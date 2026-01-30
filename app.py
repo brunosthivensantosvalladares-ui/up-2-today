@@ -15,27 +15,47 @@ ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeament
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- FUNÇÃO PDF ---
+# --- FUNÇÃO PARA GERAR PDF (CORRIGIDA) ---
 def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
     pdf.set_text_color(0, 102, 204)
     pdf.cell(190, 10, f"Relatorio de Manutencao - {NOME_SISTEMA}", ln=True, align="C")
+    pdf.set_font("Arial", "", 12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True, align="C")
     pdf.ln(5)
+
     df_periodo = df_periodo.sort_values(by=['data', 'area'])
+
     for d_process in df_periodo['data'].unique():
-        d_f = pd.to_datetime(d_process).strftime('%d/%m/%Y')
-        pdf.set_font("Arial", "B", 14); pdf.cell(190, 10, f"Data: {d_f}", ln=True)
+        d_formatada = pd.to_datetime(d_process).strftime('%d/%m/%Y')
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(190, 10, f"Data: {d_formatada}", ln=True)
+
         for area in ORDEM_AREAS:
             df_area = df_periodo[(df_periodo['data'] == d_process) & (df_periodo['area'] == area)]
             if not df_area.empty:
-                pdf.set_font("Arial", "B", 11); pdf.set_fill_color(230, 230, 230)
+                pdf.set_font("Arial", "B", 11)
+                pdf.set_fill_color(230, 230, 230)
                 pdf.cell(190, 7, f" Area: {area}", ln=True, fill=True)
+                
+                pdf.set_font("Arial", "B", 9)
+                pdf.cell(25, 6, "Prefixo", 1)
+                pdf.cell(35, 6, "Responsavel", 1)
+                pdf.cell(130, 6, "Descricao", 1, ln=True)
+                
                 pdf.set_font("Arial", "", 8)
                 for _, row in df_area.iterrows():
-                    pdf.cell(190, 6, f"{row['prefixo']} | {row['executor']} | {row['descricao'][:80]}", ln=True)
-    return bytes(pdf.output())
+                    desc = str(row['descricao'])[:80]
+                    pdf.cell(25, 6, str(row['prefixo']), 1)
+                    pdf.cell(35, 6, str(row['executor']), 1)
+                    pdf.cell(130, 6, desc, 1, ln=True)
+                pdf.ln(3)
+    
+    # AJUSTE PARA EVITAR O TYPEERROR
+    return pdf.output() if isinstance(pdf.output(), (bytes, bytearray)) else bytes(pdf.output(), 'latin-1')
 
 # --- 2. BANCO DE DADOS ---
 def get_engine():
@@ -44,10 +64,12 @@ def get_engine():
 
 def inicializar_banco():
     engine = get_engine()
-    with engine.connect() as conn:
-        conn.execute(text("CREATE TABLE IF NOT EXISTS tarefas (id SERIAL PRIMARY KEY, data TEXT, executor TEXT, prefixo TEXT, inicio_disp TEXT, fim_disp TEXT, descricao TEXT, area TEXT, turno TEXT, realizado BOOLEAN DEFAULT FALSE, id_chamado INTEGER)"))
-        conn.execute(text("CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, motorista TEXT, prefixo TEXT, descricao TEXT, data_solicitacao TEXT, status TEXT DEFAULT 'Pendente')"))
-        conn.commit()
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("CREATE TABLE IF NOT EXISTS tarefas (id SERIAL PRIMARY KEY, data TEXT, executor TEXT, prefixo TEXT, inicio_disp TEXT, fim_disp TEXT, descricao TEXT, area TEXT, turno TEXT, realizado BOOLEAN DEFAULT FALSE, id_chamado INTEGER)"))
+            conn.execute(text("CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, motorista TEXT, prefixo TEXT, descricao TEXT, data_solicitacao TEXT, status TEXT DEFAULT 'Pendente')"))
+            conn.commit()
+    except: pass
 
 # --- 3. LOGIN ---
 if "logado" not in st.session_state: st.session_state["logado"] = False
@@ -65,7 +87,7 @@ if not st.session_state["logado"]:
                 if user in users and users[user] == pw:
                     st.session_state["logado"], st.session_state["perfil"] = True, ("admin" if user != "motorista" else "motorista")
                     st.rerun()
-                else: st.error("Erro no login")
+                else: st.error("Acesso negado")
 else:
     engine = get_engine()
     inicializar_banco()
@@ -76,7 +98,7 @@ else:
         if st.button("Sair"): st.session_state["logado"] = False; st.rerun()
 
     if st.session_state["perfil"] == "motorista":
-        aba_solic, aba_hist = st.tabs(["✍️ Solicitar Manutenção", "📜 Status"])
+        aba_solic, aba_hist = st.tabs(["✍️ Abrir Solicitação", "📜 Status"])
         with aba_solic:
             with st.form("f_ch", clear_on_submit=True):
                 p, d = st.text_input("Prefixo"), st.text_area("Descrição")
@@ -85,7 +107,7 @@ else:
                         with engine.connect() as conn:
                             conn.execute(text("INSERT INTO chamados (motorista, prefixo, descricao, data_solicitacao, status) VALUES ('motorista', :p, :d, :dt, 'Pendente')"), {"p": p, "d": d, "dt": str(datetime.now().date())})
                             conn.commit()
-                        st.success("Tudo em dia!")
+                        st.success("Tudo em dia! Solicitação enviada.")
         with aba_hist:
             st.dataframe(pd.read_sql("SELECT prefixo, data_solicitacao as data, status, descricao FROM chamados ORDER BY id DESC", engine), use_container_width=True)
 
@@ -121,60 +143,56 @@ else:
                         for i in ed_l[ed_l['Exc']==True]['id'].tolist(): conn.execute(text("DELETE FROM tarefas WHERE id = :id"), {"id": int(i)})
                         conn.commit()
                     st.rerun()
+                if st.session_state.ed_lista["edited_rows"]:
+                    with engine.connect() as conn:
+                        for idx, changes in st.session_state.ed_lista["edited_rows"].items():
+                            rid = int(df_lista.iloc[idx]['id'])
+                            for col, val in changes.items():
+                                if col != 'Exc': conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
+                        conn.commit()
+                    st.rerun()
 
         with aba_cham:
             st.subheader("📥 Aprovação de Chamados")
-            # Carrega apenas chamados que ainda são 'Pendente'
-            df_p = pd.read_sql("SELECT * FROM chamados WHERE status = 'Pendente' OR status IS NULL", engine)
-            
+            df_p = pd.read_sql("SELECT * FROM chamados WHERE status != 'Agendado'", engine)
             if not df_p.empty:
-                # Criando as colunas auxiliares para a aprovação
-                df_p['Data Agendada'] = datetime.now().date()
-                df_p['Responsável'] = "Pendente"
-                df_p['Área Destino'] = "Mecânica"
-                df_p['Aprovar'] = False
-                
-                # Editor com a opção de definir o executor (Responsável)
+                # Inicialização das colunas de edição se não existirem
+                if 'df_aprov' not in st.session_state:
+                    st.session_state.df_aprov = df_p.copy()
+                    st.session_state.df_aprov['Responsável'] = "Pendente"
+                    st.session_state.df_aprov['Data'] = datetime.now().date()
+                    st.session_state.df_aprov['Área'] = "Mecânica"
+                    st.session_state.df_aprov['OK'] = False
+
                 ed_c = st.data_editor(
-                    df_p[['Aprovar', 'prefixo', 'descricao', 'data_solicitacao', 'Data Agendada', 'Responsável', 'Área Destino', 'id']],
-                    column_config={
-                        "id": None,
-                        "Aprovar": st.column_config.CheckboxColumn("OK?", width="small"),
-                        "prefixo": st.column_config.TextColumn("Prefixo", disabled=True),
-                        "descricao": st.column_config.TextColumn("Problema Relatado", disabled=True),
-                        "data_solicitacao": st.column_config.TextColumn("Solicitado em", disabled=True),
-                        "Responsável": st.column_config.TextColumn("Executor", help="Digite quem fará o serviço"),
-                        "Área Destino": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS)
-                    },
-                    hide_index=True,
+                    st.session_state.df_aprov, 
+                    hide_index=True, 
                     use_container_width=True,
+                    column_config={
+                        "id": None, "motorista": None, "status": None,
+                        "OK": st.column_config.CheckboxColumn("Aprovar?"),
+                        "Responsável": st.column_config.TextColumn("Executor (Digite Aqui)"),
+                        "Área": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS)
+                    },
                     key="editor_chamados"
                 )
                 
-                if st.button("Processar e Enviar para Agenda"):
-                    aprovados = ed_c[ed_c['Aprovar'] == True]
-                    if not aprovados.empty:
+                if st.button("Processar Agendamentos"):
+                    # Filtra apenas quem foi marcado com OK no editor
+                    selecionados = ed_c[ed_c['OK'] == True]
+                    if not selecionados.empty:
                         with engine.connect() as conn:
-                            for _, r in aprovados.iterrows():
-                                # Insere na tabela de tarefas (Agenda)
+                            for _, r in selecionados.iterrows():
                                 conn.execute(text("""
                                     INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado) 
                                     VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic)
-                                """), {
-                                    "dt": str(r['Data Agendada']), 
-                                    "ex": r['Responsável'], 
-                                    "pr": r['prefixo'], 
-                                    "ds": r['descricao'], 
-                                    "ar": r['Área Destino'], 
-                                    "ic": r['id']
-                                })
-                                # Atualiza status no chamado original
+                                """), {"dt": str(r['Data']), "ex": r['Responsável'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Área'], "ic": r['id']})
                                 conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
                             conn.commit()
-                        st.success("Tudo em dia! Chamados movidos para a Agenda.")
+                        st.success("Tudo em dia! Serviços movidos para a agenda.")
+                        del st.session_state.df_aprov # Limpa cache para atualizar
                         st.rerun()
-            else:
-                st.info("Nenhum chamado novo pendente no momento.")
+            else: st.info("Nenhum chamado pendente.")
 
         with aba_agen:
             st.subheader("📅 Agenda Principal")
@@ -182,29 +200,30 @@ else:
             if not df_a.empty:
                 df_a['data'] = pd.to_datetime(df_a['data']).dt.date
                 
-                # Relatórios
+                # --- EXPORTAÇÃO ---
                 c_per, c_pdf = st.columns([0.8, 0.2])
-                with c_per: p_sel = st.date_input("Filtrar Período", [datetime.now().date(), datetime.now().date() + timedelta(days=1)])
+                with c_per: p_sel = st.date_input("Período", [datetime.now().date(), datetime.now().date() + timedelta(days=1)])
                 if len(p_sel) == 2:
                     df_f_per = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])]
                     with c_pdf: 
                         st.write("")
-                        st.download_button("📥 Baixar PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
+                        st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
 
                 st.divider()
-                
                 for col in ['inicio_disp', 'fim_disp']:
                     df_a[col] = pd.to_datetime(df_a[col], format='%H:%M', errors='coerce').dt.time
                     df_a[col] = df_a[col].fillna(time(0, 0))
+
+                st.markdown("""<style>[data-testid="stTable"] td:nth-child(4), [data-testid="stTable"] td:nth-child(5) {background-color: #d4edda !important; font-weight: bold;}</style>""", unsafe_allow_html=True)
 
                 for d in sorted(df_a['data'].unique(), reverse=True):
                     st.markdown(f"#### 🗓️ {d.strftime('%d/%m/%Y')}")
                     for area in ORDEM_AREAS:
                         df_f = df_a[(df_a['data'] == d) & (df_a['area'] == area)]
                         if not df_f.empty:
-                            st.write(f"**📍 {area}**")
                             k = f"ed_ted_{d}_{area}"
-                            
+                            st.write(f"**📍 {area}**")
+                            # ALINHAMENTO DAS COLUNAS
                             ed_age = st.data_editor(
                                 df_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id']],
                                 column_config={
@@ -212,15 +231,9 @@ else:
                                     "realizado": st.column_config.CheckboxColumn("Status OK", width="small"),
                                     "executor": st.column_config.TextColumn("Responsável", width="medium"),
                                     "prefixo": st.column_config.TextColumn("Prefixo", width="small"),
-                                    "inicio_disp": st.column_config.TimeColumn("Início", format="HH:mm", width="small"),
-                                    "fim_disp": st.column_config.TimeColumn("Fim", format="HH:mm", width="small"),
-                                    "turno": st.column_config.SelectboxColumn("Turno", options=LISTA_TURNOS, width="small"),
-                                    "descricao": st.column_config.TextColumn("Serviço", width="large")
-                                }, 
-                                hide_index=True, 
-                                use_container_width=True, 
-                                key=k
-                            )
+                                    "inicio_disp": st.column_config.TimeColumn("Início", format="HH:mm"),
+                                    "fim_disp": st.column_config.TimeColumn("Fim", format="HH:mm")
+                                }, hide_index=True, use_container_width=True, key=k)
                             
                             if st.session_state[k]["edited_rows"]:
                                 with engine.connect() as conn:
@@ -237,4 +250,4 @@ else:
             if not df_ind.empty:
                 c1, c2 = st.columns(2)
                 with c1: st.bar_chart(df_ind['area'].value_counts())
-                with c2: st.info(f"Total de tarefas cadastradas: {len(df_ind)}")
+                with c2: st.bar_chart(df_ind['realizado'].value_counts())
