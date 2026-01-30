@@ -15,8 +15,15 @@ ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeament
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- FUNÇÃO PARA GERAR PDF (OTIMIZADA COM CACHE) ---
-@st.cache_data
+# --- CONEXÃO OTIMIZADA (EVITA RECARREGAR AO ROLAR) ---
+@st.cache_resource
+def get_engine():
+    db_url = os.environ.get("database_url", "postgresql://neondb_owner:npg_WRMhXvJVY79d@ep-lucky-sound-acy7xdyi-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require")
+    # Pool de conexões mantém o canal aberto com o banco Neon
+    return create_engine(db_url.replace("postgres://", "postgresql://", 1), pool_size=5, max_overflow=10, pool_pre_ping=True)
+
+# --- FUNÇÃO PARA GERAR PDF (OTIMIZADA COM CACHE SILENCIOSO) ---
+@st.cache_data(show_spinner=False)
 def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf = FPDF()
     pdf.add_page()
@@ -27,40 +34,24 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf.set_text_color(0, 0, 0)
     pdf.cell(190, 10, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True, align="C")
     pdf.ln(5)
-
     df_periodo = df_periodo.sort_values(by=['data', 'area'])
-
     for d_process in df_periodo['data'].unique():
         d_formatada = pd.to_datetime(d_process).strftime('%d/%m/%Y')
         pdf.set_font("Arial", "B", 14)
         pdf.cell(190, 10, f"Data: {d_formatada}", ln=True)
-
         for area in ORDEM_AREAS:
             df_area = df_periodo[(df_periodo['data'] == d_process) & (df_periodo['area'] == area)]
             if not df_area.empty:
-                pdf.set_font("Arial", "B", 11)
-                pdf.set_fill_color(230, 230, 230)
+                pdf.set_font("Arial", "B", 11); pdf.set_fill_color(230, 230, 230)
                 pdf.cell(190, 7, f" Area: {area}", ln=True, fill=True)
-                
                 pdf.set_font("Arial", "B", 9)
-                pdf.cell(25, 6, "Prefixo", 1)
-                pdf.cell(35, 6, "Responsavel", 1)
-                pdf.cell(130, 6, "Descricao", 1, ln=True)
-                
+                pdf.cell(25, 6, "Prefixo", 1); pdf.cell(35, 6, "Responsavel", 1); pdf.cell(130, 6, "Descricao", 1, ln=True)
                 pdf.set_font("Arial", "", 8)
                 for _, row in df_area.iterrows():
                     desc = str(row['descricao'])[:80]
-                    pdf.cell(25, 6, str(row['prefixo']), 1)
-                    pdf.cell(35, 6, str(row['executor']), 1)
-                    pdf.cell(130, 6, desc, 1, ln=True)
+                    pdf.cell(25, 6, str(row['prefixo']), 1); pdf.cell(35, 6, str(row['executor']), 1); pdf.cell(130, 6, desc, 1, ln=True)
                 pdf.ln(3)
-    
     return pdf.output() if isinstance(pdf.output(), (bytes, bytearray)) else bytes(pdf.output(), 'latin-1')
-
-# --- 2. BANCO DE DADOS ---
-def get_engine():
-    db_url = os.environ.get("database_url", "postgresql://neondb_owner:npg_WRMhXvJVY79d@ep-lucky-sound-acy7xdyi-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require")
-    return create_engine(db_url.replace("postgres://", "postgresql://", 1), pool_pre_ping=True)
 
 def inicializar_banco():
     engine = get_engine()
@@ -134,9 +125,8 @@ else:
                         st.success("Tudo em dia!")
                         st.rerun()
             st.divider()
-            st.info("💡 *Para reagendar serviços, basta alterar as datas na lista abaixo. Faça demais ajustes ou exclua serviços em caso de agendamentos incorretos. O salvamento é automático.*")
+            st.info("💡 *Para reagendar serviços, basta alterar as datas na lista abaixo. O salvamento é automático.*")
             
-            # FRAGMENTO PARA EVITAR RELOAD NA LISTA DE CADASTRO
             @st.fragment
             def secao_lista_cadastro():
                 df_lista = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC, id DESC", engine)
@@ -204,7 +194,7 @@ else:
 
         with aba_agen:
             st.subheader("📅 Agenda Principal")
-            st.info("💡 *Destaque em verde: Horários negociados com a Logística. O campo 'Início' indica quando o caminhão encosta e 'Fim' a meta de liberação.*")
+            st.info("💡 *Destaque em verde: Horários negociados com a Logística.*")
             
             @st.fragment
             def secao_agenda_principal():
@@ -213,12 +203,11 @@ else:
                     df_a['data'] = pd.to_datetime(df_a['data']).dt.date
                     
                     c_per, c_pdf = st.columns([0.8, 0.2])
-                    with c_per: p_sel = st.date_input("Período", [datetime.now().date(), datetime.now().date() + timedelta(days=1)])
+                    with c_per: p_sel = st.date_input("Período", [datetime.now().date(), datetime.now().date() + timedelta(days=1)], key="data_filtro")
                     if len(p_sel) == 2:
                         df_f_per = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])]
                         with c_pdf: 
-                            st.write("")
-                            st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
+                            st.write(""); st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
 
                     st.divider()
                     for col in ['inicio_disp', 'fim_disp']:
