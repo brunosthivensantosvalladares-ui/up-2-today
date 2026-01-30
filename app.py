@@ -19,7 +19,6 @@ st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", pa
 @st.cache_resource
 def get_engine():
     db_url = os.environ.get("database_url", "postgresql://neondb_owner:npg_WRMhXvJVY79d@ep-lucky-sound-acy7xdyi-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require")
-    # Pool de conexões mantém o canal aberto com o banco Neon
     return create_engine(db_url.replace("postgres://", "postgresql://", 1), pool_size=5, max_overflow=10, pool_pre_ping=True)
 
 # --- FUNÇÃO PARA GERAR PDF (OTIMIZADA COM CACHE SILENCIOSO) ---
@@ -125,7 +124,7 @@ else:
                         st.success("Tudo em dia!")
                         st.rerun()
             st.divider()
-            st.info("💡 *Para reagendar serviços, basta alterar as datas na lista abaixo. O salvamento é automático.*")
+            st.info("💡 *Para reagendar serviços, basta alterar as datas na lista abaixo. Faça demais ajustes ou exclua serviços em caso de agendamentos incorretos. O salvamento é automático.*")
             
             @st.fragment
             def secao_lista_cadastro():
@@ -194,7 +193,7 @@ else:
 
         with aba_agen:
             st.subheader("📅 Agenda Principal")
-            st.info("💡 *Destaque em verde: Horários negociados com a Logística.*")
+            st.info("💡 *Destaque em verde: Horários negociados com a Logística. O campo 'Início' indica quando o caminhão encosta e 'Fim' a meta de liberação.*")
             
             @st.fragment
             def secao_agenda_principal():
@@ -241,6 +240,7 @@ else:
                                         for idx, changes in st.session_state[k]["edited_rows"].items():
                                             rid = int(df_f.iloc[idx]['id'])
                                             for col, val in changes.items():
+                                                # CONVERSÃO DE TEMPO PARA TEXTO PARA O POSTGRES (CORREÇÃO DO SALVAMENTO)
                                                 v_s = val.strftime('%H:%M') if isinstance(val, time) else str(val)
                                                 conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": v_s, "i": rid})
                                         conn.commit()
