@@ -185,7 +185,7 @@ else:
 
         with aba_agen:
             st.subheader("📅 Agenda Principal")
-            st.info("💡 *Destaque em verde: Horários negociados com a Logística. O campo 'Início' indica quando o caminhão encosta e 'Fim' a meta de liberação.*")
+            st.info("💡 *Preencha os horários e clique no botão 'Salvar' para gravar as alterações.*")
             
             df_a = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC", engine)
             if not df_a.empty:
@@ -204,36 +204,47 @@ else:
 
                 st.markdown("""<style>[data-testid="stTable"] td:nth-child(4), [data-testid="stTable"] td:nth-child(5) {background-color: #d4edda !important; font-weight: bold;}</style>""", unsafe_allow_html=True)
 
-                for d in sorted(df_a['data'].unique(), reverse=True):
-                    st.markdown(f"#### 🗓️ {d.strftime('%d/%m/%Y')}")
-                    for area in ORDEM_AREAS:
-                        df_f = df_a[(df_a['data'] == d) & (df_a['area'] == area)]
-                        if not df_f.empty:
-                            k = f"ed_ted_{d}_{area}"
-                            st.write(f"**📍 {area}**")
-                            ed_age = st.data_editor(
-                                df_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id']],
-                                column_config={
-                                    "id": None, 
-                                    "realizado": st.column_config.CheckboxColumn("Status OK", width="small"),
-                                    "executor": st.column_config.TextColumn("Responsável", width="medium"),
-                                    "prefixo": st.column_config.TextColumn("Prefixo", width="small"),
-                                    "inicio_disp": st.column_config.TimeColumn("Início", format="HH:mm", width="small"),
-                                    "fim_disp": st.column_config.TimeColumn("Fim", format="HH:mm", width="small"),
-                                    "turno": st.column_config.SelectboxColumn("Turno", options=LISTA_TURNOS, width="small"),
-                                    "descricao": st.column_config.TextColumn("Descrição", width="large")
-                                }, hide_index=True, use_container_width=True, key=k)
-                            
-                            if st.session_state[k]["edited_rows"]:
-                                with engine.connect() as conn:
-                                    for idx, changes in st.session_state[k]["edited_rows"].items():
-                                        rid = int(df_f.iloc[idx]['id'])
+                # --- MUDANÇA: BOTÃO SALVAR ---
+                with st.form("form_agenda"):
+                    for d in sorted(df_a['data'].unique(), reverse=True):
+                        st.markdown(f"#### 🗓️ {d.strftime('%d/%m/%Y')}")
+                        for area in ORDEM_AREAS:
+                            df_f = df_a[(df_a['data'] == d) & (df_a['area'] == area)]
+                            if not df_f.empty:
+                                st.write(f"**📍 {area}**")
+                                st.data_editor(
+                                    df_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id']],
+                                    column_config={
+                                        "id": None, 
+                                        "realizado": st.column_config.CheckboxColumn("OK", width="small"),
+                                        "executor": st.column_config.TextColumn("Responsável", width="medium"),
+                                        "prefixo": st.column_config.TextColumn("Prefixo", width="small"),
+                                        "inicio_disp": st.column_config.TimeColumn("Início", format="HH:mm", width="small"),
+                                        "fim_disp": st.column_config.TimeColumn("Fim", format="HH:mm", width="small"),
+                                        "turno": st.column_config.SelectboxColumn("Turno", options=LISTA_TURNOS, width="small"),
+                                        "descricao": st.column_config.TextColumn("Descrição", width="large")
+                                    }, hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}")
+
+                    if st.form_submit_button("Salvar", use_container_width=True):
+                        with engine.connect() as conn:
+                            for key in st.session_state.keys():
+                                if key.startswith("ed_ted_") and st.session_state[key]["edited_rows"]:
+                                    # Identifica a data e área do editor
+                                    partes = key.split("_")
+                                    dt_k = datetime.strptime(partes[2], '%Y-%m-%d').date()
+                                    ar_k = partes[3]
+                                    # Filtra o dataframe original para pegar o ID correto
+                                    df_ref = df_a[(df_a['data'] == dt_k) & (df_a['area'] == ar_k)]
+                                    
+                                    for idx, changes in st.session_state[key]["edited_rows"].items():
+                                        rid = int(df_ref.iloc[idx]['id'])
                                         for col, val in changes.items():
-                                            # CONVERSÃO DE TEMPO PARA TEXTO PARA O POSTGRES
+                                            # Formata horário para texto antes de salvar
                                             v_s = val.strftime('%H:%M') if isinstance(val, time) else str(val)
                                             conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": v_s, "i": rid})
-                                    conn.commit()
-                                st.rerun()
+                            conn.commit()
+                        st.success("Alterações salvas com sucesso!")
+                        st.rerun()
 
         with aba_demo:
             df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
