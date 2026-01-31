@@ -198,7 +198,6 @@ else:
                     with col_info:
                         st.info("💡 *Preencha os horários e clique em Salvar no topo para gravar permanentemente.*")
 
-                    # Ajuste de horários para objetos time
                     for col in ['inicio_disp', 'fim_disp']:
                         df_f_per[col] = pd.to_datetime(df_f_per[col], format='%H:%M', errors='coerce').dt.time
                         df_f_per[col] = df_f_per[col].fillna(time(0, 0))
@@ -224,16 +223,13 @@ else:
                     with engine.connect() as conn:
                         for key in st.session_state.keys():
                             if key.startswith("ed_ted_") and st.session_state[key]["edited_rows"]:
-                                # Localização do ID
                                 partes = key.split("_")
-                                dt_k = datetime.strptime(partes[2], '%Y-%m-%d').date()
-                                ar_k = partes[3]
-                                df_referencia = df_f_per[(df_f_per['data'] == dt_k) & (df_f_per['area'] == ar_k)]
-                                
+                                dt_k, ar_k = datetime.strptime(partes[2], '%Y-%m-%d').date(), partes[3]
+                                df_ref = df_f_per[(df_f_per['data'] == dt_k) & (df_f_per['area'] == ar_k)]
                                 for idx, changes in st.session_state[key]["edited_rows"].items():
-                                    rid = int(df_referencia.iloc[idx]['id'])
+                                    rid = int(df_ref.iloc[idx]['id'])
                                     for col, val in changes.items():
-                                        # CORREÇÃO CRÍTICA: Converte objeto TIME em STRING HH:mm para o banco
+                                        # RESOLVE O SALVAMENTO: Converte relógio para TEXTO (string HH:mm)
                                         v_final = val.strftime('%H:%M') if isinstance(val, time) else str(val)
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": v_final, "i": rid})
                         conn.commit()
