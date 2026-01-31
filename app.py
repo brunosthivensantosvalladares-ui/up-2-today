@@ -149,6 +149,9 @@ else:
 
         with aba_cham:
             st.subheader("📥 Aprovação de Chamados")
+            # --- RECADO DA ABA CHAMADO RECUPERADO ---
+            st.info("💡 *Marque 'OK' para os itens que deseja aprovar, defina o Responsável/Área e clique em 'Processar Agendamentos'.*")
+            
             @st.fragment
             def secao_aprovacao():
                 df_p = pd.read_sql("SELECT * FROM chamados WHERE status != 'Agendado'", engine)
@@ -157,23 +160,38 @@ else:
                         st.session_state.df_aprov = df_p.copy()
                         st.session_state.df_aprov['Responsável'] = "Pendente"; st.session_state.df_aprov['Data'] = datetime.now().date()
                         st.session_state.df_aprov['Área'] = "Mecânica"; st.session_state.df_aprov['OK'] = False
-                    ed_c = st.data_editor(st.session_state.df_aprov, hide_index=True, use_container_width=True, column_config={"id": None, "motorista": None, "status": None, "OK": st.column_config.CheckboxColumn("Aprovar?"), "Responsável": st.column_config.TextColumn("Executor"), "Área": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS)}, key="editor_chamados")
+                    
+                    ed_c = st.data_editor(
+                        st.session_state.df_aprov, 
+                        hide_index=True, use_container_width=True,
+                        column_config={
+                            "id": None, "motorista": None, "status": None,
+                            "OK": st.column_config.CheckboxColumn("Aprovar?"),
+                            "Responsável": st.column_config.TextColumn("Executor (Digite Aqui)"),
+                            "Área": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS)
+                        },
+                        key="editor_chamados"
+                    )
                     if st.button("Processar Agendamentos"):
                         selecionados = ed_c[ed_c['OK'] == True]
                         if not selecionados.empty:
                             with engine.connect() as conn:
                                 for _, r in selecionados.iterrows():
-                                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic)"), {"dt": str(r['Data']), "ex": r['Responsável'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Área'], "ic": r['id']})
+                                    conn.execute(text("""
+                                        INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado) 
+                                        VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic)
+                                    """), {"dt": str(r['Data']), "ex": r['Responsável'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Área'], "ic": r['id']})
                                     conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
                                 conn.commit()
-                            st.success("Tudo em dia!"); del st.session_state.df_aprov; st.rerun()
+                            st.success("Tudo em dia! Serviços movidos para a agenda.")
+                            del st.session_state.df_aprov; st.rerun()
+                else: st.info("Nenhum chamado pendente.")
             secao_aprovacao()
 
         with aba_agen:
             st.subheader("📅 Agenda Principal")
             df_a_carrega = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC", engine)
             
-            # --- FILTROS E PDF (Fora do Form para evitar erro de API) ---
             c_per, c_pdf = st.columns([0.8, 0.2])
             with c_per: p_sel = st.date_input("Filtrar Período", [datetime.now().date(), datetime.now().date() + timedelta(days=1)], key="dt_filter")
             
@@ -181,12 +199,9 @@ else:
                 df_a_carrega['data'] = pd.to_datetime(df_a_carrega['data']).dt.date
                 df_f_per = df_a_carrega[(df_a_carrega['data'] >= p_sel[0]) & (df_a_carrega['data'] <= p_sel[1])] if len(p_sel) == 2 else df_a_carrega
                 with c_pdf: 
-                    st.write("")
-                    st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
+                    st.write(""); st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
 
                 st.divider()
-                
-                # --- FORMULÁRIO COM BOTÃO SALVAR NO TOPO ---
                 with st.form("form_agenda"):
                     col_btn, col_info = st.columns([0.2, 0.8])
                     with col_btn:
@@ -194,7 +209,6 @@ else:
                     with col_info:
                         st.info("💡 *Preencha os horários e clique em Salvar no topo para gravar permanentemente.*")
 
-                    # Ajuste visual de horários
                     for col in ['inicio_disp', 'fim_disp']:
                         df_f_per[col] = pd.to_datetime(df_f_per[col], format='%H:%M', errors='coerce').dt.time
                         df_f_per[col] = df_f_per[col].fillna(time(0, 0))
@@ -221,20 +235,16 @@ else:
                     with engine.connect() as conn:
                         for key in st.session_state.keys():
                             if key.startswith("ed_ted_") and st.session_state[key]["edited_rows"]:
-                                # Extraímos data e área da chave do editor
                                 partes = key.split("_")
                                 dt_k = datetime.strptime(partes[2], '%Y-%m-%d').date()
                                 ar_k = partes[3]
-                                # Filtramos o dataframe original para capturar o ID correto da linha editada
-                                df_referencia = df_f_per[(df_f_per['data'] == dt_k) & (df_f_per['area'] == ar_k)]
-                                
+                                df_ref = df_f_per[(df_f_per['data'] == dt_k) & (df_f_per['area'] == ar_k)]
                                 for idx, changes in st.session_state[key]["edited_rows"].items():
-                                    rid = int(df_referencia.iloc[idx]['id'])
+                                    rid = int(df_ref.iloc[idx]['id'])
                                     for col, val in changes.items():
                                         v_s = val.strftime('%H:%M') if isinstance(val, time) else str(val)
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": v_s, "i": rid})
                         conn.commit()
-                    st.success("Alterações salvas com sucesso!")
                     st.rerun()
 
         with aba_demo:
