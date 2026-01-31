@@ -46,7 +46,8 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
                 pdf.cell(25, 6, "Prefixo", 1); pdf.cell(35, 6, "Responsavel", 1); pdf.cell(130, 6, "Descricao", 1, ln=True)
                 pdf.set_font("Arial", "", 8)
                 for _, row in df_area.iterrows():
-                    pdf.cell(25, 6, str(row['prefixo']), 1); pdf.cell(35, 6, str(row['executor']), 1); pdf.cell(130, 6, str(row['descricao'])[:80], 1, ln=True)
+                    desc = str(row['descricao'])[:80]
+                    pdf.cell(25, 6, str(row['prefixo']), 1); pdf.cell(35, 6, str(row['executor']), 1); pdf.cell(130, 6, desc, 1, ln=True)
                 pdf.ln(3)
     return pdf.output() if isinstance(pdf.output(), (bytes, bytearray)) else bytes(pdf.output(), 'latin-1')
 
@@ -54,7 +55,8 @@ def inicializar_banco():
     engine = get_engine()
     try:
         with engine.connect() as conn:
-            conn.execute(text("CREATE TABLE IF NOT EXISTS tarefas (id SERIAL PRIMARY KEY, data TEXT, executor TEXT, prefixo TEXT, inicio_disp TEXT, fim_disp TEXT, descricao TEXT, area TEXT, turno TEXT, realizado BOOLEAN DEFAULT FALSE, id_chamado INTEGER)"))
+            # ADICIONADA COLUNA ORIGEM
+            conn.execute(text("CREATE TABLE IF NOT EXISTS tarefas (id SERIAL PRIMARY KEY, data TEXT, executor TEXT, prefixo TEXT, inicio_disp TEXT, fim_disp TEXT, descricao TEXT, area TEXT, turno TEXT, realizado BOOLEAN DEFAULT FALSE, id_chamado INTEGER, origem TEXT)"))
             conn.execute(text("CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, motorista TEXT, prefixo TEXT, descricao TEXT, data_solicitacao TEXT, status TEXT DEFAULT 'Pendente')"))
             conn.commit()
     except: pass
@@ -116,7 +118,8 @@ else:
                     t_i = st.selectbox("Turno", LISTA_TURNOS)
                     if st.form_submit_button("Confirmar", use_container_width=True):
                         with engine.connect() as conn:
-                            conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, :tu)"), {"dt": str(d_i), "ex": e_i, "pr": p_i, "ds": ds_i, "ar": a_i, "tu": t_i})
+                            # DEFININDO ORIGEM COMO 'Direto'
+                            conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, :tu, 'Direto')"), {"dt": str(d_i), "ex": e_i, "pr": p_i, "ds": ds_i, "ar": a_i, "tu": t_i})
                             conn.commit()
                         st.rerun()
             st.divider()
@@ -128,7 +131,8 @@ else:
                 if not df_lista.empty:
                     df_lista['data'] = pd.to_datetime(df_lista['data']).dt.date
                     df_lista['Exc'] = False
-                    ed_l = st.data_editor(df_lista[['Exc', 'data', 'turno', 'executor', 'prefixo', 'descricao', 'area', 'id']], hide_index=True, use_container_width=True, key="ed_lista")
+                    # ADICIONADA COLUNA ORIGEM NA VISUALIZAÇÃO
+                    ed_l = st.data_editor(df_lista[['Exc', 'data', 'turno', 'origem', 'executor', 'prefixo', 'descricao', 'area', 'id']], hide_index=True, use_container_width=True, key="ed_lista")
                     if st.button("🗑️ Excluir Selecionados"):
                         with engine.connect() as conn:
                             for i in ed_l[ed_l['Exc']==True]['id'].tolist(): conn.execute(text("DELETE FROM tarefas WHERE id = :id"), {"id": int(i)})
@@ -163,7 +167,8 @@ else:
                         if not selecionados.empty:
                             with engine.connect() as conn:
                                 for _, r in selecionados.iterrows():
-                                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic)"), {"dt": str(r['Data']), "ex": r['Responsável'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Área'], "ic": r['id']})
+                                    # DEFININDO ORIGEM COMO 'Chamado'
+                                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic, 'Chamado')"), {"dt": str(r['Data']), "ex": r['Responsável'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Área'], "ic": r['id']})
                                     conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
                                 conn.commit()
                             del st.session_state.df_aprov; st.rerun()
@@ -174,7 +179,6 @@ else:
             st.subheader("📅 Agenda Principal")
             df_a_carrega = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC", engine)
             
-            # FILTRO TRAVADO EM HOJE E AMANHÃ
             hoje = datetime.now().date()
             amanha = hoje + timedelta(days=1)
             
@@ -204,12 +208,13 @@ else:
                             df_area_f = df_f_per[(df_f_per['data'] == d) & (df_f_per['area'] == area)]
                             if not df_area_f.empty:
                                 st.write(f"**📍 {area}**")
-                                # USANDO TEXTCOLUMN PARA GARANTIR SALVAMENTO SEM ERRO
+                                # ADICIONADA COLUNA ORIGEM NA AGENDA PRINCIPAL PARA REFERÊNCIA
                                 st.data_editor(
-                                    df_area_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id']],
+                                    df_area_f[['realizado', 'origem', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id']],
                                     column_config={
                                         "id": None, 
                                         "realizado": st.column_config.CheckboxColumn("OK", width="small"),
+                                        "origem": st.column_config.TextColumn("Origem", disabled=True, width="small"),
                                         "inicio_disp": st.column_config.TextColumn("Início (HH:mm)", width="small"),
                                         "fim_disp": st.column_config.TextColumn("Fim (HH:mm)", width="small")
                                     }, 
@@ -240,6 +245,5 @@ else:
                     st.bar_chart(df_ind['area'].value_counts())
                 with c2:
                     st.markdown("**Serviços Concluídos x Pendentes**")
-                    # AJUSTE DO GRÁFICO: Substituindo False/True por Pendente/Concluído
                     df_status = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
                     st.bar_chart(df_status)
