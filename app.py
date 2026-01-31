@@ -9,25 +9,23 @@ from fpdf import FPDF
 # --- CONFIGURAÇÕES DE MARCA ---
 NOME_SISTEMA = "Ted"
 SLOGAN = "Seu Controle. Nossa Prioridade."
-# LINK DIRETO DA IMAGEM (Hospedado no ImgBB)
-LOGO_PATH = "https://i.ibb.co/3ykG83G/logo-png-jpeg.jpg" 
+# LINK ESTÁVEL DA LOGO (Hospedagem Direta)
+LOGO_PATH = "https://i.postimg.cc/0jXmY8m4/logo-ted.png" 
 LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
 ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeamento", "Limpeza"]
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA UNIDADE VISUAL (CORES DA LOGO) ---
+# --- CSS PARA UNIDADE VISUAL ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #f8f9fa; }}
-    /* Azul e Verde Ted nos botões e elementos */
+    /* Cores da Logo: Azul (#0066cc) e Verde (#28a745) */
     .stButton>button {{ background-color: #0066cc; color: white; border-radius: 8px; border: none; font-weight: bold; }}
     .stButton>button:hover {{ background-color: #004d99; border: none; }}
     [data-testid="stSidebar"] {{ background-color: #ffffff; border-right: 1px solid #e0e0e0; }}
     .area-header {{ color: #28a745; font-weight: bold; font-size: 1.1rem; border-left: 5px solid #0066cc; padding-left: 10px; margin-top: 20px; }}
-    /* Ajuste de cards de login */
-    [data-testid="stForm"] {{ border-radius: 15px; background-color: white; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -58,13 +56,9 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
             if not df_area.empty:
                 pdf.set_font("Arial", "B", 11); pdf.set_fill_color(230, 230, 230)
                 pdf.cell(190, 7, f" Area: {area}", ln=True, fill=True)
-                pdf.set_font("Arial", "B", 9)
-                pdf.cell(25, 6, "Prefixo", 1); pdf.cell(35, 6, "Responsavel", 1); pdf.cell(130, 6, "Descricao", 1, ln=True)
-                pdf.set_font("Arial", "", 8)
                 for _, row in df_area.iterrows():
-                    desc = str(row['descricao'])[:80]
-                    pdf.cell(25, 6, str(row['prefixo']), 1); pdf.cell(35, 6, str(row['executor']), 1); pdf.cell(130, 6, desc, 1, ln=True)
-                pdf.ln(3)
+                    pdf.set_font("Arial", "", 8)
+                    pdf.cell(190, 6, f"{row['prefixo']} | {row['executor']} | {str(row['descricao'])[:80]}", ln=True)
     return pdf.output() if isinstance(pdf.output(), (bytes, bytearray)) else bytes(pdf.output(), 'latin-1')
 
 def inicializar_banco():
@@ -84,7 +78,6 @@ if "logado" not in st.session_state: st.session_state["logado"] = False
 if not st.session_state["logado"]:
     _, col_login, _ = st.columns([1.2, 1, 1.2])
     with col_login:
-        # LOGO NO LOGIN
         st.image(LOGO_PATH, use_container_width=True)
         st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-bottom: 20px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         with st.container(border=True):
@@ -100,7 +93,6 @@ else:
     engine = get_engine()
     inicializar_banco()
     
-    # --- BARRA LATERAL COM LOGO ---
     with st.sidebar:
         st.image(LOGO_PATH, use_container_width=True)
         st.markdown(f"<p style='text-align: center; font-size: 0.85rem; color: #666; margin-top:-10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
@@ -182,7 +174,7 @@ else:
                         st.session_state.df_aprov['Área'] = "Mecânica"; st.session_state.df_aprov['OK'] = False
                     
                     ed_c = st.data_editor(st.session_state.df_aprov, hide_index=True, use_container_width=True, column_config={"id": None, "motorista": None, "status": None, "OK": st.column_config.CheckboxColumn("Aprovar?"), "Responsável": st.column_config.TextColumn("Executor"), "Área": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS)}, key="editor_chamados")
-                    if st.button("Mover para Agenda Principal", use_container_width=True):
+                    if st.button("Mover para Agenda", use_container_width=True):
                         selecionados = ed_c[ed_c['OK'] == True]
                         if not selecionados.empty:
                             with engine.connect() as conn:
