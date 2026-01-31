@@ -10,7 +10,7 @@ from fpdf import FPDF
 NOME_SISTEMA = "Ted"
 SLOGAN = "Seu Controle. Nossa Prioridade."
 # LINK DIRETO DA IMAGEM (Extraído do GitHub para estabilidade)
-LOGO_URL = "https://ibb.co/KJZFd0r"
+LOGO_URL = "https://raw.githubusercontent.com/brunofrois/ted-app/main/logo.png"
 LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
 ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeamento", "Limpeza"]
 
