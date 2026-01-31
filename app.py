@@ -90,7 +90,8 @@ else:
     if st.session_state["perfil"] == "motorista":
         aba_solic, aba_hist = st.tabs(["✍️ Abrir Solicitação", "📜 Status"])
         with aba_solic:
-            st.info("💡 *Preencha os campos abaixo com o prefixo do veículo.*")
+            # --- RECADO MOTORISTA RESTAURADO ---
+            st.info("💡 *Preencha os campos abaixo com o prefixo do veículo e descreva os sintomas do(a) ocorrido/falha.*")
             with st.form("f_ch", clear_on_submit=True):
                 p, d = st.text_input("Prefixo"), st.text_area("Descrição")
                 if st.form_submit_button("Enviar para a oficina"):
@@ -124,6 +125,9 @@ else:
                         st.success("Tudo em dia!")
                         st.rerun()
             st.divider()
+            # --- RECADO CADASTRO RESTAURADO ---
+            st.info("💡 *Para reagendar serviços, basta alterar as datas na lista abaixo. Faça demais ajustes ou exclua serviços em caso de agendamentos incorretos. O salvamento é automático.*")
+            
             @st.fragment
             def secao_lista_cadastro():
                 df_lista = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC, id DESC", engine)
@@ -170,21 +174,33 @@ else:
 
         with aba_agen:
             st.subheader("📅 Agenda Principal")
+            
             df_a_carrega = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC", engine)
+            
+            # --- ÁREA DE FILTROS E PDF (FORA DO FORM) ---
             c_per, c_pdf = st.columns([0.8, 0.2])
             with c_per: p_sel = st.date_input("Filtrar Período", [datetime.now().date(), datetime.now().date() + timedelta(days=1)], key="dt_filter")
             
             if not df_a_carrega.empty:
                 df_a_carrega['data'] = pd.to_datetime(df_a_carrega['data']).dt.date
                 df_f_per = df_a_carrega[(df_a_carrega['data'] >= p_sel[0]) & (df_a_carrega['data'] <= p_sel[1])] if len(p_sel) == 2 else df_a_carrega
-                with c_pdf: st.write(""); st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
+                
+                with c_pdf: 
+                    st.write("")
+                    st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
 
-                st.divider()
-                with st.form("form_agenda"):
-                    col_btn, col_info = st.columns([0.2, 0.8])
-                    with col_btn: btn_salvar = st.form_submit_button("Salvar", use_container_width=True)
-                    with col_info: st.info("💡 *Altere os dados e clique em Salvar no topo para gravar.*")
+            st.divider()
 
+            # --- ÁREA DE EDIÇÃO COM BOTÃO SALVAR NO TOPO ---
+            with st.form("form_agenda"):
+                col_btn, col_info = st.columns([0.2, 0.8])
+                with col_btn:
+                    btn_salvar = st.form_submit_button("Salvar", use_container_width=True)
+                with col_info:
+                    # --- RECADO AGENDA RESTAURADO ---
+                    st.info("💡 *Preencha os horários e clique em Salvar no topo para gravar permanentemente.*")
+
+                if not df_f_per.empty:
                     for col in ['inicio_disp', 'fim_disp']:
                         df_f_per[col] = pd.to_datetime(df_f_per[col], format='%H:%M', errors='coerce').dt.time
                         df_f_per[col] = df_f_per[col].fillna(time(0, 0))
@@ -197,7 +213,10 @@ else:
                             df_f = df_f_per[(df_f_per['data'] == d) & (df_f_per['area'] == area)]
                             if not df_f.empty:
                                 st.write(f"**📍 {area}**")
-                                st.data_editor(df_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id']], column_config={"id": None, "realizado": st.column_config.CheckboxColumn("OK", width="small"), "inicio_disp": st.column_config.TimeColumn("Início", format="HH:mm", width="small"), "fim_disp": st.column_config.TimeColumn("Fim", format="HH:mm", width="small")}, hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}")
+                                st.data_editor(
+                                    df_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id']],
+                                    column_config={"id": None, "realizado": st.column_config.CheckboxColumn("OK", width="small"), "inicio_disp": st.column_config.TimeColumn("Início", format="HH:mm", width="small"), "fim_disp": st.column_config.TimeColumn("Fim", format="HH:mm", width="small")}, 
+                                    hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}")
 
                 if btn_salvar:
                     with engine.connect() as conn:
@@ -213,7 +232,7 @@ else:
                                         v_s = val.strftime('%H:%M') if isinstance(val, time) else str(val)
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": v_s, "i": rid})
                         conn.commit()
-                    st.success("Alterações salvas!"); st.rerun()
+                    st.rerun()
 
         with aba_demo:
             df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
