@@ -15,6 +15,17 @@ ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeament
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
+# --- CSS PARA UNIDADE VISUAL ---
+st.markdown(f"""
+    <style>
+    .stApp {{ background-color: #f8f9fa; }}
+    .stButton>button {{ background-color: #0066cc; color: white; border-radius: 5px; }}
+    .stButton>button:hover {{ background-color: #004d99; color: white; }}
+    [data-testid="stSidebar"] {{ background-color: #ffffff; border-right: 1px solid #e0e0e0; }}
+    .origem-label {{ font-weight: bold; color: #28a745; }}
+    </style>
+""", unsafe_allow_html=True)
+
 # --- CONEXÃO OTIMIZADA ---
 @st.cache_resource
 def get_engine():
@@ -46,8 +57,7 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
                 pdf.cell(25, 6, "Prefixo", 1); pdf.cell(35, 6, "Responsavel", 1); pdf.cell(130, 6, "Descricao", 1, ln=True)
                 pdf.set_font("Arial", "", 8)
                 for _, row in df_area.iterrows():
-                    desc = str(row['descricao'])[:80]
-                    pdf.cell(25, 6, str(row['prefixo']), 1); pdf.cell(35, 6, str(row['executor']), 1); pdf.cell(130, 6, desc, 1, ln=True)
+                    pdf.cell(25, 6, str(row['prefixo']), 1); pdf.cell(35, 6, str(row['executor']), 1); pdf.cell(130, 6, str(row['descricao'])[:80], 1, ln=True)
                 pdf.ln(3)
     return pdf.output() if isinstance(pdf.output(), (bytes, bytearray)) else bytes(pdf.output(), 'latin-1')
 
@@ -82,15 +92,19 @@ if not st.session_state["logado"]:
 else:
     engine = get_engine()
     inicializar_banco()
-    c_tit, c_s = st.columns([0.8, 0.2])
-    with c_tit: st.markdown(f"## 🛠️ <span style='color: #0066cc;'>T</span><span style='color: #28a745;'>ed</span>", unsafe_allow_html=True)
-    with c_s:
-        if st.button("Sair"): st.session_state["logado"] = False; st.rerun()
+    
+    # --- LOGO E IDENTIDADE NA SIDEBAR (MAIS PROFISSIONAL) ---
+    with st.sidebar:
+        st.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: #0066cc;'>T</span><span style='color: #28a745;'>ed</span></h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666;'>{SLOGAN}</p>", unsafe_allow_html=True)
+        st.divider()
+        if st.button("Sair da Conta", use_container_width=True):
+            st.session_state["logado"] = False; st.rerun()
 
     if st.session_state["perfil"] == "motorista":
         aba_solic, aba_hist = st.tabs(["✍️ Abrir Solicitação", "📜 Status"])
         with aba_solic:
-            st.info("💡 *Preencha os campos abaixo com o prefixo do veículo e descreva os sintomas do(a) ocorrido/falha.*")
+            st.info("💡 *Preencha os campos abaixo com o prefixo do veículo.*")
             with st.form("f_ch", clear_on_submit=True):
                 p, d = st.text_input("Prefixo"), st.text_area("Descrição")
                 if st.form_submit_button("Enviar para a oficina"):
@@ -150,7 +164,7 @@ else:
 
         with aba_cham:
             st.subheader("📥 Aprovação de Chamados")
-            st.info("💡 *Marque 'OK' para os itens que deseja aprovar, defina o Responsável/Área e clique em 'Processar Agendamentos'.*")
+            st.info("💡 *Aprove itens vindos da oficina para a agenda.*")
             
             @st.fragment
             def secao_aprovacao():
@@ -162,7 +176,7 @@ else:
                         st.session_state.df_aprov['Área'] = "Mecânica"; st.session_state.df_aprov['OK'] = False
                     
                     ed_c = st.data_editor(st.session_state.df_aprov, hide_index=True, use_container_width=True, column_config={"id": None, "motorista": None, "status": None, "OK": st.column_config.CheckboxColumn("Aprovar?"), "Responsável": st.column_config.TextColumn("Executor"), "Área": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS)}, key="editor_chamados")
-                    if st.button("Processar Agendamentos"):
+                    if st.button("Processar Agendamentos", use_container_width=True):
                         selecionados = ed_c[ed_c['OK'] == True]
                         if not selecionados.empty:
                             with engine.connect() as conn:
@@ -187,16 +201,13 @@ else:
                 df_a_carrega['origem'] = df_a_carrega['origem'].fillna('Direto')
                 df_a_carrega['data'] = pd.to_datetime(df_a_carrega['data']).dt.date
                 df_f_per = df_a_carrega[(df_a_carrega['data'] >= p_sel[0]) & (df_a_carrega['data'] <= p_sel[1])] if len(p_sel) == 2 else df_a_carrega
-                with c_pdf: 
-                    st.write(""); st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
+                with c_pdf: st.write(""); st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
 
                 st.divider()
                 with st.form("form_agenda"):
                     col_btn, col_info = st.columns([0.2, 0.8])
-                    with col_btn: btn_salvar = st.form_submit_button("Salvar", use_container_width=True)
-                    with col_info: st.info("💡 *Preencha os horários (Ex: 14:00) e marque OK para concluir o serviço.*")
-
-                    st.markdown("""<style>[data-testid="stTable"] td:nth-child(4), [data-testid="stTable"] td:nth-child(5) {background-color: #d4edda !important; font-weight: bold;}</style>""", unsafe_allow_html=True)
+                    with col_btn: btn_salvar = st.form_submit_button("Salvar Tudo", use_container_width=True)
+                    with col_info: st.info("💡 *Preencha os horários e marque OK para finalizar.*")
 
                     for d in sorted(df_f_per['data'].unique(), reverse=True):
                         st.markdown(f"#### 🗓️ {d.strftime('%d/%m/%Y')}")
@@ -206,7 +217,13 @@ else:
                                 st.write(f"**📍 {area}**")
                                 st.data_editor(
                                     df_area_f[['realizado', 'origem', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id', 'id_chamado']],
-                                    column_config={"id": None, "id_chamado": None, "origem": st.column_config.TextColumn("Origem", disabled=True), "realizado": st.column_config.CheckboxColumn("OK"), "inicio_disp": st.column_config.TextColumn("Início (HH:mm)"), "fim_disp": st.column_config.TextColumn("Fim (HH:mm)")}, 
+                                    column_config={
+                                        "id": None, "id_chamado": None, 
+                                        "origem": st.column_config.TextColumn("Origem", disabled=True), 
+                                        "realizado": st.column_config.CheckboxColumn("OK"), 
+                                        "inicio_disp": st.column_config.TextColumn("Início"), 
+                                        "fim_disp": st.column_config.TextColumn("Fim")
+                                    }, 
                                     hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}")
 
                 if btn_salvar:
@@ -218,15 +235,9 @@ else:
                                 df_referencia = df_f_per[(df_f_per['data'] == dt_k) & (df_f_per['area'] == ar_k)]
                                 for idx, changes in st.session_state[key]["edited_rows"].items():
                                     row_data = df_referencia.iloc[idx]
-                                    rid = int(row_data['id'])
-                                    id_chamado_vinculado = row_data['id_chamado']
-                                    
+                                    rid, id_chamado_vinculado = int(row_data['id']), row_data['id_chamado']
                                     for col, val in changes.items():
-                                        # Atualiza a tarefa
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
-                                        
-                                        # --- NOVA LÓGICA DE SINCRONIZAÇÃO ---
-                                        # Se a coluna alterada for 'realizado' e o valor for True, e houver um chamado vinculado
                                         if col == 'realizado' and val is True and id_chamado_vinculado:
                                             conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(id_chamado_vinculado)})
                         conn.commit()
@@ -241,6 +252,6 @@ else:
                     st.markdown("**Volume por Área**")
                     st.bar_chart(df_ind['area'].value_counts())
                 with c2:
-                    st.markdown("**Serviços Concluídos x Pendentes**")
+                    st.markdown("**Status de Realização**")
                     df_status = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
                     st.bar_chart(df_status)
