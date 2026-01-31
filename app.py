@@ -125,6 +125,7 @@ else:
             st.divider()
             st.info("💡 *Para reagendar serviços, basta alterar as datas na lista abaixo. Faça demais ajustes ou exclua serviços em caso de agendamentos incorretos. O salvamento é automático.*")
             
+            # --- LISTA CADASTRO COM LÓGICA DE EXCLUSÃO ---
             @st.fragment
             def secao_lista_cadastro():
                 df_lista = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC, id DESC", engine)
@@ -149,9 +150,8 @@ else:
 
         with aba_cham:
             st.subheader("📥 Aprovação de Chamados")
-            # --- RECADO DA ABA CHAMADO RECUPERADO ---
-            st.info("💡 *Marque 'OK' para os itens que deseja aprovar, defina o Responsável/Área e clique em 'Processar Agendamentos'.*")
-            
+            # --- RECADO CHAMADO RESTAURADO ---
+            st.info("💡 *Marque 'OK' para aprovar itens, defina o Executor/Área e clique em 'Processar Agendamentos'.*")
             @st.fragment
             def secao_aprovacao():
                 df_p = pd.read_sql("SELECT * FROM chamados WHERE status != 'Agendado'", engine)
@@ -160,31 +160,16 @@ else:
                         st.session_state.df_aprov = df_p.copy()
                         st.session_state.df_aprov['Responsável'] = "Pendente"; st.session_state.df_aprov['Data'] = datetime.now().date()
                         st.session_state.df_aprov['Área'] = "Mecânica"; st.session_state.df_aprov['OK'] = False
-                    
-                    ed_c = st.data_editor(
-                        st.session_state.df_aprov, 
-                        hide_index=True, use_container_width=True,
-                        column_config={
-                            "id": None, "motorista": None, "status": None,
-                            "OK": st.column_config.CheckboxColumn("Aprovar?"),
-                            "Responsável": st.column_config.TextColumn("Executor (Digite Aqui)"),
-                            "Área": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS)
-                        },
-                        key="editor_chamados"
-                    )
+                    ed_c = st.data_editor(st.session_state.df_aprov, hide_index=True, use_container_width=True, column_config={"id": None, "motorista": None, "status": None, "OK": st.column_config.CheckboxColumn("Aprovar?"), "Responsável": st.column_config.TextColumn("Executor"), "Área": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS)}, key="editor_chamados")
                     if st.button("Processar Agendamentos"):
                         selecionados = ed_c[ed_c['OK'] == True]
                         if not selecionados.empty:
                             with engine.connect() as conn:
                                 for _, r in selecionados.iterrows():
-                                    conn.execute(text("""
-                                        INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado) 
-                                        VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic)
-                                    """), {"dt": str(r['Data']), "ex": r['Responsável'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Área'], "ic": r['id']})
+                                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic)"), {"dt": str(r['Data']), "ex": r['Responsável'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Área'], "ic": r['id']})
                                     conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
                                 conn.commit()
-                            st.success("Tudo em dia! Serviços movidos para a agenda.")
-                            del st.session_state.df_aprov; st.rerun()
+                            st.success("Tudo em dia!"); del st.session_state.df_aprov; st.rerun()
                 else: st.info("Nenhum chamado pendente.")
             secao_aprovacao()
 
@@ -192,8 +177,12 @@ else:
             st.subheader("📅 Agenda Principal")
             df_a_carrega = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC", engine)
             
+            # --- FILTRO: DIA ATUAL E PRÓXIMO ---
+            hoje = datetime.now().date()
+            amanha = hoje + timedelta(days=1)
+            
             c_per, c_pdf = st.columns([0.8, 0.2])
-            with c_per: p_sel = st.date_input("Filtrar Período", [datetime.now().date(), datetime.now().date() + timedelta(days=1)], key="dt_filter")
+            with c_per: p_sel = st.date_input("Filtrar Período", [hoje, amanha], key="dt_filter")
             
             if not df_a_carrega.empty:
                 df_a_carrega['data'] = pd.to_datetime(df_a_carrega['data']).dt.date
@@ -202,12 +191,11 @@ else:
                     st.write(""); st.download_button("📥 PDF", gerar_pdf_periodo(df_f_per, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
 
                 st.divider()
+                # --- FORMULÁRIO COM SALVAMENTO DE HORÁRIO ---
                 with st.form("form_agenda"):
                     col_btn, col_info = st.columns([0.2, 0.8])
-                    with col_btn:
-                        btn_salvar = st.form_submit_button("Salvar", use_container_width=True)
-                    with col_info:
-                        st.info("💡 *Preencha os horários e clique em Salvar no topo para gravar permanentemente.*")
+                    with col_btn: btn_salvar = st.form_submit_button("Salvar", use_container_width=True)
+                    with col_info: st.info("💡 *Preencha os horários e clique em Salvar no topo para gravar permanentemente.*")
 
                     for col in ['inicio_disp', 'fim_disp']:
                         df_f_per[col] = pd.to_datetime(df_f_per[col], format='%H:%M', errors='coerce').dt.time
@@ -224,8 +212,7 @@ else:
                                 st.data_editor(
                                     df_area_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id']],
                                     column_config={
-                                        "id": None, 
-                                        "realizado": st.column_config.CheckboxColumn("OK", width="small"),
+                                        "id": None, "realizado": st.column_config.CheckboxColumn("OK", width="small"),
                                         "inicio_disp": st.column_config.TimeColumn("Início", format="HH:mm", width="small"),
                                         "fim_disp": st.column_config.TimeColumn("Fim", format="HH:mm", width="small")
                                     }, 
@@ -236,12 +223,12 @@ else:
                         for key in st.session_state.keys():
                             if key.startswith("ed_ted_") and st.session_state[key]["edited_rows"]:
                                 partes = key.split("_")
-                                dt_k = datetime.strptime(partes[2], '%Y-%m-%d').date()
-                                ar_k = partes[3]
+                                dt_k, ar_k = datetime.strptime(partes[2], '%Y-%m-%d').date(), partes[3]
                                 df_ref = df_f_per[(df_f_per['data'] == dt_k) & (df_f_per['area'] == ar_k)]
                                 for idx, changes in st.session_state[key]["edited_rows"].items():
                                     rid = int(df_ref.iloc[idx]['id'])
                                     for col, val in changes.items():
+                                        # CONVERSÃO DE TEMPO PARA TEXTO (RESOLVE O SALVAMENTO)
                                         v_s = val.strftime('%H:%M') if isinstance(val, time) else str(val)
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": v_s, "i": rid})
                         conn.commit()
