@@ -76,10 +76,9 @@ if "logado" not in st.session_state: st.session_state["logado"] = False
 if not st.session_state["logado"]:
     _, col_login, _ = st.columns([1.2, 1, 1.2])
     with col_login:
-        # Espaço reservado para a animação ou logo futuro
         placeholder_topo = st.empty()
         
-        # Estado Inicial: Texto Ted e Slogan
+        # ESTADO INICIAL: Texto Ted e Slogan
         placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: #0066cc;'>T</span><span style='color: #28a745;'>ed</span></h1>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
         
@@ -92,13 +91,15 @@ if not st.session_state["logado"]:
                 
                 if user in users and users[user] == pw:
                     import time
-                    # Início da animação: Substitui o título "Ted"
                     with st.spinner(""):
-                        placeholder_topo.markdown("<h3 style='text-align: center; color: #0066cc; margin-top: 20px;'>Tudo em dia...</h3>", unsafe_allow_html=True)
-                        time.sleep(1.2)
-                        placeholder_topo.markdown("<h1 style='text-align: center; color: #28a745; margin-top: 15px;'>Ted</h1>", unsafe_allow_html=True)
+                        # PASSO 1: Ted (Cores do Logo)
+                        placeholder_topo.markdown("<h1 style='text-align: center; margin-top: 20px;'><span style='color: #0066cc;'>T</span><span style='color: #28a745;'>ed</span></h1>", unsafe_allow_html=True)
                         time.sleep(1.0)
-                    
+                        
+                        # PASSO 2: Tudo em dia (Tudo azul, restante verde)
+                        placeholder_topo.markdown("<h2 style='text-align: center; margin-top: 25px;'><span style='color: #0066cc;'>Tudo</span> <span style='color: #28a745;'>em dia</span></h2>", unsafe_allow_html=True)
+                        time.sleep(1.2)
+                        
                     st.session_state["logado"], st.session_state["perfil"] = True, ("admin" if user != "motorista" else "motorista")
                     st.rerun()
                 else: 
@@ -107,9 +108,7 @@ else:
     engine = get_engine()
     inicializar_banco()
     
-    # --- MENU DE NAVEGAÇÃO LATERAL ---
     with st.sidebar:
-        # LOGO APARECE APENAS AQUI (APÓS LOGIN)
         st.image(LOGO_URL, use_container_width=True)
         st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         st.divider()
@@ -158,10 +157,7 @@ else:
                     conn.commit()
                 st.rerun()
         st.divider()
-        
-        # --- RESTAURAÇÃO DO TÍTULO ---
         st.subheader("📋 Lista de serviços")
-        
         df_lista = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC, id DESC", engine)
         if not df_lista.empty:
             df_lista['data'] = pd.to_datetime(df_lista['data']).dt.date
