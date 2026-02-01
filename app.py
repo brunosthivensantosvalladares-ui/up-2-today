@@ -49,7 +49,7 @@ st.markdown(f"""
             width: 60px !important; 
             min-width: 60px !important;
             flex: unset !important;
-            margin: 0 20px !important;
+            margin: 0 2px !important;
         }}
         
         /* Garante que o container pai não quebre linha e centralize */
@@ -151,7 +151,7 @@ if not st.session_state["logado"]:
 else:
     engine = get_engine(); inicializar_banco()
     
-    # Navegação Híbrida
+    # Navegação Híbrida (Perfil)
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
         icones = ["✍️", "📜"]
@@ -172,7 +172,7 @@ else:
         st.write(f"👤 **{st.session_state['perfil'].capitalize()}**")
         if st.button("Sair da Conta"): st.session_state["logado"] = False; st.rerun()
 
-    # MENU MOBILE (O CSS acima vai forçar o 'st.columns' a ficarem juntos no centro)
+    # MENU MOBILE (Ajustado para centralizar e aproximar ícones)
     st.markdown('<div class="mobile-nav-container">', unsafe_allow_html=True)
     m_cols = st.columns(len(opcoes))
     for i, opt in enumerate(opcoes):
@@ -218,7 +218,7 @@ else:
                     conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, :tu, 'Direto')"), {"dt": str(d_i), "ex": e_i, "pr": p_i, "ds": ds_i, "ar": a_i, "tu": t_i})
                     conn.commit()
                 st.success("✅ Serviço cadastrado com sucesso!"); st.rerun()
-                
+        
         st.divider(); st.subheader("📋 Lista de serviços")
         df_lista = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC, id DESC", engine)
         if not df_lista.empty:
@@ -235,7 +235,7 @@ else:
                     for idx, changes in st.session_state.ed_lista["edited_rows"].items():
                         rid = int(df_lista.iloc[idx]['id'])
                         for col, val in changes.items():
-                            if col != 'Exc': conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
+                            if col != 'Exc': conn.execute(text(f"UPDATE tarefas SET {{col}} = :v WHERE id = :i").format(col=col), {"v": str(val), "i": rid})
                     conn.commit(); st.rerun()
 
     elif escolha == "📥 Chamados Oficina":
@@ -243,11 +243,14 @@ else:
         st.info("💡 Preencha os campos e marque 'Aprovar' na última coluna para enviar à agenda.")
         df_p = pd.read_sql("SELECT id, data_solicitacao, prefixo, descricao FROM chamados WHERE status = 'Pendente' ORDER BY id DESC", engine)
         if not df_p.empty:
-            if 'df_ap_work' not in st.session_state:
-                df_p['Executor'] = "Pendente"; df_p['Area_Destino'] = "Mecânica"; df_p['Data_Programada'] = datetime.now().date(); df_p['Aprovar'] = False
-                st.session_state.df_ap_work = df_p
+            if 'df_aprov_work' not in st.session_state:
+                df_p['Executor'] = "Pendente"
+                df_p['Area_Destino'] = "Mecânica"
+                df_p['Data_Programada'] = datetime.now().date()
+                df_p['Aprovar'] = False
+                st.session_state.df_aprov_work = df_p
 
-            ed_c = st.data_editor(st.session_state.df_ap_work, hide_index=True, use_container_width=True, column_config={
+            ed_c = st.data_editor(st.session_state.df_aprov_work, hide_index=True, use_container_width=True, column_config={
                 "data_solicitacao": "Aberto em", "Data_Programada": st.column_config.DateColumn("Data Programada"),
                 "Area_Destino": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS),
                 "Aprovar": st.column_config.CheckboxColumn("Aprovar?"), "id": None
@@ -260,7 +263,7 @@ else:
                         for _, r in selecionados.iterrows():
                             conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic, 'Chamado')"), {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id']})
                             conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
-                        conn.commit(); st.success("✅ Agendamentos processados!"); del st.session_state.df_ap_work; st.rerun()
+                        conn.commit(); st.success("✅ Agendamentos processados!"); del st.session_state.df_aprov_work; st.rerun()
 
     elif escolha == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
@@ -292,12 +295,12 @@ else:
                     with engine.connect() as conn:
                         for key in st.session_state.keys():
                             if key.startswith("ed_ted_") and st.session_state[key]["edited_rows"]:
-                                dt_ref, ar_ref = key.split("_")[2], key.split("_")[3]
-                                df_rows = df_f[(df_f['data'].astype(str) == dt_ref) & (df_f['area'] == ar_ref)]
+                                dt_r, ar_r = key.split("_")[2], key.split("_")[3]
+                                df_rows = df_f[(df_f['data'].astype(str) == dt_r) & (df_f['area'] == ar_r)]
                                 for idx, changes in st.session_state[key]["edited_rows"].items():
                                     row_data = df_rows.iloc[idx]; rid, id_ch = int(row_data['id']), row_data['id_chamado']
                                     for col, val in changes.items():
-                                        conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
+                                        conn.execute(text(f"UPDATE tarefas SET {{col}} = :v WHERE id = :i").format(col=col), {"v": str(val), "i": rid})
                                         if col == 'realizado' and val is True and id_ch: conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(id_ch)})
                     conn.commit(); st.success("✅ Alterações salvas!"); st.rerun()
 
@@ -308,7 +311,7 @@ else:
         df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
         with c1:
             st.markdown("**Serviços por Área**"); st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
-            st.caption("🔍 **O que isso mostra?** Identifica quais setores da oficina estão com maior carga.")
+            st.caption("🔍 **O que isso mostra?** Identifica quais setores da oficina estão com maior carga de trabalho.")
         with c2: 
             if not df_ind.empty:
                 df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
@@ -321,6 +324,6 @@ else:
             df_lead['data_solicitacao'], df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_solicitacao']), pd.to_datetime(df_lead['data_conclusao'])
             df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days.apply(lambda x: max(x, 0))
             col_m1, col_m2 = st.columns([0.3, 0.7])
-            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias"); st.caption("🔍 Média entre o chamado e a entrega.")
+            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias"); st.caption("🔍 Média entre o chamado e a entrega real.")
             with col_m2: df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index(); st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
         else: st.warning("Dados de Lead Time ainda não disponíveis.")
