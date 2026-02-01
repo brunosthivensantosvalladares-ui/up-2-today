@@ -86,29 +86,23 @@ if not st.session_state["logado"]:
             user = st.text_input("Usuário", key="u_log").lower()
             pw = st.text_input("Senha", type="password", key="p_log")
             
-            if st.button("Acessar Painel Ted"):
+            if st.button("Acessar Painel Ted", use_container_width=True):
                 users = {"bruno": "master789", "admin": "12345", "motorista": "12345"}
                 
                 if user in users and users[user] == pw:
-                    # --- ANIMAÇÃO DE CARREGAMENTO ---
-                    placeholder = st.empty()
-                    with placeholder.container():
-                        st.markdown("---")
-                        # Passo 1: Texto Completo
-                        st.markdown("<h3 style='text-align: center; color: #0066cc;'>Tudo em dia...</h3>", unsafe_allow_html=True)
-                        bar = st.progress(0)
-                        import time
-                        for i in range(1, 101):
-                            time.sleep(0.01) # Simula carregamento rápido
-                            bar.progress(i)
-                            if i == 50:
-                                # Passo 2: Transformação para Ted
-                                st.markdown("<h2 style='text-align: center; color: #28a745;'>→ Ted!</h2>", unsafe_allow_html=True)
-                        
-                        st.success("Acesso autorizado!")
-                        time.sleep(0.8)
+                    import time
+                    # Criamos um espaço vazio para a animação
+                    msg_carregamento = st.empty()
                     
-                    placeholder.empty() # Limpa a animação
+                    with st.spinner("Conectando..."):
+                        # Fase 1: Tudo em dia
+                        msg_carregamento.markdown("<h3 style='text-align: center; color: #0066cc;'>Tudo em dia...</h3>", unsafe_allow_html=True)
+                        time.sleep(1.2) # Pausa para leitura
+                        
+                        # Fase 2: Transformação para Ted
+                        msg_carregamento.markdown("<h2 style='text-align: center; color: #28a745;'>Ted</h2>", unsafe_allow_html=True)
+                        time.sleep(1.0)
+                        
                     st.session_state["logado"], st.session_state["perfil"] = True, ("admin" if user != "motorista" else "motorista")
                     st.rerun()
                 else: 
