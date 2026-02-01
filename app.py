@@ -216,7 +216,21 @@ else:
                         df_area_f = df_f[(df_f['data'] == d) & (df_f['area'] == area)]
                         if not df_area_f.empty:
                             st.markdown(f"<p class='area-header'>📍 {area}</p>", unsafe_allow_html=True)
-                            st.data_editor(df_area_f[['realizado', 'executor', 'prefixo', 'descricao', 'id', 'id_chamado']], column_config={"realizado": st.column_config.CheckboxColumn("OK")}, hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}")
+                            # --- COLUNAS DE DISPONIBILIDADE RESTAURADAS E ALINHADAS ---
+                            st.data_editor(
+                                df_area_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id', 'id_chamado']],
+                                column_config={
+                                    "realizado": st.column_config.CheckboxColumn("OK", width="small"),
+                                    "executor": st.column_config.TextColumn("Executor", width="medium"),
+                                    "prefixo": st.column_config.TextColumn("Prefixo", width="small"),
+                                    "inicio_disp": st.column_config.TextColumn("🕒 Início", width="small"),
+                                    "fim_disp": st.column_config.TextColumn("🕒 Fim", width="small"),
+                                    "turno": st.column_config.TextColumn("Turno", width="small"),
+                                    "descricao": st.column_config.TextColumn("Descrição", width="large"),
+                                    "id": None, "id_chamado": None
+                                },
+                                hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}"
+                            )
                 if btn_salvar:
                     with engine.connect() as conn:
                         for key in st.session_state.keys():
