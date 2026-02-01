@@ -189,11 +189,11 @@ else:
         
         if not df_p.empty:
             if 'df_aprov_work' not in st.session_state:
-                # Monta DataFrame com a coluna Aprovar por ÚLTIMO
+                # Montagem do DataFrame com Aprovar por último
                 df_p['Executor'] = "Pendente"
                 df_p['Area_Destino'] = "Mecânica"
                 df_p['Data_Programada'] = datetime.now().date()
-                df_p['Aprovar'] = False # Coluna por último
+                df_p['Aprovar'] = False
                 st.session_state.df_aprov_work = df_p
 
             ed_c = st.data_editor(
@@ -201,11 +201,11 @@ else:
                 hide_index=True,
                 use_container_width=True,
                 column_config={
+                    "data_solicitacao": "Aberto em",
                     "Data_Programada": st.column_config.DateColumn("Data Programada"),
                     "Area_Destino": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS),
                     "Aprovar": st.column_config.CheckboxColumn("Aprovar?"),
-                    "id": None,
-                    "data_solicitacao": "Aberto em"
+                    "id": None
                 },
                 key="editor_chamados"
             )
@@ -330,7 +330,7 @@ else:
             col_m1, col_m2 = st.columns([0.3, 0.7])
             with col_m1:
                 st.metric("Lead Time Médio", f"{media_lead:.1f} Dias")
-                st.caption("🔍 **O que isso mostra?** Média de dias desde a abertura do chamado até a conclusão oficial. Representa a agilidade real. Quanto menor o Lead Time, mais rápido o veículo volta para a rua.")
+                st.caption("🔍 **O que isso mostra?** Média de dias desde a abertura do chamado até a conclusão oficial. Representa a agilidade real.")
             with col_m2:
                 st.markdown("**Tendência do Tempo de Resposta**")
                 df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index()
