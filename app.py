@@ -17,7 +17,7 @@ COR_AZUL, COR_VERDE = "#3282b8", "#8ac926"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA UNIDADE VISUAL E SINCRONISMO ---
+# --- CSS PARA UNIDADE VISUAL E ABAS ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #f8f9fa; }}
@@ -26,16 +26,6 @@ st.markdown(f"""
     [data-testid="stSidebar"] {{ background-color: #ffffff; border-right: 1px solid #e0e0e0; }}
     .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
     div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
-    
-    /* Menu de Abas (Botões) no Topo para Mobile */
-    .tab-box {{
-        display: flex;
-        overflow-x: auto;
-        gap: 10px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid {COR_AZUL};
-        margin-bottom: 20px;
-    }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -111,33 +101,32 @@ if not st.session_state["logado"]:
 else:
     engine = get_engine(); inicializar_banco()
     
-    # Define as opções por perfil
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
         opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores"]
 
-    # --- LÓGICA DE SINCRONISMO (BARRA LATERAL <-> ABAS) ---
+    # --- ESTADO DE NAVEGAÇÃO SINCRONIZADO ---
     if "opcao_selecionada" not in st.session_state:
         st.session_state.opcao_selecionada = opcoes[0]
 
-    # 1. Barra Lateral
+    # 1. BARRA LATERAL
     with st.sidebar:
         st.image(LOGO_URL, use_container_width=True)
         st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         st.divider()
         
-        # O rádio lateral escuta e manda na sessão
-        escolha_radio = st.radio(
+        # Sincroniza o rádio com a variável de sessão
+        escolha_sidebar = st.radio(
             "NAVEGAÇÃO", 
             opcoes, 
             index=opcoes.index(st.session_state.opcao_selecionada),
             key="radio_nav"
         )
         
-        # Se mudar na sidebar, atualiza a sessão
-        if escolha_radio != st.session_state.opcao_selecionada:
-            st.session_state.opcao_selecionada = escolha_radio
+        # Se mudar no rádio, atualiza a variável global
+        if escolha_sidebar != st.session_state.opcao_selecionada:
+            st.session_state.opcao_selecionada = escolha_sidebar
             st.rerun()
 
         st.divider()
@@ -146,20 +135,19 @@ else:
             st.session_state["logado"] = False
             st.rerun()
 
-    # 2. Abas no Topo (Botões sincronizados)
-    # Criamos colunas para os botões ficarem na horizontal
+    # 2. BOTÕES DE ABA NO TOPO (Mobile/Navegação Rápida)
     cols = st.columns(len(opcoes))
     for i, nome in enumerate(opcoes):
-        # Se for a opção selecionada, o botão fica com cor de destaque
-        tipo_botao = "primary" if nome == st.session_state.opcao_selecionada else "secondary"
-        if cols[i].button(nome, key=f"btn_tab_{i}", use_container_width=True, type=tipo_botao):
+        # O segredo do sincronismo: Se o botão for clicado, ele muda a variável que o rádio usa
+        estilo = "primary" if nome == st.session_state.opcao_selecionada else "secondary"
+        if cols[i].button(nome, key=f"btn_tab_{i}", use_container_width=True, type=estilo):
             st.session_state.opcao_selecionada = nome
             st.rerun()
 
     st.divider()
     nome_aba = st.session_state.opcao_selecionada
 
-    # --- 3. CONTEÚDO DAS PÁGINAS (TOTALMENTE RESTAURADO) ---
+    # --- 3. CONTEÚDO DAS PÁGINAS (COM TODOS OS RECADOS RESTAURADOS) ---
     if nome_aba == "✍️ Abrir Solicitação":
         st.subheader("✍️ Nova Solicitação de Manutenção")
         st.info("💡 **Dica:** Informe o prefixo e detalhe o problema para que a oficina possa se programar.")
@@ -274,12 +262,12 @@ else:
         df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
         with c1:
             st.markdown("**Serviços por Área**"); st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
-            st.caption("🔍 **O que isso mostra?** Identifica quais setores da oficina estão com maior carga.")
+            st.caption("🔍 **O que isso mostra?** Setores da oficina com maior carga.")
         with c2: 
             if not df_ind.empty:
                 df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
                 st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_VERDE)
-                st.caption("🔍 **O que isso mostra?** Mede a eficiência de entrega da equipe.")
+                st.caption("🔍 **O que isso mostra?** Eficiência de entrega da equipe.")
         st.divider(); st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
         query_lead = "SELECT c.data_solicitacao, t.data as data_conclusao FROM chamados c JOIN tarefas t ON c.id = t.id_chamado WHERE t.realizado = True"
         df_lead = pd.read_sql(query_lead, engine)
@@ -287,6 +275,6 @@ else:
             df_lead['data_solicitacao'], df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_solicitacao']), pd.to_datetime(df_lead['data_conclusao'])
             df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days.apply(lambda x: max(x, 0))
             col_m1, col_m2 = st.columns([0.3, 0.7])
-            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias"); st.caption("🔍 Média entre o chamado e a entrega.")
+            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias"); st.caption("🔍 Média entre chamado e entrega.")
             with col_m2: df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index(); st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
         else: st.warning("Dados de Lead Time ainda não disponíveis.")
