@@ -86,13 +86,13 @@ def to_excel_native(df):
     
 @st.cache_data(show_spinner=False)
 def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16); pdf.set_text_color(50, 130, 184)
-    pdf.cell(190, 10, f"Relatorio de Manutencao - {NOME_SISTEMA}", ln=True, align="C")
-    pdf.set_font("Arial", "", 12); pdf.set_text_color(0, 0, 0)
-    pdf.cell(190, 10, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True, align="C")
-    pdf.ln(5)
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16); pdf.set_text_color(50, 130, 184)
+    pdf.cell(190, 10, f"Relatorio de Manutencao - {NOME_SISTEMA}", ln=True, align="C")
+    pdf.set_font("Arial", "", 12); pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True, align="C")
+    pdf.ln(5)
     for d_process in sorted(df_periodo['data'].unique(), reverse=True):
         d_formatada = pd.to_datetime(d_process).strftime('%d/%m/%Y')
         pdf.set_font("Arial", "B", 14); pdf.cell(190, 10, f"Data: {d_formatada}", ln=True)
