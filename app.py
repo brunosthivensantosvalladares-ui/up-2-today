@@ -10,7 +10,7 @@ from fpdf import FPDF
 NOME_SISTEMA = "Ted"
 SLOGAN = "Seu Controle. Nossa Prioridade."
 # Link direto funcional para a imagem (apenas após login)
-LOGO_URL = "https://i.postimg.cc/J4HwRsLK/logo-png.png" 
+LOGO_URL = "https://i.postimg.cc/ZqNTW9ZB/logo-png.jpg" 
 ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeamento", "Limpeza"]
 LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
 
@@ -44,9 +44,6 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf.set_font("Arial", "B", 16)
     pdf.set_text_color(0, 102, 204)
     pdf.cell(190, 10, f"Relatorio de Manutencao - {NOME_SISTEMA}", ln=True, align="C")
-    pdf.set_font("Arial", "", 12)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(190, 10, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True, align="C")
     pdf.ln(5)
     for d_process in sorted(df_periodo['data'].unique(), reverse=True):
         d_formatada = pd.to_datetime(d_process).strftime('%d/%m/%Y')
@@ -79,8 +76,11 @@ if "logado" not in st.session_state: st.session_state["logado"] = False
 if not st.session_state["logado"]:
     _, col_login, _ = st.columns([1.2, 1, 1.2])
     with col_login:
-        # RESTAURAÇÃO DO TEXTO TED E SLOGAN NA TELA INICIAL
-        st.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: #0066cc;'>T</span><span style='color: #28a745;'>ed</span></h1>", unsafe_allow_html=True)
+        # Espaço reservado para a animação ou logo futuro
+        placeholder_topo = st.empty()
+        
+        # Estado Inicial: Texto Ted e Slogan
+        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: #0066cc;'>T</span><span style='color: #28a745;'>ed</span></h1>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
         
         with st.container(border=True):
@@ -92,14 +92,13 @@ if not st.session_state["logado"]:
                 
                 if user in users and users[user] == pw:
                     import time
-                    msg_carregamento = st.empty()
-                    
-                    with st.spinner("Conectando..."):
-                        msg_carregamento.markdown("<h3 style='text-align: center; color: #0066cc;'>Tudo em dia...</h3>", unsafe_allow_html=True)
+                    # Início da animação: Substitui o título "Ted"
+                    with st.spinner(""):
+                        placeholder_topo.markdown("<h3 style='text-align: center; color: #0066cc; margin-top: 20px;'>Tudo em dia...</h3>", unsafe_allow_html=True)
                         time.sleep(1.2)
-                        msg_carregamento.markdown("<h2 style='text-align: center; color: #28a745;'>Ted</h2>", unsafe_allow_html=True)
+                        placeholder_topo.markdown("<h1 style='text-align: center; color: #28a745; margin-top: 15px;'>Ted</h1>", unsafe_allow_html=True)
                         time.sleep(1.0)
-                        
+                    
                     st.session_state["logado"], st.session_state["perfil"] = True, ("admin" if user != "motorista" else "motorista")
                     st.rerun()
                 else: 
@@ -118,7 +117,7 @@ else:
         if st.session_state["perfil"] == "motorista":
             opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
         else:
-            opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados", "📊 Indicadores"]
+            opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores"]
         
         escolha = st.radio("NAVEGAÇÃO", opcoes)
         
@@ -160,7 +159,7 @@ else:
                 st.rerun()
         st.divider()
         
-        # --- RESTAURAÇÃO DO TÍTULO LISTA DE SERVIÇOS ---
+        # --- RESTAURAÇÃO DO TÍTULO ---
         st.subheader("📋 Lista de serviços")
         
         df_lista = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC, id DESC", engine)
@@ -205,14 +204,12 @@ else:
         hoje, amanha = datetime.now().date(), datetime.now().date() + timedelta(days=1)
         c_per, c_pdf = st.columns([0.8, 0.2])
         with c_per: p_sel = st.date_input("Filtrar Período", [hoje, amanha], key="dt_filter")
-        
         if not df_a.empty:
             df_a['data'] = pd.to_datetime(df_a['data']).dt.date
             df_f = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])] if len(p_sel) == 2 else df_a
             with c_pdf: st.download_button("📥 PDF", gerar_pdf_periodo(df_f, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
-            st.divider()
             with st.form("form_agenda"):
-                btn_salvar = st.form_submit_button("Salvar Tudo", use_container_width=True)
+                btn_salvar = st.form_submit_button("Salvar Alterações", use_container_width=True)
                 for d in sorted(df_f['data'].unique(), reverse=True):
                     st.markdown(f"#### 🗓️ {d.strftime('%d/%m/%Y')}")
                     for area in ORDEM_AREAS:
