@@ -22,44 +22,38 @@ st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", pa
 
 # --- CSS PARA UNIDADE VISUAL E RESPONSIVIDADE ---
 st.markdown(f"""
-    <style>
-    .stApp {{ background-color: #f8f9fa; }}
-    .stButton>button {{ background-color: {COR_AZUL}; color: white; border-radius: 8px; border: none; font-weight: bold; width: 100%; }}
-    .stButton>button:hover {{ background-color: #276691; color: white; border: none; }}
-    [data-testid="stSidebar"] {{ background-color: #ffffff; border-right: 1px solid #e0e0e0; }}
-    .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
-    div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
-    
-    /* MENU MOBILE NO TOPO - FORÇAR HORIZONTAL */
-    @media (min-width: 801px) {{
-        .mobile-nav-container {{ display: none; }}
-    }}
-    @media (max-width: 800px) {{
-        .mobile-nav-container {{
-            display: flex;
-            flex-direction: row;
-            flex-wrap: nowrap;
-            justify-content: space-around;
-            background-color: white;
-            padding: 10px 5px;
-            border-bottom: 2px solid {COR_AZUL};
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            margin-bottom: 10px;
-            overflow-x: auto;
-        }}
-        /* Ajuste para botões dentro da div customizada */
-        .mobile-nav-container .stButton {{
-            flex: 1;
-            margin: 0 2px;
-        }}
-        .mobile-nav-container button {{
-            padding: 5px !important;
-            font-size: 1.2rem !important;
-        }}
-    }}
-    </style>
+    <style>
+    .stApp {{ background-color: #f8f9fa; }}
+    .stButton>button {{ background-color: {COR_AZUL}; color: white; border-radius: 8px; border: none; font-weight: bold; width: 100%; }}
+    .stButton>button:hover {{ background-color: #276691; color: white; border: none; }}
+    [data-testid="stSidebar"] {{ background-color: #ffffff; border-right: 1px solid #e0e0e0; }}
+    .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
+    div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
+    
+    /* MENU MOBILE NO TOPO - FORÇAR GRID HORIZONTAL */
+    @media (min-width: 801px) {{
+        .mobile-nav-container {{ display: none; }}
+    }}
+    @media (max-width: 800px) {{
+        .mobile-nav-container {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+            gap: 5px;
+            background-color: white;
+            padding: 10px 5px;
+            border-bottom: 2px solid {COR_AZUL};
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            margin-bottom: 10px;
+        }}
+        /* Impedir empilhamento de colunas internas do Streamlit no mobile */
+        .mobile-nav-container [data-testid="column"] {{
+            min-width: unset !important;
+            flex: 1 1 0% !important;
+        }}
+    }}
+    </style>
 """, unsafe_allow_html=True)
 
 # --- 2. FUNÇÕES DE SUPORTE E BANCO ---
@@ -67,6 +61,7 @@ st.markdown(f"""
 def get_engine():
     db_url = os.environ.get("database_url", "postgresql://neondb_owner:npg_WRMhXvJVY79d@ep-lucky-sound-acy7xdyi-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require")
     return create_engine(db_url.replace("postgres://", "postgresql://", 1), pool_pre_ping=True)
+
 def inicializar_banco():
     engine = get_engine()
     try:
@@ -76,14 +71,14 @@ def inicializar_banco():
             try: conn.execute(text("ALTER TABLE tarefas ADD COLUMN IF NOT EXISTS origem TEXT"))
             except: pass
             conn.commit()
-except: pass
+    except: pass
 
 def to_excel_native(df):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Manutencoes')
     return output.getvalue()
-    
+
 @st.cache_data(show_spinner=False)
 def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf = FPDF()
@@ -93,7 +88,7 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf.set_font("Arial", "", 12); pdf.set_text_color(0, 0, 0)
     pdf.cell(190, 10, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True, align="C")
     pdf.ln(5)
-for d_process in sorted(df_periodo['data'].unique(), reverse=True):
+    for d_process in sorted(df_periodo['data'].unique(), reverse=True):
         d_formatada = pd.to_datetime(d_process).strftime('%d/%m/%Y')
         pdf.set_font("Arial", "B", 14); pdf.cell(190, 10, f"Data: {d_formatada}", ln=True)
         for area in ORDEM_AREAS:
