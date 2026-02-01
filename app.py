@@ -98,14 +98,6 @@ if not st.session_state["logado"]:
                     with st.spinner(""):
                         placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tu</span><span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
                         time.sleep(0.1)
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tud</span><span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
-                        time.sleep(0.1)
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
-                        time.sleep(0.3)
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>em d</span></h1>", unsafe_allow_html=True)
-                        time.sleep(0.1)
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>em di</span></h1>", unsafe_allow_html=True)
-                        time.sleep(0.1)
                         placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>em dia</span></h1>", unsafe_allow_html=True)
                         time.sleep(0.8)
                     st.session_state["logado"], st.session_state["perfil"] = True, ("admin" if user != "motorista" else "motorista")
@@ -225,7 +217,7 @@ else:
             df_a['data'] = pd.to_datetime(df_a['data']).dt.date
             df_f = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])]
             with c_pdf: st.download_button("📥 PDF", gerar_pdf_periodo(df_f, p_sel[0], p_sel[1]), f"Relatorio_Ted_{p_sel[0]}.pdf")
-            with c_xls: st.download_button("📊 Excel", to_excel_native(df_f), f"Relatorio_Ted_{p_sel[0]}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            with c_xls: st.download_button("📊 Excel", to_excel_native(df_f), f"Relatorio_Ted_{p_sel[0]}.xlsx")
             
             with st.form("form_agenda"):
                 btn_salvar = st.form_submit_button("💾 Salvar Tudo")
@@ -268,27 +260,28 @@ else:
 
     elif escolha == "📊 Indicadores":
         st.subheader("📊 Painel de Performance Operacional")
-        st.info("💡 **Dica:** Utilize esses dados para planejar escalas e identificar gargalos na manutenção.")
+        st.info("💡 **Dica:** Utilize esses dados para identificar gargalos e planejar a capacidade da oficina.")
         
-        # 1. VOLUME E STATUS
+        # 1. VOLUME E EFICIÊNCIA
         c1, c2 = st.columns(2)
+        df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
+        
         with c1:
             st.markdown("**Serviços por Área**")
-            df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
             if not df_ind.empty:
                 st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
-                st.caption("🔍 **O que isso mostra?** Identifica quais setores da oficina estão com maior carga de trabalho. Útil para redistribuir recursos ou contratar especialistas.")
+                st.caption("🔍 **O que isso mostra?** Identifica quais setores da oficina (Mecânica, Elétrica, etc) estão com maior carga de trabalho.")
         
         with c2:
             st.markdown("**Status de Conclusão**")
             if not df_ind.empty:
                 df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
                 st.bar_chart(df_st, color=COR_VERDE)
-                st.caption("🔍 **O que isso mostra?** Mede a eficiência de entrega. Se o volume de 'Pendentes' crescer muito, indica atrasos no cronograma.")
+                st.caption("🔍 **O que isso mostra?** Mede a eficiência de entrega. Um alto volume de 'Pendentes' pode indicar necessidade de reforço na equipe.")
 
         st.divider()
 
-        # 2. LEAD TIME (COM EXPLICAÇÃO)
+        # 2. LEAD TIME (ANÁLISE DE TEMPO)
         st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
         query_lead = """
             SELECT c.data_solicitacao, t.data as data_conclusao
@@ -308,11 +301,11 @@ else:
             
             col_m1, col_m2 = st.columns([0.3, 0.7])
             with col_m1:
-                st.metric("Lead Time Médio", f"{media_lead:.1f} Dias", help="Média de dias desde a abertura do chamado até a entrega do veículo.")
-                st.caption("🔍 **O que isso mostra?** Representa a agilidade real da sua oficina. Números baixos significam veículos voltando rápido para a rua.")
+                st.metric("Lead Time Médio", f"{media_lead:.1f} Dias", help="Média de dias desde o chamado do motorista até a conclusão oficial.")
+                st.caption("🔍 **O que isso mostra?** Representa a agilidade real. Quanto menor o Lead Time, mais rápido o veículo volta a gerar receita.")
             with col_m2:
                 st.markdown("**Tendência do Tempo de Resposta**")
                 df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index()
                 st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
         else:
-            st.warning("Dados de Lead Time ainda não disponíveis (aguardando conclusão do primeiro chamado).")
+            st.warning("Dados de Lead Time ainda não disponíveis (aguardando a conclusão do primeiro chamado vindo de motorista).")
