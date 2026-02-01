@@ -20,7 +20,7 @@ COR_VERDE = "#8ac926"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA UNIDADE VISUAL E RESPONSIVIDADE (HÍBRIDO) ---
+# --- CSS PARA UNIDADE VISUAL E RESPONSIVIDADE (Ajustado) ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #f8f9fa; }}
@@ -30,7 +30,7 @@ st.markdown(f"""
     .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
     div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
     
-    /* MENU MOBILE NO TOPO (HORIZONTAL) */
+    /* MENU MOBILE NO TOPO COM BORDA VERDE */
     @media (min-width: 801px) {{
         .mobile-nav {{ display: none; }}
     }}
@@ -40,19 +40,24 @@ st.markdown(f"""
             flex-direction: row;
             justify-content: space-around;
             background-color: white;
-            padding: 10px 5px;
-            border-bottom: 2px solid {COR_AZUL};
+            padding: 5px;
+            border: 3px solid {COR_VERDE}; /* VOLTA DOS ÍCONES VERDE */
+            border-radius: 15px;
             position: sticky;
             top: 0;
             z-index: 1000;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }}
-        /* Força colunas de botões a ficarem lado a lado no mobile */
+        /* Força colunas de botões a não quebrarem linha */
         [data-testid="column"] {{
             width: fit-content !important;
             flex: 1 1 auto !important;
+            min-width: 45px !important;
         }}
-    }}
+        div.stButton > button {{
+            padding: 5px 2px !important;
+            font-size: 1.2rem !important;
+        }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -141,23 +146,18 @@ else:
     # Barra Lateral (Desktop)
     with st.sidebar:
         st.image(LOGO_URL, use_container_width=True)
-        st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         st.divider()
         idx_ini = 0
         if "escolha_mob" in st.session_state and st.session_state["escolha_mob"] in opcoes:
             idx_ini = opcoes.index(st.session_state["escolha_mob"])
-        
         escolha = st.radio("NAVEGAÇÃO", opcoes, index=idx_ini)
-        st.divider()
-        st.write(f"👤 **{st.session_state['perfil'].capitalize()}**")
-        if st.button("Sair da Conta"):
-            st.session_state["logado"] = False; st.rerun()
+        if st.button("Sair"): st.session_state["logado"] = False; st.rerun()
 
-    # Barra de Navegação Mobile (Topo Horizontal)
+    # Barra Mobile (Topo Horizontal) com volta verde
     st.markdown('<div class="mobile-nav">', unsafe_allow_html=True)
     cols_mob = st.columns(len(opcoes))
     for i, opt in enumerate(opcoes):
-        if cols_mob[i].button(icones[i], key=f"btn_mob_{opt}"):
+        if cols_mob[i].button(icones[i], key=f"mob_nav_{opt}"):
             st.session_state["escolha_mob"] = opt
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
@@ -211,14 +211,16 @@ else:
                     for i in ed_l[ed_l['Exc']==True]['id'].tolist():
                         conn.execute(text("DELETE FROM tarefas WHERE id = :id"), {"id": int(i)})
                     conn.commit()
-                st.warning("🗑️ Itens excluídos."); st.rerun()
+                st.warning("🗑️ Itens excluídos.")
+                st.rerun()
             if st.session_state.ed_lista["edited_rows"]:
                 with engine.connect() as conn:
                     for idx, changes in st.session_state.ed_lista["edited_rows"].items():
                         rid = int(df_lista.iloc[idx]['id'])
                         for col, val in changes.items():
                             if col != 'Exc': conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
-                    conn.commit(); st.rerun()
+                    conn.commit()
+                st.rerun()
 
     elif escolha == "📥 Chamados Oficina":
         st.subheader("📥 Aprovação de Chamados")
@@ -226,12 +228,12 @@ else:
         df_p = pd.read_sql("SELECT id, data_solicitacao, prefixo, descricao FROM chamados WHERE status = 'Pendente' ORDER BY id DESC", engine)
         
         if not df_p.empty:
-            if 'df_ap_work' not in st.session_state:
+            if 'df_aprov_work' not in st.session_state:
                 df_p['Executor'] = "Pendente"; df_p['Area_Destino'] = "Mecânica"; df_p['Data_Programada'] = datetime.now().date(); df_p['Aprovar'] = False
-                st.session_state.df_ap_work = df_p
+                st.session_state.df_aprov_work = df_p
 
             ed_c = st.data_editor(
-                st.session_state.df_ap_work,
+                st.session_state.df_aprov_work,
                 hide_index=True,
                 use_container_width=True,
                 column_config={
@@ -247,7 +249,7 @@ else:
             if st.button("Processar Agendamentos"):
                 selecionados = ed_c[ed_c['Aprovar'] == True]
                 if selecionados.empty:
-                    st.warning("Nenhum chamado selecionado.")
+                    st.warning("Nenhum chamado selecionado para aprovação.")
                 else:
                     with engine.connect() as conn:
                         for _, r in selecionados.iterrows():
@@ -264,7 +266,9 @@ else:
                             })
                             conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
                         conn.commit()
-                    st.success(f"✅ {len(selecionados)} chamados agendados!"); del st.session_state.df_ap_work; st.rerun()
+                    st.success(f"✅ {len(selecionados)} chamados agendados!")
+                    if 'df_aprov_work' in st.session_state: del st.session_state.df_aprov_work
+                    st.rerun()
         else:
             st.info("Nenhum chamado pendente no momento.")
 
@@ -317,18 +321,23 @@ else:
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
                                         if col == 'realizado' and val is True and id_ch:
                                             conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(id_ch)})
-                    conn.commit(); st.success("✅ Alterações salvas!"); st.rerun()
+                    conn.commit()
+                    st.success("✅ Alterações salvas com sucesso!")
+                    st.rerun()
 
     elif escolha == "📊 Indicadores":
         st.subheader("📊 Painel de Performance Operacional")
         st.info("💡 **Dica:** Utilize esses dados para identificar gargalos e planejar a capacidade da oficina.")
+        
         c1, c2 = st.columns(2)
         df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
+        
         with c1:
             st.markdown("**Serviços por Área**")
             if not df_ind.empty:
                 st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
                 st.caption("🔍 **O que isso mostra?** Setores da oficina com maior carga de trabalho.")
+        
         with c2:
             st.markdown("**Status de Conclusão**")
             if not df_ind.empty:
@@ -336,17 +345,26 @@ else:
                 st.bar_chart(df_st, color=COR_VERDE)
                 st.caption("🔍 **O que isso mostra?** Mede a eficiência de entrega da oficina.")
 
-        st.divider(); st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
+        st.divider()
+        st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
         query_lead = "SELECT c.data_solicitacao, t.data as data_conclusao FROM chamados c JOIN tarefas t ON c.id = t.id_chamado WHERE t.realizado = True"
         df_lead = pd.read_sql(query_lead, engine)
+        
         if not df_lead.empty:
-            df_lead['data_solicitacao'], df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_solicitacao']), pd.to_datetime(df_lead['data_conclusao'])
-            df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days.apply(lambda x: max(x, 0))
+            df_lead['data_solicitacao'] = pd.to_datetime(df_lead['data_solicitacao'])
+            df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_conclusao'])
+            df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days
+            df_lead['dias'] = df_lead['dias'].apply(lambda x: max(x, 0)) 
+            
+            media_lead = df_lead['dias'].mean()
+            
             col_m1, col_m2 = st.columns([0.3, 0.7])
             with col_m1:
-                st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias")
-                st.caption("🔍 **O que isso mostra?** Média de dias entre o chamado e a conclusão.")
+                st.metric("Lead Time Médio", f"{media_lead:.1f} Dias")
+                st.caption("🔍 Média de dias desde a abertura do chamado até a conclusão. Representa a agilidade real.")
             with col_m2:
+                st.markdown("**Tendência do Tempo de Resposta**")
                 df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index()
                 st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
-        else: st.warning("Dados de Lead Time ainda não disponíveis.")
+        else:
+            st.warning("Dados de Lead Time ainda não disponíveis.")
