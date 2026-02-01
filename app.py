@@ -17,14 +17,30 @@ LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA UNIDADE VISUAL ---
+# --- AJUSTE DE PALETA (Cores extraídas do Logo) ---
+COR_AZUL = "#3282b8"
+COR_VERDE = "#8ac926"
+
+# --- CSS PARA UNIDADE VISUAL ATUALIZADO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #f8f9fa; }}
-    .stButton>button {{ background-color: #0066cc; color: white; border-radius: 8px; border: none; font-weight: bold; width: 100%; }}
-    .stButton>button:hover {{ background-color: #004d99; color: white; border: none; }}
+    /* Botões com o azul do logo */
+    .stButton>button {{ background-color: {COR_AZUL}; color: white; border-radius: 8px; border: none; font-weight: bold; width: 100%; }}
+    .stButton>button:hover {{ background-color: #276691; color: white; border: none; }}
+    
     [data-testid="stSidebar"] {{ background-color: #ffffff; border-right: 1px solid #e0e0e0; }}
-    .area-header {{ color: #28a745; font-weight: bold; font-size: 1.1rem; border-left: 5px solid #0066cc; padding-left: 10px; margin-top: 20px; }}
+    
+    /* Cabeçalhos das áreas com o verde do logo */
+    .area-header {{ 
+        color: {COR_VERDE}; 
+        font-weight: bold; 
+        font-size: 1.1rem; 
+        border-left: 5px solid {COR_AZUL}; 
+        padding-left: 10px; 
+        margin-top: 20px; 
+    }}
+    
     div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
     </style>
 """, unsafe_allow_html=True)
