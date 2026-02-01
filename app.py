@@ -49,7 +49,7 @@ st.markdown(f"""
             width: 60px !important; 
             min-width: 60px !important;
             flex: unset !important;
-            margin: 0 2px !important;
+            margin: 0 20px !important;
         }}
         
         /* Garante que o container pai não quebre linha e centralize */
