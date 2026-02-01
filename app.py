@@ -12,8 +12,6 @@ SLOGAN = "Seu Controle. Nossa Prioridade."
 LOGO_URL = "https://i.postimg.cc/wTbmmT7r/logo-png.png" 
 ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeamento", "Limpeza"]
 LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
-
-# Paleta de Cores do Logo
 COR_AZUL = "#3282b8"
 COR_VERDE = "#8ac926"
 
@@ -32,17 +30,15 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONEXÃO OTIMIZADA ---
+# --- CONEXÃO E UTILITÁRIOS ---
 @st.cache_resource
 def get_engine():
     db_url = os.environ.get("database_url", "postgresql://neondb_owner:npg_WRMhXvJVY79d@ep-lucky-sound-acy7xdyi-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require")
     return create_engine(db_url.replace("postgres://", "postgresql://", 1), pool_pre_ping=True)
 
-# --- FUNÇÃO PARA CONVERTER PARA EXCEL ---
 def to_excel(df):
     return df.to_csv(index=False).encode('utf-8-sig')
 
-# --- FUNÇÃO PARA GERAR PDF ---
 @st.cache_data(show_spinner=False)
 def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf = FPDF()
@@ -62,7 +58,7 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
                 for _, row in df_area.iterrows():
                     pdf.set_font("Arial", "", 8); pdf.cell(190, 6, f"{row['prefixo']} | {row['executor']} | {str(row['descricao'])[:80]}", ln=True)
                 pdf.ln(3)
-    return pdf.output() if isinstance(pdf.output(), (bytes, bytearray)) else bytes(pdf.output(), 'latin-1')
+    return pdf.output(dest='S').encode('latin-1')
 
 def inicializar_banco():
     engine = get_engine()
@@ -82,40 +78,39 @@ if not st.session_state["logado"]:
     _, col_login, _ = st.columns([1.2, 1, 1.2])
     with col_login:
         placeholder_topo = st.empty()
-        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>T</span><span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
+        placeholder_topo.markdown(f"<h1 style='text-align: center;'><span style='color: {COR_AZUL};'>T</span><span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: #555;'>{SLOGAN}</p>", unsafe_allow_html=True)
         
         with st.container(border=True):
             user = st.text_input("Usuário", key="u_log").lower()
             pw = st.text_input("Senha", type="password", key="p_log")
             if st.button("Acessar Painel Ted", use_container_width=True):
-                users = {"bruno": "master789", "admin": "12345", "motorista": "12345"}
-                if user in users and users[user] == pw:
+                if (user == "bruno" and pw == "master789") or (user == "admin" and pw == "12345") or (user == "motorista" and pw == "12345"):
                     import time
                     with st.spinner(""):
-                        # ANIMAÇÃO DE EXPANSÃO
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tu</span><span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
+                        # ANIMAÇÃO DE EXPANSÃO (Sincronizada)
+                        placeholder_topo.markdown(f"<h1 style='text-align: center;'><span style='color: {COR_AZUL};'>Tu</span><span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
                         time.sleep(0.1)
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tud</span><span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
+                        placeholder_topo.markdown(f"<h1 style='text-align: center;'><span style='color: {COR_AZUL};'>Tud</span><span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
                         time.sleep(0.1)
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
+                        placeholder_topo.markdown(f"<h1 style='text-align: center;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
                         time.sleep(0.3)
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>em d</span></h1>", unsafe_allow_html=True)
+                        placeholder_topo.markdown(f"<h1 style='text-align: center;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>em d</span></h1>", unsafe_allow_html=True)
                         time.sleep(0.1)
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>em di</span></h1>", unsafe_allow_html=True)
+                        placeholder_topo.markdown(f"<h1 style='text-align: center;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>em di</span></h1>", unsafe_allow_html=True)
                         time.sleep(0.1)
-                        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>em dia</span></h1>", unsafe_allow_html=True)
+                        placeholder_topo.markdown(f"<h1 style='text-align: center;'><span style='color: {COR_AZUL};'>Tudo</span> <span style='color: {COR_VERDE};'>em dia</span></h1>", unsafe_allow_html=True)
                         time.sleep(0.8)
                     st.session_state["logado"], st.session_state["perfil"] = True, ("admin" if user != "motorista" else "motorista")
                     st.rerun()
-                else: st.error("Usuário ou senha incorretos")
+                else: st.error("Acesso negado")
 else:
     engine = get_engine()
     inicializar_banco()
     
     with st.sidebar:
         st.image(LOGO_URL, use_container_width=True)
-        st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666;'>{SLOGAN}</p>", unsafe_allow_html=True)
         st.divider()
         opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores"] if st.session_state["perfil"] == "admin" else ["✍️ Abrir Solicitação", "📜 Status"]
         escolha = st.radio("NAVEGAÇÃO", opcoes)
@@ -130,11 +125,10 @@ else:
         with st.form("f_ch", clear_on_submit=True):
             p, d = st.text_input("Prefixo"), st.text_area("Descrição")
             if st.form_submit_button("Enviar para Oficina"):
-                if p and d:
-                    with engine.connect() as conn:
-                        conn.execute(text("INSERT INTO chamados (motorista, prefixo, descricao, data_solicitacao, status) VALUES ('motorista', :p, :d, :dt, 'Pendente')"), {"p": p, "d": d, "dt": str(datetime.now().date())})
-                        conn.commit()
-                    st.success("Solicitação enviada!")
+                with engine.connect() as conn:
+                    conn.execute(text("INSERT INTO chamados (motorista, prefixo, descricao, data_solicitacao, status) VALUES ('motorista', :p, :d, :dt, 'Pendente')"), {"p": p, "d": d, "dt": str(datetime.now().date())})
+                    conn.commit()
+                st.success("Solicitação enviada!")
 
     elif escolha == "📜 Status":
         st.subheader("📜 Status dos Veículos")
@@ -142,7 +136,6 @@ else:
 
     elif escolha == "📋 Cadastro Direto":
         st.subheader("📝 Agendamento Direto")
-        st.info("💡 *Para reagendar serviços, basta alterar as datas na lista abaixo. O salvamento é automático.*")
         with st.form("f_d", clear_on_submit=True):
             c1, c2, c3, c4 = st.columns(4)
             with c1: d_i = st.date_input("Data", datetime.now())
@@ -155,8 +148,7 @@ else:
                     conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, :tu, 'Direto')"), {"dt": str(d_i), "ex": e_i, "pr": p_i, "ds": ds_i, "ar": a_i, "tu": t_i})
                     conn.commit()
                 st.rerun()
-        st.divider()
-        st.subheader("📋 Lista de serviços")
+        st.divider(); st.subheader("📋 Lista de serviços")
         df_lista = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC, id DESC", engine)
         if not df_lista.empty:
             df_lista['data'] = pd.to_datetime(df_lista['data']).dt.date
@@ -165,8 +157,7 @@ else:
             if st.button("🗑️ Excluir Selecionados"):
                 with engine.connect() as conn:
                     for i in ed_l[ed_l['Exc']==True]['id'].tolist(): conn.execute(text("DELETE FROM tarefas WHERE id = :id"), {"id": int(i)})
-                    conn.commit()
-                st.rerun()
+                    conn.commit(); st.rerun()
             if st.session_state.ed_lista["edited_rows"]:
                 with engine.connect() as conn:
                     for idx, changes in st.session_state.ed_lista["edited_rows"].items():
@@ -182,15 +173,14 @@ else:
             if 'df_aprov' not in st.session_state:
                 st.session_state.df_aprov = df_p.copy()
                 st.session_state.df_aprov['Responsável'] = "Pendente"; st.session_state.df_aprov['Data'] = datetime.now().date(); st.session_state.df_aprov['OK'] = False
-            ed_c = st.data_editor(st.session_state.df_aprov, hide_index=True, use_container_width=True, column_config={"id": None, "motorista": None, "status": None, "OK": st.column_config.CheckboxColumn("Aprovar?"), "Responsável": st.column_config.TextColumn("Executor"), "Área": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS)}, key="editor_chamados")
-            if st.button("Processar Agendamentos", use_container_width=True):
+            ed_c = st.data_editor(st.session_state.df_aprov, hide_index=True, use_container_width=True, column_config={"OK": st.column_config.CheckboxColumn("Aprovar?")}, key="editor_chamados")
+            if st.button("Processar Agendamentos"):
                 selecionados = ed_c[ed_c['OK'] == True]
                 with engine.connect() as conn:
                     for _, r in selecionados.iterrows():
                         conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic, 'Chamado')"), {"dt": str(r['Data']), "ex": r['Responsável'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Área'], "ic": r['id']})
                         conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
-                    conn.commit()
-                del st.session_state.df_aprov; st.rerun()
+                    conn.commit(); del st.session_state.df_aprov; st.rerun()
         else: st.info("Nenhum chamado pendente.")
 
     elif escolha == "📅 Agenda Principal":
@@ -199,34 +189,31 @@ else:
         hoje, amanha = datetime.now().date(), datetime.now().date() + timedelta(days=1)
         c_per, c_pdf, c_xls = st.columns([0.6, 0.2, 0.2])
         with c_per: p_sel = st.date_input("Filtrar Período", [hoje, amanha], key="dt_filter")
-        if not df_a.empty:
+        if not df_a.empty and len(p_sel) == 2:
             df_a['data'] = pd.to_datetime(df_a['data']).dt.date
-            df_f = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])] if len(p_sel) == 2 else df_a
-            with c_pdf: st.download_button("📥 PDF", gerar_pdf_periodo(df_f, p_sel[0], p_sel[1]), "Relatorio_Ted.pdf")
-            with c_xls: st.download_button("📊 Excel", to_excel(df_f), f"Ted_Manutencao_{p_sel[0]}.csv", "text/csv")
+            df_f = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])]
+            with c_pdf: st.download_button("📥 PDF", gerar_pdf_periodo(df_f, p_sel[0], p_sel[1]), "Relatorio.pdf")
+            with c_xls: st.download_button("📊 Excel", to_excel(df_f), "Relatorio.csv", "text/csv")
             with st.form("form_agenda"):
-                btn_salvar = st.form_submit_button("Salvar Alterações", use_container_width=True)
+                btn_salvar = st.form_submit_button("Salvar Tudo")
                 for d in sorted(df_f['data'].unique(), reverse=True):
                     st.markdown(f"#### 🗓️ {d.strftime('%d/%m/%Y')}")
                     for area in ORDEM_AREAS:
                         df_area_f = df_f[(df_f['data'] == d) & (df_f['area'] == area)]
                         if not df_area_f.empty:
                             st.markdown(f"<p class='area-header'>📍 {area}</p>", unsafe_allow_html=True)
-                            st.data_editor(df_area_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id', 'id_chamado']], column_config={"id": None, "id_chamado": None, "realizado": st.column_config.CheckboxColumn("OK"), "inicio_disp": st.column_config.TextColumn("Início"), "fim_disp": st.column_config.TextColumn("Fim")}, hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}")
+                            st.data_editor(df_area_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'descricao', 'id', 'id_chamado']], column_config={"realizado": st.column_config.CheckboxColumn("OK")}, hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}")
                 if btn_salvar:
                     with engine.connect() as conn:
                         for key in st.session_state.keys():
                             if key.startswith("ed_ted_") and st.session_state[key]["edited_rows"]:
-                                partes = key.split("_")
-                                dt_k, ar_k = datetime.strptime(partes[2], '%Y-%m-%d').date(), partes[3]
-                                df_ref = df_f[(df_f['data'] == dt_k) & (df_f['area'] == ar_k)]
+                                rid_list = df_f[(df_f['data'] == datetime.strptime(key.split("_")[2], '%Y-%m-%d').date()) & (df_f['area'] == key.split("_")[3])]['id'].tolist()
                                 for idx, changes in st.session_state[key]["edited_rows"].items():
-                                    row = df_ref.iloc[idx]
-                                    rid, id_ch = int(row['id']), row['id_chamado']
+                                    rid = rid_list[idx]
                                     for col, val in changes.items():
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
-                                        if col == 'realizado' and val is True and id_ch:
-                                            conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(id_ch)})
+                                        if col == 'realizado' and val is True:
+                                            conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = (SELECT id_chamado FROM tarefas WHERE id = :i)"), {"i": rid})
                     conn.commit(); st.rerun()
 
     elif escolha == "📊 Indicadores":
@@ -236,5 +223,5 @@ else:
             c1, c2 = st.columns(2)
             with c1: st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
             with c2:
-                df_status = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
-                st.bar_chart(df_status, color=COR_VERDE)
+                df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
+                st.bar_chart(df_st, color=COR_VERDE)
