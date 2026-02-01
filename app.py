@@ -12,12 +12,15 @@ SLOGAN = "Seu Controle. Nossa Prioridade."
 LOGO_URL = "https://i.postimg.cc/wTbmmT7r/logo-png.png"
 ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeamento", "Limpeza"]
 LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
-COR_AZUL, COR_VERDE = "#3282b8", "#8ac926"
+
+# Cores exatas do logotipo
+COR_AZUL = "#3282b8"
+COR_VERDE = "#8ac926"
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA UNIDADE VISUAL E RESPONSIVIDADE ---
+# --- CSS PARA UNIDADE VISUAL E RESPONSIVIDADE (AJUSTE DE ESPAÇAMENTO MOBILE) ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #f8f9fa; }}
@@ -27,32 +30,40 @@ st.markdown(f"""
     .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
     div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
     
-    /* NOVO AJUSTE: FORÇAR NAVEGAÇÃO HORIZONTAL NO MOBILE */
+    /* AJUSTE MOBILE - ÍCONES JUNTOS E CENTRALIZADOS */
     @media (max-width: 800px) {{
-        /* Seleciona o container que envolve as colunas do menu */
-        div[data-testid="column"] {{
-            width: calc(25% - 10px) !important; /* Força 4 colunas de 25% */
-            flex: 1 1 0% !important;
-            min-width: 0px !important;
-        }}
-        
-        /* Garante que o container pai não permita quebra de linha */
-        div[data-testid="stHorizontalBlock"] {{
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: center !important;
-            justify-content: space-around !important;
-        }}
-
         .mobile-nav-container {{
             background-color: white;
-            padding: 10px 5px;
+            padding: 5px 0;
             border-bottom: 2px solid {COR_AZUL};
             position: sticky;
             top: 0;
             z-index: 1000;
             margin-bottom: 10px;
+            display: flex !important;
+            justify-content: center !important;
+        }}
+        
+        /* Força as colunas a ficarem pequenas e juntas no centro */
+        div[data-testid="column"] {{
+            width: 60px !important; 
+            min-width: 60px !important;
+            flex: unset !important;
+            margin: 0 2px !important;
+        }}
+        
+        /* Garante que o container pai não quebre linha e centralize */
+        div[data-testid="stHorizontalBlock"] {{
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }}
+        
+        .mobile-nav-container button {{
+            font-size: 1.4rem !important;
+            padding: 5px 0 !important;
         }}
     }}
     </style>
@@ -140,7 +151,7 @@ if not st.session_state["logado"]:
 else:
     engine = get_engine(); inicializar_banco()
     
-    # Navegação Híbrida (Perfil)
+    # Navegação Híbrida
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
         icones = ["✍️", "📜"]
@@ -161,7 +172,7 @@ else:
         st.write(f"👤 **{st.session_state['perfil'].capitalize()}**")
         if st.button("Sair da Conta"): st.session_state["logado"] = False; st.rerun()
 
-   # MENU MOBILE (O CSS acima vai forçar o 'st.columns' a não quebrar)
+    # MENU MOBILE (O CSS acima vai forçar o 'st.columns' a ficarem juntos no centro)
     st.markdown('<div class="mobile-nav-container">', unsafe_allow_html=True)
     m_cols = st.columns(len(opcoes))
     for i, opt in enumerate(opcoes):
@@ -194,6 +205,7 @@ else:
         st.subheader("📝 Agendamento Direto")
         st.info("💡 **Atenção:** Use este formulário para serviços que não vieram de chamados (ex: preventivas).")
         st.warning("⚠️ **Nota:** Para reagendar ou corrigir, basta alterar diretamente na lista abaixo. O salvamento é automático.")
+        
         with st.form("f_d", clear_on_submit=True):
             c1, c2, c3, c4 = st.columns(4)
             with c1: d_i = st.date_input("Data", datetime.now())
@@ -205,8 +217,8 @@ else:
                 with engine.connect() as conn:
                     conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, :tu, 'Direto')"), {"dt": str(d_i), "ex": e_i, "pr": p_i, "ds": ds_i, "ar": a_i, "tu": t_i})
                     conn.commit()
-                st.success("✅ Serviço cadastrado!"); st.rerun()
-        
+                st.success("✅ Serviço cadastrado com sucesso!"); st.rerun()
+                
         st.divider(); st.subheader("📋 Lista de serviços")
         df_lista = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC, id DESC", engine)
         if not df_lista.empty:
@@ -249,7 +261,6 @@ else:
                             conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem) VALUES (:dt, :ex, :pr, '00:00', '00:00', :ds, :ar, 'Não definido', :ic, 'Chamado')"), {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id']})
                             conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
                         conn.commit(); st.success("✅ Agendamentos processados!"); del st.session_state.df_ap_work; st.rerun()
-        else: st.info("Nenhum chamado pendente no momento.")
 
     elif escolha == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
@@ -296,17 +307,13 @@ else:
         c1, c2 = st.columns(2)
         df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
         with c1:
-            st.markdown("**Serviços por Área**")
-            if not df_ind.empty:
-                st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
-                st.caption("🔍 **O que isso mostra?** Identifica quais setores da oficina estão com maior carga de trabalho.")
+            st.markdown("**Serviços por Área**"); st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
+            st.caption("🔍 **O que isso mostra?** Identifica quais setores da oficina estão com maior carga.")
         with c2: 
-            st.markdown("**Status de Conclusão**")
             if not df_ind.empty:
                 df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
-                st.bar_chart(df_st, color=COR_VERDE)
+                st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_VERDE)
                 st.caption("🔍 **O que isso mostra?** Mede a eficiência de entrega da oficina.")
-        
         st.divider(); st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
         query_lead = "SELECT c.data_solicitacao, t.data as data_conclusao FROM chamados c JOIN tarefas t ON c.id = t.id_chamado WHERE t.realizado = True"
         df_lead = pd.read_sql(query_lead, engine)
@@ -314,11 +321,6 @@ else:
             df_lead['data_solicitacao'], df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_solicitacao']), pd.to_datetime(df_lead['data_conclusao'])
             df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days.apply(lambda x: max(x, 0))
             col_m1, col_m2 = st.columns([0.3, 0.7])
-            with col_m1:
-                st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias")
-                st.caption("🔍 **O que isso mostra?** Média de dias desde a abertura do chamado até a conclusão. Representa a agilidade real.")
-            with col_m2:
-                st.markdown("**Tendência do Tempo de Resposta**")
-                df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index()
-                st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
+            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias"); st.caption("🔍 Média entre o chamado e a entrega.")
+            with col_m2: df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index(); st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
         else: st.warning("Dados de Lead Time ainda não disponíveis.")
