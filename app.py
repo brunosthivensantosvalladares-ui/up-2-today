@@ -76,7 +76,7 @@ def inicializar_banco():
             try: conn.execute(text("ALTER TABLE tarefas ADD COLUMN IF NOT EXISTS origem TEXT"))
             except: pass
             conn.commit()
-    except: pass
+except: pass
 
 def to_excel_native(df):
     output = BytesIO()
