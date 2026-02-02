@@ -17,64 +17,62 @@ COR_AZUL, COR_VERDE = "#3282b8", "#8ac926"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA UNIDADE VISUAL E BOTÃO MENU INTERATIVO ---
-st.markdown(f"""
-    <style>
-    .stApp {{ background-color: #f8f9fa; }}
-    
-    /* Botões Azul Ted */
-    .stButton>button[kind="primary"] {{ background-color: {COR_AZUL}; color: white; border-radius: 8px; border: none; font-weight: bold; width: 100%; }}
-    .stButton>button[kind="secondary"] {{ background-color: #e0e0e0; color: #333; border-radius: 8px; border: none; width: 100%; }}
-    
-    /* Estilo da Barra Lateral */
-    [data-testid="stSidebar"] {{ background-color: #ffffff; border-right: 1px solid #e0e0e0; }}
-    .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
-    div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
+# --- CSS PARA FIXAR O BOTÃO MENU NO TOPO ---
+    st.markdown(f"""
+        <style>
+        /* Esconde a flechinha nativa */
+        button[data-testid="stSidebarCollapseControl"], 
+        header[data-testid="stHeader"] button {{ display: none !important; }}
 
-    /* O BOTÃO VISUAL (O QUE VOCÊ VÊ) */
-    #custom-menu-trigger {{
-        position: fixed;
-        top: 15px;
-        left: 10px;
-        background-color: {COR_AZUL};
-        color: white;
-        padding: 8px 18px;
-        border-radius: 8px;
-        font-weight: bold;
-        font-family: sans-serif;
-        font-size: 14px;
-        z-index: 999999;
-        cursor: pointer;
-        box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-        border: 2px solid rgba(255,255,255,0.2);
-    }}
+        /* Posiciona o botão de MENU que criaremos abaixo */
+        div.stElementContainer:has(button[key="btn_menu_real"]) {{
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 999999;
+            width: 100px !important;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
 
-    /* ESCONDER A FLECHINHA ORIGINAL SEM SUMIR COM ELA */
-    button[data-testid="stSidebarCollapseControl"], 
-    header[data-testid="stHeader"] button {{
-        opacity: 0 !important;
-        pointer-events: none !important;
-    }}
-    </style>
-    
-    <div id="custom-menu-trigger" onclick="window.parent.document.querySelector('button[aria-label=\'Open sidebar\']').click();">
-        MENU
-    </div>
-""", unsafe_allow_html=True)
+    # --- ESTADO DE NAVEGAÇÃO ---
+    if "opcao_selecionada" not in st.session_state:
+        st.session_state.opcao_selecionada = opcoes[0]
+    if "sidebar_aberta" not in st.session_state:
+        st.session_state.sidebar_aberta = False
 
-# --- SCRIPT PARA GARANTIR O CLIQUE NO MOBILE ---
-st.components.v1.html(f"""
-    <script>
-    const trigger = window.parent.document.getElementById('custom-menu-trigger');
-    trigger.addEventListener('click', function() {{
-        // Tenta encontrar o botão de abrir a lateral por múltiplos seletores
-        const sideBtn = window.parent.document.querySelector('button[aria-label="Open sidebar"]') || 
-                        window.parent.document.querySelector('button[data-testid="stHeaderSidebarNav"]');
-        if (sideBtn) sideBtn.click();
-    }});
-    </script>
-""", height=0)
+    # --- O BOTÃO MENU REAL (Funciona como gatilho) ---
+    # Ao clicar aqui, ele muda um estado que a sidebar reconhece
+    if st.button("☰ MENU", key="btn_menu_real", type="primary"):
+        st.session_state.sidebar_aberta = not st.session_state.sidebar_aberta
+        # Pequeno aviso visual para o usuário olhar para a esquerda
+        st.toast("Opções de Perfil abertas na lateral ⬅️")
 
+    # 1. BARRA LATERAL
+    with st.sidebar:
+        st.image(LOGO_URL, use_container_width=True)
+        st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
+        st.divider()
+        
+        # Sincronismo do Rádio
+        idx_seguro = opcoes.index(st.session_state.opcao_selecionada) if st.session_state.opcao_selecionada in opcoes else 0
+        escolha_sidebar = st.radio(
+            "NAVEGAÇÃO", 
+            opcoes, 
+            index=idx_seguro,
+            key=f"radio_nav_main"
+        )
+        if escolha_sidebar != st.session_state.opcao_selecionada:
+            st.session_state.opcao_selecionada = escolha_sidebar
+            st.rerun()
+
+        st.divider()
+        st.write(f"👤 **{st.session_state['perfil'].capitalize()}**")
+        # Botão de Sair Azul
+        if st.button("Sair da Conta", type="primary", key="btn_sair_def"): 
+            st.session_state["logado"] = False
+            st.rerun()
+            
 # --- 2. FUNÇÕES DE SUPORTE E BANCO ---
 @st.cache_resource
 def get_engine():
@@ -147,6 +145,7 @@ if not st.session_state["logado"]:
 else:
     engine = get_engine(); inicializar_banco()
     
+    # 1. Definição de Opções
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
