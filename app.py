@@ -17,7 +17,7 @@ COR_AZUL, COR_VERDE = "#3282b8", "#8ac926"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA UNIDADE VISUAL E BOTÃO "MENU" FORÇADO ---
+# --- CSS PARA UNIDADE VISUAL E BOTÃO "MENU" ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #f8f9fa; }}
@@ -31,30 +31,37 @@ st.markdown(f"""
     .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
     div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
 
-    /* FORÇAR A PALAVRA "MENU" SOBRE A FLECHA */
-    button[data-testid="stSidebarCollapseControl"] {{
+    /* FORÇAR TEXTO "MENU" NO BOTÃO DA SIDEBAR (SELECTORES MÚLTIPLOS) */
+    header[data-testid="stHeader"] button, 
+    [data-testid="stSidebarCollapsedControl"],
+    button[aria-label="Open sidebar"] {{
         background-color: {COR_AZUL} !important;
-        border-radius: 0 8px 8px 0 !important;
-        width: 70px !important;
-        height: 35px !important;
+        border-radius: 0 10px 10px 0 !important;
+        width: 90px !important;
+        height: 40px !important;
         left: 0 !important;
-        top: 10px !important;
+        top: 5px !important;
         position: fixed !important;
         z-index: 999999 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }}
-    
-    button[data-testid="stSidebarCollapseControl"]::after {{
+
+    header[data-testid="stHeader"] button::after,
+    [data-testid="stSidebarCollapsedControl"]::after,
+    button[aria-label="Open sidebar"]::after {{
         content: "MENU" !important;
         color: white !important;
         font-weight: bold !important;
-        font-size: 12px !important;
+        font-size: 14px !important;
         margin-left: 5px !important;
     }}
 
-    /* Esconder o ícone original para não confundir */
-    button[data-testid="stSidebarCollapseControl"] svg {{
+    header[data-testid="stHeader"] svg,
+    [data-testid="stSidebarCollapsedControl"] svg,
+    button[aria-label="Open sidebar"] svg {{
         fill: white !important;
-        width: 15px !important;
     }}
     </style>
 """, unsafe_allow_html=True)
