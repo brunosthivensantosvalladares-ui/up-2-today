@@ -75,11 +75,9 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
                 pdf.set_font("Arial", "B", 10); pdf.set_fill_color(235, 235, 235)
                 pdf.cell(190, 7, f" Area: {area}", ln=True, fill=True)
                 
-                # Cabeçalho da Tabela no PDF
                 pdf.set_font("Arial", "B", 8); pdf.set_text_color(100)
                 pdf.cell(20, 6, "Prefixo", 1); pdf.cell(30, 6, "Executor", 1); pdf.cell(40, 6, "Disponibilidade", 1); pdf.cell(100, 6, "Descricao", 1, ln=True)
                 
-                # Linhas da Tabela no PDF
                 pdf.set_font("Arial", "", 7); pdf.set_text_color(0)
                 for _, row in df_area.iterrows():
                     disp = f"{row['inicio_disp']} - {row['fim_disp']}"
@@ -233,10 +231,11 @@ else:
                                     # Grava cada coluna alterada individualmente
                                     for col, val in changes.items():
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
-                                        # Se marcar realizado, atualiza status do chamado
+                                        # Se marcar realizado, atualiza status do chamado vinculado
                                         if col == 'realizado' and val is True:
                                             id_ch = row_data['id_chamado']
-                                            if id_ch: conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(id_ch)})
+                                            if id_ch: 
+                                                conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(id_ch)})
                     conn.commit(); st.success("✅ Todas as alterações foram salvas!"); st.rerun()
 
     elif aba_ativa == "📋 Cadastro Direto":
