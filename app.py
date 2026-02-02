@@ -295,7 +295,7 @@ else:
         else: st.info("Nenhum chamado pendente no momento.")
 
 elif aba_ativa == "📊 Indicadores":
-        st.subheader("📊 Painel de Performance Operacional")
+st.subheader("📊 Painel de Performance Operacional")
         st.info("💡 **Dica:** Utilize esses dados para identificar gargalos e planejar a capacidade da oficina.")
         c1, c2 = st.columns(2)
         df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
