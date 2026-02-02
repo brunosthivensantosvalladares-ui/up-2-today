@@ -89,10 +89,12 @@ if not st.session_state["logado"]:
         with st.container(border=True):
             user = st.text_input("Usuário", key="u_log").lower()
             pw = st.text_input("Senha", type="password", key="p_log")
-            # Ajuste: Botão de Login em Azul
             if st.button("Acessar Painel Ted", use_container_width=True, type="primary"):
                 users = {"bruno": "master789", "admin": "12345", "motorista": "12345"}
                 if user in users and users[user] == pw:
+                    # Resetar navegação ao logar para evitar erro de index
+                    if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
+                    
                     import time
                     with st.spinner(""):
                         for t in ["Tu", "Tud", "Tudo ", "Tudo e", "Tudo em d", "Tudo em dia"]:
@@ -104,13 +106,14 @@ if not st.session_state["logado"]:
 else:
     engine = get_engine(); inicializar_banco()
     
+    # Define as opções por perfil
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
         opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores"]
 
-    # --- LÓGICA DE SINCRONISMO ---
-    if "opcao_selecionada" not in st.session_state:
+    # --- PROTEÇÃO CONTRA O ERRO DE INDEX (VALUEERROR) ---
+    if "opcao_selecionada" not in st.session_state or st.session_state.opcao_selecionada not in opcoes:
         st.session_state.opcao_selecionada = opcoes[0]
     
     if "radio_key" not in st.session_state:
@@ -126,19 +129,23 @@ else:
         st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         st.divider()
         
+        # O rádio lateral com índice protegido
+        try:
+            idx_seguro = opcoes.index(st.session_state.opcao_selecionada)
+        except ValueError:
+            idx_seguro = 0
+            st.session_state.opcao_selecionada = opcoes[0]
+
         escolha_sidebar = st.radio(
             "NAVEGAÇÃO", 
             opcoes, 
-            index=opcoes.index(st.session_state.opcao_selecionada),
+            index=idx_seguro,
             key=f"radio_nav_{st.session_state.radio_key}",
             on_change=lambda: st.session_state.update({"opcao_selecionada": st.session_state[f"radio_nav_{st.session_state.radio_key}"]})
         )
-        if escolha_sidebar != st.session_state.opcao_selecionada:
-            st.session_state.opcao_selecionada = escolha_sidebar
-
+        
         st.divider()
         st.write(f"👤 **{st.session_state['perfil'].capitalize()}**")
-        # Ajuste: Botão de Sair em Azul
         if st.button("Sair da Conta", type="primary"): 
             st.session_state["logado"] = False
             st.rerun()
@@ -195,7 +202,7 @@ else:
                         if not df_area_f.empty:
                             st.markdown(f"<p class='area-header'>📍 {area}</p>", unsafe_allow_html=True)
                             st.data_editor(df_area_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id', 'id_chamado']], 
-                                column_config={"realizado": st.column_config.CheckboxColumn("OK", width="small"), "inicio_disp": "🕒 Início", "fim_disp": "🕒 Fim", "id": None, "id_chamado": None}, 
+                                column_config={"realizado": st.column_config.CheckboxColumn("OK", width="small"), "id": None, "id_chamado": None}, 
                                 hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}")
                 if btn_salvar:
                     with engine.connect() as conn:
@@ -283,6 +290,6 @@ else:
             df_lead['data_solicitacao'], df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_solicitacao']), pd.to_datetime(df_lead['data_conclusao'])
             df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days.apply(lambda x: max(x, 0))
             col_m1, col_m2 = st.columns([0.3, 0.7])
-            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias"); st.caption("🔍 Média entre o chamado e a entrega.")
+            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias"); st.caption("🔍 Média entre chamado e entrega.")
             with col_m2: df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index(); st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
         else: st.warning("Dados de Lead Time ainda não disponíveis.")
