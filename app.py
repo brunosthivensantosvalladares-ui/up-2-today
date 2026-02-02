@@ -209,7 +209,7 @@ else:
                         if not df_area_f.empty:
                             st.markdown(f"<p class='area-header'>📍 {area}</p>", unsafe_allow_html=True)
                             
-                            # --- AJUSTE DE ALINHAMENTO: OK | Prefixo | Início | Fim | Executor | Descrição ---
+                            # --- ALINHAMENTO: OK | Prefixo | Início | Fim | Executor | Descrição ---
                             st.data_editor(df_area_f[['realizado', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id', 'id_chamado']], 
                                 column_config={
                                     "realizado": st.column_config.CheckboxColumn("OK", width="small"),
@@ -228,10 +228,10 @@ else:
                                 df_rows = df_f[(df_f['data'].astype(str) == dt_r) & (df_f['area'] == ar_r)]
                                 for idx, changes in st.session_state[key]["edited_rows"].items():
                                     row_data = df_rows.iloc[idx]; rid = int(row_data['id'])
-                                    # Grava cada coluna alterada individualmente (Horários e OK)
+                                    # Grava todas as colunas alteradas (OK, Horários, etc)
                                     for col, val in changes.items():
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
-                                        # Proteção contra ValueError no id_chamado para fechar chamado vinculado
+                                        # Proteção contra ValueError no id_chamado
                                         if col == 'realizado' and val is True:
                                             id_ch = row_data['id_chamado']
                                             if id_ch and pd.notnull(id_ch):
@@ -294,13 +294,27 @@ else:
                         conn.commit(); st.success("✅ Agendamentos processados!"); del st.session_state.df_ap_work; st.rerun()
         else: st.info("Nenhum chamado pendente no momento.")
 
-    elif aba_ativa == "📊 Indicadores":
+   elif aba_ativa == "📊 Indicadores":
         st.subheader("📊 Painel de Performance Operacional")
+        st.info("💡 **Dica:** Utilize esses dados para identificar gargalos e planejar a capacidade da oficina.")
+        c1, c2 = st.columns(2)
         df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
-        if not df_ind.empty:
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown("**Serviços por Área**"); st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
-            with c2: 
+        with c1:
+            st.markdown("**Serviços por Área**"); st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
+            st.caption("🔍 **O que isso mostra?** Identifica quais setores da oficina estão com maior carga.")
+        with c2: 
+            if not df_ind.empty:
                 df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
                 st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_VERDE)
+                st.caption("🔍 **O que isso mostra?** Mede a eficiência de entrega da equipe.")
+        st.divider(); st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
+        query_lead = "SELECT c.data_solicitacao, t.data as data_conclusao FROM chamados c JOIN tarefas t ON c.id = t.id_chamado WHERE t.realizado = True"
+        df_lead = pd.read_sql(query_lead, engine)
+        if not df_lead.empty:
+            df_lead['data_solicitacao'], df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_solicitacao']), pd.to_datetime(df_lead['data_conclusao'])
+            df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days.apply(lambda x: max(x, 0))
+            col_m1, col_m2 = st.columns([0.3, 0.7])
+            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias"); st.caption("🔍 Média entre chamado e entrega.")
+            with col_m2: df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index(); st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
+        else: st.warning("Dados de Lead Time ainda não disponíveis.")
+            
