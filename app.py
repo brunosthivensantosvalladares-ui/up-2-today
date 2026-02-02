@@ -61,23 +61,34 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(50, 130, 184)
     pdf.cell(190, 10, f"Relatorio de Manutencao - {NOME_SISTEMA}", ln=True, align="C")
-    pdf.set_font("Arial", "", 12); pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Arial", "", 10); pdf.set_text_color(0, 0, 0)
     pdf.cell(190, 10, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True, align="C")
     pdf.ln(5)
+    
     for d_process in sorted(df_periodo['data'].unique(), reverse=True):
         d_formatada = pd.to_datetime(d_process).strftime('%d/%m/%Y')
-        pdf.set_font("Arial", "B", 14); pdf.cell(190, 10, f"Data: {d_formatada}", ln=True)
+        pdf.set_font("Arial", "B", 12); pdf.cell(190, 10, f"Data: {d_formatada}", ln=True)
+        
         for area in ORDEM_AREAS:
             df_area = df_periodo[(df_periodo['data'] == d_process) & (df_periodo['area'] == area)]
             if not df_area.empty:
-                pdf.set_font("Arial", "B", 11); pdf.set_fill_color(230, 230, 230)
+                pdf.set_font("Arial", "B", 10); pdf.set_fill_color(235, 235, 235)
                 pdf.cell(190, 7, f" Area: {area}", ln=True, fill=True)
+                
+                # Cabeçalho da Tabela
+                pdf.set_font("Arial", "B", 8); pdf.set_text_color(100)
+                pdf.cell(20, 6, "Prefixo", 1); pdf.cell(30, 6, "Executor", 1); pdf.cell(40, 6, "Disponibilidade", 1); pdf.cell(100, 6, "Descricao", 1, ln=True)
+                
+                # Linhas da Tabela
+                pdf.set_font("Arial", "", 7); pdf.set_text_color(0)
                 for _, row in df_area.iterrows():
-                    pdf.set_font("Arial", "B", 9); pdf.cell(190, 6, f"Prefixo: {row['prefixo']} | Executor: {row['executor']}", ln=True)
-                    # Adicionando o horário de disponibilidade aqui:
-                    pdf.set_font("Arial", "I", 8); pdf.cell(190, 5, f" Disponibilidade: Inicio as {row['inicio_disp']} | Fim as {row['fim_disp']}", ln=True)
-                    pdf.set_font("Arial", "", 8); pdf.multi_cell(190, 5, f" Descricao: {str(row['descricao'])}")
-                    pdf.ln(1)
+                    disp = f"{row['inicio_disp']} - {row['fim_disp']}"
+                    desc = str(row['descricao'])[:65] + "..." if len(str(row['descricao'])) > 65 else str(row['descricao'])
+                    
+                    pdf.cell(20, 6, str(row['prefixo']), 1)
+                    pdf.cell(30, 6, str(row['executor']), 1)
+                    pdf.cell(40, 6, disp, 1)
+                    pdf.cell(100, 6, desc, 1, ln=True)
                 pdf.ln(2)
     return pdf.output(dest='S').encode('latin-1')
 
