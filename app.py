@@ -17,7 +17,7 @@ COR_AZUL, COR_VERDE = "#3282b8", "#8ac926"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA UNIDADE VISUAL E BOTÃO "MENU" ---
+# --- CSS PARA UNIDADE VISUAL E BOTÃO "MENU" PRECISO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #f8f9fa; }}
@@ -31,26 +31,25 @@ st.markdown(f"""
     .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
     div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
 
-    /* FORÇAR TEXTO "MENU" NO BOTÃO DA SIDEBAR (SELECTORES MÚLTIPLOS) */
-    header[data-testid="stHeader"] button, 
-    [data-testid="stSidebarCollapsedControl"],
-    button[aria-label="Open sidebar"] {{
+    /* CORREÇÃO: APLICAR "MENU" APENAS AO BOTÃO DA SIDEBAR */
+    button[data-testid="stBaseButton-headerNoPadding"][aria-label="Open sidebar"],
+    section[data-testid="stSidebarCollapsedControl"] button {{
         background-color: {COR_AZUL} !important;
         border-radius: 0 10px 10px 0 !important;
         width: 90px !important;
-        height: 40px !important;
+        height: 38px !important;
         left: 0 !important;
         top: 5px !important;
         position: fixed !important;
-        z-index: 999999 !important;
+        z-index: 1000000 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        border: none !important;
     }}
 
-    header[data-testid="stHeader"] button::after,
-    [data-testid="stSidebarCollapsedControl"]::after,
-    button[aria-label="Open sidebar"]::after {{
+    button[data-testid="stBaseButton-headerNoPadding"][aria-label="Open sidebar"]::after,
+    section[data-testid="stSidebarCollapsedControl"] button::after {{
         content: "MENU" !important;
         color: white !important;
         font-weight: bold !important;
@@ -58,10 +57,11 @@ st.markdown(f"""
         margin-left: 5px !important;
     }}
 
-    header[data-testid="stHeader"] svg,
-    [data-testid="stSidebarCollapsedControl"] svg,
-    button[aria-label="Open sidebar"] svg {{
+    /* Garante que o ícone de flecha fique branco dentro do botão azul */
+    button[data-testid="stBaseButton-headerNoPadding"][aria-label="Open sidebar"] svg,
+    section[data-testid="stSidebarCollapsedControl"] button svg {{
         fill: white !important;
+        color: white !important;
     }}
     </style>
 """, unsafe_allow_html=True)
