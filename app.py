@@ -17,12 +17,12 @@ COR_AZUL, COR_VERDE = "#3282b8", "#8ac926"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA UNIDADE VISUAL E BOTÃO "MENU" ---
+# --- CSS PARA UNIDADE VISUAL E BOTÃO "MENU" FORÇADO ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #f8f9fa; }}
     
-    /* Personalização do botão de Login e Sair */
+    /* Botões Azul Ted */
     .stButton>button[kind="primary"] {{ background-color: {COR_AZUL}; color: white; border-radius: 8px; border: none; font-weight: bold; width: 100%; }}
     .stButton>button[kind="secondary"] {{ background-color: #e0e0e0; color: #333; border-radius: 8px; border: none; width: 100%; }}
     
@@ -31,30 +31,30 @@ st.markdown(f"""
     .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
     div[data-testid="stRadio"] > div {{ background-color: #f1f3f5; padding: 10px; border-radius: 10px; }}
 
-    /* FORÇAR A PALAVRA "MENU" NO MOBILE */
-    [data-testid="stSidebarCollapsedControl"] {{
+    /* FORÇAR A PALAVRA "MENU" SOBRE A FLECHA */
+    button[data-testid="stSidebarCollapseControl"] {{
         background-color: {COR_AZUL} !important;
-        color: white !important;
         border-radius: 0 8px 8px 0 !important;
-        width: 80px !important;
-        height: 40px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        width: 70px !important;
+        height: 35px !important;
         left: 0 !important;
+        top: 10px !important;
+        position: fixed !important;
+        z-index: 999999 !important;
     }}
     
-    /* Insere o texto Menu e esconde o ícone original se necessário */
-    [data-testid="stSidebarCollapsedControl"]::before {{
+    button[data-testid="stSidebarCollapseControl"]::after {{
         content: "MENU" !important;
-        font-size: 14px !important;
+        color: white !important;
         font-weight: bold !important;
-        font-family: sans-serif !important;
+        font-size: 12px !important;
+        margin-left: 5px !important;
     }}
-    
-    /* Esconde a flechinha preta original para não sobrepor o texto */
-    [data-testid="stSidebarCollapsedControl"] svg {{
-        display: none !important;
+
+    /* Esconder o ícone original para não confundir */
+    button[data-testid="stSidebarCollapseControl"] svg {{
+        fill: white !important;
+        width: 15px !important;
     }}
     </style>
 """, unsafe_allow_html=True)
