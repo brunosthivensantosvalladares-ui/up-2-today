@@ -213,6 +213,8 @@ else:
                             st.data_editor(df_area_f[['realizado', 'executor', 'prefixo', 'inicio_disp', 'fim_disp', 'turno', 'descricao', 'id', 'id_chamado']], 
                                 column_config={"realizado": st.column_config.CheckboxColumn("OK", width="small"), "inicio_disp": "Início", "fim_disp": "Fim", "id": None, "id_chamado": None}, 
                                 hide_index=True, use_container_width=True, key=f"ed_ted_{d}_{area}")
+                
+                # --- AJUSTE NA FÓRMULA DE SALVAMENTO ---
                 if btn_salvar:
                     with engine.connect() as conn:
                         for key in st.session_state.keys():
@@ -220,10 +222,14 @@ else:
                                 dt_r, ar_r = key.split("_")[2], key.split("_")[3]
                                 df_rows = df_f[(df_f['data'].astype(str) == dt_r) & (df_f['area'] == ar_r)]
                                 for idx, changes in st.session_state[key]["edited_rows"].items():
-                                    row_data = df_rows.iloc[idx]; rid, id_ch = int(row_data['id']), row_data['id_chamado']
+                                    rid = int(df_rows.iloc[idx]['id'])
+                                    # Grava cada coluna alterada (OK, Início, Fim, etc)
                                     for col, val in changes.items():
                                         conn.execute(text(f"UPDATE tarefas SET {col} = :v WHERE id = :i"), {"v": str(val), "i": rid})
-                                        if col == 'realizado' and val is True and id_ch: conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(id_ch)})
+                                        # Se marcar OK, encerra o chamado vinculado
+                                        if col == 'realizado' and val is True:
+                                            id_ch = df_rows.iloc[idx]['id_chamado']
+                                            if id_ch: conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(id_ch)})
                     conn.commit(); st.success("✅ Alterações salvas!"); st.rerun()
 
     elif aba_ativa == "📋 Cadastro Direto":
