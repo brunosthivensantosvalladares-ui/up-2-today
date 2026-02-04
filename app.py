@@ -67,16 +67,16 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf = FPDF()
     pdf.add_page()
     
-    # --- CABEÇALHO COM MARCA U2T ---
+    # --- CABEÇALHO COM MARCA U2T (AJUSTADO: LETRAS PRÓXIMAS) ---
     pdf.set_font("Arial", "B", 22)
     pdf.set_text_color(27, 34, 76) # Azul Logo
-    pdf.cell(15, 10, "U", ln=0)
+    pdf.cell(8, 10, "U", ln=0)     # Célula estreita para aproximar
     pdf.set_text_color(49, 173, 100) # Verde Logo
     pdf.cell(40, 10, "2T", ln=0)
     
     pdf.set_font("Arial", "I", 8)
     pdf.set_text_color(120, 120, 120)
-    pdf.cell(135, 10, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=1, align="R")
+    pdf.cell(142, 10, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=1, align="R")
     
     pdf.set_font("Arial", "B", 14)
     pdf.set_text_color(27, 34, 76)
@@ -98,8 +98,8 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
                 pdf.set_font("Arial", "B", 9); pdf.set_text_color(49, 173, 100)
                 pdf.cell(190, 7, f" Setor: {area}", ln=True)
                 
-                # Títulos da Tabela
-                pdf.set_font("Arial", "B", 8); pdf.set_text_color(255, 255, 255); pdf.set_fill_color(27, 34, 76)
+                # Títulos da Tabela (RESTAURADO PARA CINZA)
+                pdf.set_font("Arial", "B", 8); pdf.set_text_color(50); pdf.set_fill_color(230, 230, 230)
                 pdf.cell(20, 6, "Prefixo", 1, 0, 'C', True)
                 pdf.cell(35, 6, "Executor", 1, 0, 'C', True)
                 pdf.cell(40, 6, "Disponibilidade", 1, 0, 'C', True)
