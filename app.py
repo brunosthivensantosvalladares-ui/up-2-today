@@ -19,7 +19,6 @@ COR_VERDE = "#31ad64" # Verde Esmeralda do '2T'
 COR_FUNDO = "#f4f7f6"
 
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
-# Restaurado ícone de martelo e chave conforme solicitado
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
 # --- CSS PARA UNIDADE VISUAL ---
@@ -67,35 +66,54 @@ def to_excel_native(df):
 def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", "B", 16); pdf.set_text_color(26, 80, 139)
-    pdf.cell(190, 10, f"Relatorio de Manutencao - {NOME_SISTEMA}", ln=True, align="C")
-    pdf.set_font("Arial", "", 10); pdf.set_text_color(0, 0, 0)
-    pdf.cell(190, 10, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True, align="C")
+    
+    # --- CABEÇALHO COM MARCA U2T ---
+    pdf.set_font("Arial", "B", 22)
+    pdf.set_text_color(27, 34, 76) # Azul Logo
+    pdf.cell(15, 10, "U", ln=0)
+    pdf.set_text_color(49, 173, 100) # Verde Logo
+    pdf.cell(40, 10, "2T", ln=0)
+    
+    pdf.set_font("Arial", "I", 8)
+    pdf.set_text_color(120, 120, 120)
+    pdf.cell(135, 10, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=1, align="R")
+    
+    pdf.set_font("Arial", "B", 14)
+    pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, f"RELATORIO DE MANUTENCAO - {NOME_SISTEMA.upper()}", ln=True, align="C")
+    
+    pdf.set_font("Arial", "", 10)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 8, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True, align="C")
     pdf.ln(5)
     
     for d_process in sorted(df_periodo['data'].unique(), reverse=True):
         d_formatada = pd.to_datetime(d_process).strftime('%d/%m/%Y')
-        pdf.set_font("Arial", "B", 12); pdf.cell(190, 10, f"Data: {d_formatada}", ln=True)
+        pdf.set_font("Arial", "B", 11); pdf.set_fill_color(240, 240, 240)
+        pdf.cell(190, 8, f" DATA: {d_formatada}", ln=True, fill=True)
         
         for area in ORDEM_AREAS:
             df_area = df_periodo[(df_periodo['data'] == d_process) & (df_periodo['area'] == area)]
             if not df_area.empty:
-                pdf.set_font("Arial", "B", 10); pdf.set_fill_color(235, 235, 235)
-                pdf.cell(190, 7, f" Area: {area}", ln=True, fill=True)
+                pdf.set_font("Arial", "B", 9); pdf.set_text_color(49, 173, 100)
+                pdf.cell(190, 7, f" Setor: {area}", ln=True)
                 
-                pdf.set_font("Arial", "B", 8); pdf.set_text_color(100)
-                pdf.cell(20, 6, "Prefixo", 1); pdf.cell(30, 6, "Executor", 1); pdf.cell(40, 6, "Disponibilidade", 1); pdf.cell(100, 6, "Descricao", 1, ln=True)
+                # Títulos da Tabela
+                pdf.set_font("Arial", "B", 8); pdf.set_text_color(255, 255, 255); pdf.set_fill_color(27, 34, 76)
+                pdf.cell(20, 6, "Prefixo", 1, 0, 'C', True)
+                pdf.cell(35, 6, "Executor", 1, 0, 'C', True)
+                pdf.cell(40, 6, "Disponibilidade", 1, 0, 'C', True)
+                pdf.cell(95, 6, "Descricao", 1, 1, 'C', True)
                 
+                # Linhas da Tabela
                 pdf.set_font("Arial", "", 7); pdf.set_text_color(0)
                 for _, row in df_area.iterrows():
-                    disp = f"{row['inicio_disp']} - {row['fim_disp']}"
-                    desc = str(row['descricao'])[:65] + "..." if len(str(row['descricao'])) > 65 else str(row['descricao'])
-                    
-                    pdf.cell(20, 6, str(row['prefixo']), 1)
-                    pdf.cell(30, 6, str(row['executor']), 1)
-                    pdf.cell(40, 6, disp, 1)
-                    pdf.cell(100, 6, desc, 1, ln=True)
+                    pdf.cell(20, 6, str(row['prefixo']), 1, 0, 'C')
+                    pdf.cell(35, 6, str(row['executor'])[:20], 1, 0, 'C')
+                    pdf.cell(40, 6, f"{row['inicio_disp']} - {row['fim_disp']}", 1, 0, 'C')
+                    pdf.cell(95, 6, str(row['descricao'])[:75], 1, 1, 'L')
                 pdf.ln(2)
+                
     return pdf.output(dest='S').encode('latin-1')
 
 # --- 3. LÓGICA DE LOGIN ---
@@ -116,7 +134,7 @@ if not st.session_state["logado"]:
                     if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
                     import time
                     with st.spinner(""):
-                        # ANIMAÇÃO: LETRAS MAIÚSCULAS COM CORES DO LOGOTIPO (UP EM AZUL, RESTANTE EM VERDE)
+                        # ANIMAÇÃO: LETRAS MAIÚSCULAS COM CORES DO LOGOTIPO (UP AZUL, RESTANTE VERDE)
                         for t in ["UP", "UP 2", "UP 2 T", "UP 2 TOD", "UP 2 TODA", "UP 2 TODAY"]:
                             placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>{t[:2]}</span><span style='color: {COR_VERDE};'>{t[2:]}</span></h1>", unsafe_allow_html=True)
                             time.sleep(0.05)
@@ -207,8 +225,8 @@ else:
         if not df_a.empty and len(p_sel) == 2:
             df_a['data'] = pd.to_datetime(df_a['data']).dt.date
             df_f = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])]
-            with c_pdf: st.download_button("📥 PDF", gerar_pdf_periodo(df_f, p_sel[0], p_sel[1]), f"Relatorio_{NOME_SISTEMA}.pdf")
-            with c_xls: st.download_button("📊 Excel", to_excel_native(df_f), f"Relatorio_{NOME_SISTEMA}.xlsx")
+            with c_pdf: st.download_button("📥 PDF", gerar_pdf_periodo(df_f, p_sel[0], p_sel[1]), f"Relatorio_U2T_{p_sel[0]}.pdf")
+            with c_xls: st.download_button("📊 Excel", to_excel_native(df_f), f"Relatorio_U2T_{p_sel[0]}.xlsx")
             
             for d in sorted(df_f['data'].unique(), reverse=True):
                 st.markdown(f"#### 🗓️ {d.strftime('%d/%m/%Y')}")
