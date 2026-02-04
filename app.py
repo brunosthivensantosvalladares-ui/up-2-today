@@ -34,15 +34,15 @@ st.markdown(f"""
     .area-header {{ color: {COR_VERDE}; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
     div[data-testid="stRadio"] > div {{ background-color: #ffffff; padding: 10px; border-radius: 10px; border: 1px solid #e0e0e0; }}
     
-    /* Estilização de métricas para combinar com a logo */
-    [data-testid="stMetricValue"] {{ color: {COR_AZUL}; font-weight: bold; }}
-    /* Cards de resumo no topo */
+    /* Estilização de métricas (CARDS DIMINUÍDOS) */
+    [data-testid="stMetricValue"] {{ color: {COR_AZUL}; font-weight: bold; font-size: 1.6rem !important; }}
+    [data-testid="stMetricLabel"] {{ font-size: 0.85rem !important; }}
     div[data-testid="stMetric"] {{
         background-color: #ffffff;
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 5px solid {COR_VERDE};
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border-left: 4px solid {COR_VERDE};
+        box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -226,13 +226,11 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # --- NOVO: PAINEL DE RESUMO RÁPIDO NO TOPO ---
+        # --- PAINEL DE RESUMO RÁPIDO NO TOPO ---
         df_stats = pd.read_sql("SELECT data, realizado FROM tarefas", engine)
         if not df_stats.empty:
             df_stats['data'] = pd.to_datetime(df_stats['data']).dt.date
-            hoje_dt = datetime.now().date()
-            df_hoje = df_stats[df_stats['data'] == hoje_dt]
-            
+            df_hoje = df_stats[df_stats['data'] == datetime.now().date()]
             m1, m2, m3 = st.columns(3)
             with m1: st.metric("Agendados Hoje", len(df_hoje))
             with m2: st.metric("Concluídos", len(df_hoje[df_hoje['realizado'] == True]))
@@ -316,6 +314,7 @@ else:
 
     elif aba_ativa == "📥 Chamados Oficina":
         st.subheader("📥 Aprovação de Chamados")
+        st.info("💡 Preencha os campos e marque 'Aprovar' na última coluna para enviar à agenda.")
         df_p = pd.read_sql("SELECT id, data_solicitacao, prefixo, descricao FROM chamados WHERE status = 'Pendente' ORDER BY id DESC", engine)
         if not df_p.empty:
             if 'df_ap_work' not in st.session_state:
@@ -334,6 +333,7 @@ else:
 
     elif aba_ativa == "📊 Indicadores":
         st.subheader("📊 Painel de Performance Operacional")
+        st.info("💡 **Dica:** Utilize esses dados para identificar gargalos e planejar a capacidade da oficina.")
         c1, c2 = st.columns(2)
         df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
         with c1: st.markdown("**Serviços por Área**"); st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
