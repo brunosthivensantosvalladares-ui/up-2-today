@@ -116,7 +116,7 @@ if not st.session_state["logado"]:
                     if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
                     import time
                     with st.spinner(""):
-                        # ANIMAÇÃO: LETRAS MAIÚSCULAS COM CORES DO LOGOTIPO (UP AZUL, RESTANTE VERDE)
+                        # ANIMAÇÃO: LETRAS MAIÚSCULAS COM CORES DO LOGOTIPO (UP EM AZUL, RESTANTE EM VERDE)
                         for t in ["UP", "UP 2", "UP 2 T", "UP 2 TOD", "UP 2 TODA", "UP 2 TODAY"]:
                             placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>{t[:2]}</span><span style='color: {COR_VERDE};'>{t[2:]}</span></h1>", unsafe_allow_html=True)
                             time.sleep(0.05)
