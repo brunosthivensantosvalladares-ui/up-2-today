@@ -7,7 +7,7 @@ from io import BytesIO
 from fpdf import FPDF
 
 # --- CONFIGURAÇÕES DE MARCA ---
-NOME_SISTEMA = "Ted"
+NOME_SISTEMA = "Up 2 Today"
 SLOGAN = "Seu Controle. Nossa Prioridade."
 LOGO_URL = "https://i.postimg.cc/9MHLwp26/logo-png.png"
 ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeamento", "Limpeza"]
@@ -97,19 +97,20 @@ if not st.session_state["logado"]:
     _, col_login, _ = st.columns([1.2, 1, 1.2])
     with col_login:
         placeholder_topo = st.empty()
-        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>T</span><span style='color: {COR_VERDE};'>ed</span></h1>", unsafe_allow_html=True)
+        placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>U</span><span style='color: {COR_VERDE};'>2T</span></h1>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
         with st.container(border=True):
             user = st.text_input("Usuário", key="u_log").lower()
             pw = st.text_input("Senha", type="password", key="p_log")
-            if st.button("Acessar Painel Ted", use_container_width=True, type="primary"):
+            if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
                 users = {"bruno": "master789", "admin": "12345", "motorista": "12345"}
                 if user in users and users[user] == pw:
                     if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
                     import time
                     with st.spinner(""):
-                        for t in ["Tu", "Tud", "Tudo ", "Tudo e", "Tudo em d", "Tudo em dia"]:
-                            placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>{t[:4]}</span><span style='color: {COR_VERDE};'>{t[4:]}</span></h1>", unsafe_allow_html=True)
+                        # ANIMAÇÃO PARA "UP 2 TODAY"
+                        for t in ["Up", "Up 2", "Up 2 T", "Up 2 Tod", "Up 2 Toda", "Up 2 Today"]:
+                            placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>{t[:2]}</span><span style='color: {COR_VERDE};'>{t[2:]}</span></h1>", unsafe_allow_html=True)
                             time.sleep(0.05)
                     st.session_state["logado"], st.session_state["perfil"] = True, ("admin" if user != "motorista" else "motorista")
                     st.rerun()
@@ -198,8 +199,8 @@ else:
         if not df_a.empty and len(p_sel) == 2:
             df_a['data'] = pd.to_datetime(df_a['data']).dt.date
             df_f = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])]
-            with c_pdf: st.download_button("📥 PDF", gerar_pdf_periodo(df_f, p_sel[0], p_sel[1]), f"Relatorio_Ted_{p_sel[0]}.pdf")
-            with c_xls: st.download_button("📊 Excel", to_excel_native(df_f), f"Relatorio_Ted_{p_sel[0]}.xlsx")
+            with c_pdf: st.download_button("📥 PDF", gerar_pdf_periodo(df_f, p_sel[0], p_sel[1]), f"Relatorio_U2T_{p_sel[0]}.pdf")
+            with c_xls: st.download_button("📊 Excel", to_excel_native(df_f), f"Relatorio_U2T_{p_sel[0]}.xlsx")
             
             for d in sorted(df_f['data'].unique(), reverse=True):
                 st.markdown(f"#### 🗓️ {d.strftime('%d/%m/%Y')}")
