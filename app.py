@@ -230,7 +230,9 @@ else:
         df_stats = pd.read_sql("SELECT data, realizado FROM tarefas", engine)
         if not df_stats.empty:
             df_stats['data'] = pd.to_datetime(df_stats['data']).dt.date
-            df_hoje = df_stats[df_stats['data'] == datetime.now().date()]
+            hoje_dt = datetime.now().date()
+            df_hoje = df_stats[df_stats['data'] == hoje_dt]
+            
             m1, m2, m3 = st.columns(3)
             with m1: st.metric("Agendados Hoje", len(df_hoje))
             with m2: st.metric("Concluídos", len(df_hoje[df_hoje['realizado'] == True]))
@@ -336,11 +338,16 @@ else:
         st.info("💡 **Dica:** Utilize esses dados para identificar gargalos e planejar a capacidade da oficina.")
         c1, c2 = st.columns(2)
         df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
-        with c1: st.markdown("**Serviços por Área**"); st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
+        with c1:
+            st.markdown("**Serviços por Área**")
+            st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
+            st.caption("🔍 **O que isso mostra?** Identifica quais setores da oficina estão com maior carga.")
         with c2: 
             if not df_ind.empty:
                 df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
-                st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_VERDE)
+                st.markdown("**Status de Conclusão**")
+                st.bar_chart(df_st, color=COR_VERDE)
+                st.caption("🔍 **O que isso mostra?** Mede a eficiência de entrega da equipe.")
         st.divider(); st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
         query_lead = "SELECT c.data_solicitacao, t.data as data_conclusao FROM chamados c JOIN tarefas t ON c.id = t.id_chamado WHERE t.realizado = True"
         df_lead = pd.read_sql(query_lead, engine)
@@ -348,5 +355,9 @@ else:
             df_lead['data_solicitacao'], df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_solicitacao']), pd.to_datetime(df_lead['data_conclusao'])
             df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days.apply(lambda x: max(x, 0))
             col_m1, col_m2 = st.columns([0.3, 0.7])
-            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias")
-            with col_m2: df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index(); st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
+            with col_m1:
+                st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias")
+                st.caption("🔍 Média entre chamado e entrega.")
+            with col_m2:
+                df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index()
+                st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
