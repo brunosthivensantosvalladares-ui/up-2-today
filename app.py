@@ -169,7 +169,10 @@ else:
 
     # 1. BARRA LATERAL
     with st.sidebar:
-        st.image(LOGO_URL, use_container_width=True)
+        # LOGO DIMINUÍDO NA SIDEBAR
+        _, col_img, _ = st.columns([0.15, 0.7, 0.15])
+        with col_img:
+            st.image(LOGO_URL, width=150)
         st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         st.divider()
         
