@@ -50,16 +50,19 @@ st.markdown(f"""
 # --- 2. FUNÇÕES DE SUPORTE E BANCO ---
 @st.cache_resource
 def get_engine():
-    db_url = os.environ.get("database_url", "postgresql://neondb_owner:npg_WRMhXvJVY79d@ep-lucky-sound-acy7xdyi-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require")
+    # Prioriza o segredo configurado no painel do Streamlit
+    db_url = st.secrets.get("database_url") or os.environ.get("database_url", "postgresql://neondb_owner:npg_WRMhXvJVY79d@ep-lucky-sound-acy7xdyi-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require")
     return create_engine(db_url.replace("postgres://", "postgresql://", 1), pool_pre_ping=True)
 
 def inicializar_banco():
     engine = get_engine()
     try:
         with engine.connect() as conn:
-            conn.execute(text("CREATE TABLE IF NOT EXISTS tarefas (id SERIAL PRIMARY KEY, data TEXT, executor TEXT, prefixo TEXT, inicio_disp TEXT, fim_disp TEXT, descricao TEXT, area TEXT, turno TEXT, realizado BOOLEAN DEFAULT FALSE, id_chamado INTEGER, origem TEXT)"))
-            conn.execute(text("CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, motorista TEXT, prefixo TEXT, descricao TEXT, data_solicitacao TEXT, status TEXT DEFAULT 'Pendente')"))
-            try: conn.execute(text("ALTER TABLE tarefas ADD COLUMN IF NOT EXISTS origem TEXT"))
+            conn.execute(text("CREATE TABLE IF NOT EXISTS tarefas (id SERIAL PRIMARY KEY, data TEXT, executor TEXT, prefixo TEXT, inicio_disp TEXT, fim_disp TEXT, descricao TEXT, area TEXT, turno TEXT, realizado BOOLEAN DEFAULT FALSE, id_chamado INTEGER, origem TEXT, empresa_id TEXT)"))
+            conn.execute(text("CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, motorista TEXT, prefixo TEXT, descricao TEXT, data_solicitacao TEXT, status TEXT DEFAULT 'Pendente', empresa_id TEXT)"))
+            try: conn.execute(text("ALTER TABLE tarefas ADD COLUMN IF NOT EXISTS empresa_id TEXT DEFAULT 'U2T_MATRIZ'"))
+            except: pass
+            try: conn.execute(text("ALTER TABLE chamados ADD COLUMN IF NOT EXISTS empresa_id TEXT DEFAULT 'U2T_MATRIZ'"))
             except: pass
             conn.commit()
     except: pass
@@ -137,8 +140,13 @@ if not st.session_state["logado"]:
             user = st.text_input("Usuário", key="u_log").lower()
             pw = st.text_input("Senha", type="password", key="p_log")
             if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
-                users = {"bruno": "master789", "admin": "12345", "motorista": "12345"}
-                if user in users and users[user] == pw:
+                # MAPA DE USUÁRIOS E SUAS RESPECTIVAS EMPRESAS
+                users_db = {
+                    "bruno": {"pw": "master789", "perfil": "admin", "empresa": "U2T_MATRIZ"},
+                    "cliente_demo": {"pw": "demo123", "perfil": "admin", "empresa": "EMPRESA_DEMO"},
+                    "motorista": {"pw": "12345", "perfil": "motorista", "empresa": "U2T_MATRIZ"}
+                }
+                if user in users_db and users_db[user]["pw"] == pw:
                     if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
                     import time
                     with st.spinner(""):
@@ -146,11 +154,12 @@ if not st.session_state["logado"]:
                         for t in ["UP", "UP 2", "UP 2 T", "UP 2 TOD", "UP 2 TODA", "UP 2 TODAY"]:
                             placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>{t[:2]}</span><span style='color: {COR_VERDE};'>{t[2:]}</span></h1>", unsafe_allow_html=True)
                             time.sleep(0.05)
-                    st.session_state["logado"], st.session_state["perfil"] = True, ("admin" if user != "motorista" else "motorista")
+                    st.session_state.update({"logado": True, "perfil": users_db[user]["perfil"], "empresa": users_db[user]["empresa"]})
                     st.rerun()
                 else: st.error("Usuário ou senha incorretos")
 else:
     engine = get_engine(); inicializar_banco()
+    emp_id = st.session_state["empresa"] # Filtro global
     
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
@@ -190,6 +199,7 @@ else:
         )
         
         st.divider()
+        st.write(f"🏢 **Empresa:** {emp_id}")
         st.write(f"👤 **{st.session_state['perfil'].capitalize()}**")
         if st.button("Sair da Conta", type="primary"): 
             st.session_state["logado"] = False
@@ -216,34 +226,38 @@ else:
             if st.form_submit_button("Enviar para Oficina"):
                 if p and d:
                     with engine.connect() as conn:
-                        conn.execute(text("INSERT INTO chamados (motorista, prefixo, descricao, data_solicitacao, status) VALUES ('motorista', :p, :d, :dt, 'Pendente')"), {"p": p, "d": d, "dt": str(datetime.now().date())})
+                        conn.execute(text("INSERT INTO chamados (motorista, prefixo, descricao, data_solicitacao, status, empresa_id) VALUES ('motorista', :p, :d, :dt, 'Pendente', :eid)"), {"p": p, "d": d, "dt": str(datetime.now().date()), "eid": emp_id})
                         conn.commit()
                     st.success("✅ Solicitação enviada com sucesso! Acompanhe o status na aba ao lado.")
 
     elif aba_ativa == "📜 Status":
         st.subheader("📜 Status dos Meus Veículos")
         st.info("Aqui você pode ver se o seu veículo já foi agendado ou concluído pela oficina.")
-        df_status = pd.read_sql("SELECT prefixo, data_solicitacao as data, status, descricao FROM chamados ORDER BY id DESC", engine)
+        df_status = pd.read_sql(text("SELECT prefixo, data_solicitacao as data, status, descricao FROM chamados WHERE empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
         st.dataframe(df_status, use_container_width=True, hide_index=True)
 
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # --- PAINEL DE RESUMO RÁPIDO NO TOPO ---
-        df_stats = pd.read_sql("SELECT data, realizado FROM tarefas", engine)
-        if not df_stats.empty:
-            df_stats['data'] = pd.to_datetime(df_stats['data']).dt.date
-            hoje_dt = datetime.now().date()
-            df_hoje = df_stats[df_stats['data'] == hoje_dt]
-            
-            m1, m2, m3 = st.columns(3)
-            with m1: st.metric("Agendados Hoje", len(df_hoje))
-            with m2: st.metric("Concluídos", len(df_hoje[df_hoje['realizado'] == True]))
-            with m3: st.metric("Pendentes", len(df_hoje[df_hoje['realizado'] == False]))
-            st.divider()
+        # --- PAINEL DE RESUMO RÁPIDO NO TOPO (COM PROTEÇÃO CONTRA ERROS) ---
+        try:
+            df_stats = pd.read_sql(text("SELECT data, realizado FROM tarefas WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
+            if not df_stats.empty:
+                df_stats['data'] = pd.to_datetime(df_stats['data']).dt.date
+                hoje_dt = datetime.now().date()
+                df_hoje = df_stats[df_stats['data'] == hoje_dt]
+                
+                m1, m2, m3 = st.columns(3)
+                with m1: st.metric("Agendados Hoje", len(df_hoje))
+                with m2: st.metric("Concluídos", len(df_hoje[df_hoje['realizado'] == True]))
+                with m3: st.metric("Pendentes", len(df_hoje[df_hoje['realizado'] == False]))
+                st.divider()
+        except:
+            st.warning("⚠️ O banco de dados está iniciando. Aguarde alguns segundos.")
+            st.stop()
 
         st.info("💡 **Aviso:** O salvamento agora é automático ao editar horários ou marcar OK.")
-        df_a = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC", engine)
+        df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC"), engine, params={"eid": emp_id})
         hoje, amanha = datetime.now().date(), datetime.now().date() + timedelta(days=1)
         c_per, c_pdf, c_xls = st.columns([0.6, 0.2, 0.2])
         with c_per: p_sel = st.date_input("Filtrar Período", [hoje, amanha], key="dt_filter")
@@ -296,11 +310,11 @@ else:
             ds_i, t_i = st.text_area("Descrição"), st.selectbox("Turno", LISTA_TURNOS)
             if st.form_submit_button("Confirmar Agendamento"):
                 with engine.connect() as conn:
-                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, :tu, 'Direto')"), {"dt": str(d_i), "ex": e_i, "pr": p_i, "ti": t_ini, "tf": t_fim, "ds": ds_i, "ar": a_i, "tu": t_i})
+                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem, empresa_id) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, :tu, 'Direto', :eid)"), {"dt": str(d_i), "ex": e_i, "pr": p_i, "ti": t_ini, "tf": t_fim, "ds": ds_i, "ar": a_i, "tu": t_i, "eid": emp_id})
                     conn.commit()
                 st.success("✅ Serviço cadastrado!"); st.rerun()
         st.divider(); st.subheader("📋 Lista de serviços")
-        df_lista = pd.read_sql("SELECT * FROM tarefas ORDER BY data DESC, id DESC", engine)
+        df_lista = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC, id DESC"), engine, params={"eid": emp_id})
         if not df_lista.empty:
             df_lista['data'] = pd.to_datetime(df_lista['data']).dt.date
             df_lista['Exc'] = False
@@ -320,7 +334,7 @@ else:
     elif aba_ativa == "📥 Chamados Oficina":
         st.subheader("📥 Aprovação de Chamados")
         st.info("💡 Preencha os campos e marque 'Aprovar' na última coluna para enviar à agenda.")
-        df_p = pd.read_sql("SELECT id, data_solicitacao, prefixo, descricao FROM chamados WHERE status = 'Pendente' ORDER BY id DESC", engine)
+        df_p = pd.read_sql(text("SELECT id, data_solicitacao, prefixo, descricao FROM chamados WHERE status = 'Pendente' AND empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
         if not df_p.empty:
             if 'df_ap_work' not in st.session_state:
                 df_p['Executor'], df_p['Area_Destino'], df_p['Data_Programada'], df_p['Inicio'], df_p['Fim'], df_p['Aprovar'] = "Pendente", "Mecânica", datetime.now().date(), "08:00", "10:00", False
@@ -331,7 +345,7 @@ else:
                 if not selecionados.empty:
                     with engine.connect() as conn:
                         for _, r in selecionados.iterrows():
-                            conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, 'Não definido', :ic, 'Chamado')"), {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ti": r['Inicio'], "tf": r['Fim'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id']})
+                            conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem, empresa_id) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, 'Não definido', :ic, 'Chamado', :eid)"), {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ti": r['Inicio'], "tf": r['Fim'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id'], "eid": emp_id})
                             conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
                         conn.commit(); st.success("✅ Agendamentos processados!"); del st.session_state.df_ap_work; st.rerun()
         else: st.info("Nenhum chamado pendente no momento.")
@@ -340,7 +354,7 @@ else:
         st.subheader("📊 Painel de Performance Operacional")
         st.info("💡 **Dica:** Utilize esses dados para identificar gargalos e planejar a capacidade da oficina.")
         c1, c2 = st.columns(2)
-        df_ind = pd.read_sql("SELECT area, realizado FROM tarefas", engine)
+        df_ind = pd.read_sql(text("SELECT area, realizado FROM tarefas WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
         with c1:
             st.markdown("**Serviços por Área**")
             st.bar_chart(df_ind['area'].value_counts(), color=COR_AZUL)
@@ -352,8 +366,8 @@ else:
                 st.bar_chart(df_st, color=COR_VERDE)
                 st.caption("🔍 **O que isso mostra?** Mede a eficiência de entrega da equipe.")
         st.divider(); st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
-        query_lead = "SELECT c.data_solicitacao, t.data as data_conclusao FROM chamados c JOIN tarefas t ON c.id = t.id_chamado WHERE t.realizado = True"
-        df_lead = pd.read_sql(query_lead, engine)
+        query_lead = text("SELECT c.data_solicitacao, t.data as data_conclusao FROM chamados c JOIN tarefas t ON c.id = t.id_chamado WHERE t.realizado = True AND t.empresa_id = :eid")
+        df_lead = pd.read_sql(query_lead, engine, params={"eid": emp_id})
         if not df_lead.empty:
             df_lead['data_solicitacao'], df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_solicitacao']), pd.to_datetime(df_lead['data_conclusao'])
             df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days.apply(lambda x: max(x, 0))
