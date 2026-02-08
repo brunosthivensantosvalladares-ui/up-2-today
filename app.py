@@ -73,6 +73,17 @@ def inicializar_banco():
                     data_expiracao DATE DEFAULT (CURRENT_DATE + INTERVAL '7 days')
                 )
             """))
+            # NOVA TABELA DE USUÁRIOS (MOTORISTAS/EQUIPE)
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    id SERIAL PRIMARY KEY,
+                    login TEXT NOT NULL,
+                    senha TEXT NOT NULL,
+                    perfil TEXT DEFAULT 'motorista',
+                    empresa_id TEXT NOT NULL,
+                    UNIQUE(login, empresa_id)
+                )
+            """))
             try: conn.execute(text("ALTER TABLE tarefas ADD COLUMN IF NOT EXISTS empresa_id TEXT DEFAULT 'U2T_MATRIZ'"))
             except: pass
             try: conn.execute(text("ALTER TABLE chamados ADD COLUMN IF NOT EXISTS empresa_id TEXT DEFAULT 'U2T_MATRIZ'"))
@@ -189,6 +200,14 @@ if not st.session_state["logado"]:
                                 else:
                                     st.session_state.update({"logado": True, "perfil": "admin", "empresa": res[0]})
                                     logado_agora = True
+                            else:
+                                # 3. VERIFICAÇÃO DE USUÁRIOS DA EQUIPE (MOTORISTAS)
+                                u_equipe = conn.execute(text("""
+                                    SELECT login, senha, perfil, empresa_id FROM usuarios WHERE LOWER(login) = :u
+                                """), {"u": user_input}).fetchone()
+                                if u_equipe and u_equipe[1] == pw_input:
+                                    st.session_state.update({"logado": True, "perfil": u_equipe[2], "empresa": u_equipe[3]})
+                                    logado_agora = True
                     
                     if logado_agora:
                         if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
@@ -227,7 +246,7 @@ else:
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
-        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores"]
+        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores", "👥 Minha Equipe"]
 
     if "opcao_selecionada" not in st.session_state or st.session_state.opcao_selecionada not in opcoes:
         st.session_state.opcao_selecionada = opcoes[0]
@@ -441,3 +460,34 @@ else:
             with col_m2:
                 df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index()
                 st.line_chart(df_ev.set_index('data_conclusao'), color=COR_AZUL)
+
+    elif aba_ativa == "👥 Minha Equipe":
+        st.subheader("👥 Gestão de Equipe e Acessos")
+        st.info("💡 **Por que cadastrar motoristas?** Ao criar acessos para sua equipe, eles poderão abrir chamados diretamente pelo celular. O sistema separará automaticamente os dados de cada colaborador.")
+        
+        with st.expander("➕ Cadastrar Novo Integrante", expanded=True):
+            with st.form("form_novo_usuario", clear_on_submit=True):
+                col1, col2 = st.columns(2)
+                novo_u = col1.text_input("Login (Ex: pedro.motorista)")
+                nova_s = col2.text_input("Senha de Acesso", type="password")
+                if st.form_submit_button("Criar Acesso"):
+                    if novo_u and nova_s:
+                        try:
+                            with engine.connect() as conn:
+                                conn.execute(text("INSERT INTO usuarios (login, senha, empresa_id) VALUES (:u, :s, :eid)"), 
+                                             {"u": novo_u.lower(), "s": nova_s, "eid": emp_id})
+                                conn.commit()
+                            st.success(f"✅ Acesso para '{novo_u}' criado com sucesso!")
+                            st.rerun()
+                        except:
+                            st.error("Erro: Este login já existe ou houve um problema com o banco.")
+                    else:
+                        st.warning("Preencha todos os campos.")
+
+        st.divider()
+        st.subheader("Integrantes Cadastrados")
+        df_users = pd.read_sql(text("SELECT login, perfil as cargo FROM usuarios WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
+        if not df_users.empty:
+            st.dataframe(df_users, use_container_width=True, hide_index=True)
+        else:
+            st.write("Nenhum integrante cadastrado ainda.")
