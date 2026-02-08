@@ -173,9 +173,14 @@ if not st.session_state["logado"]:
                         st.session_state.update({"logado": True, "perfil": masters[user_input]["perfil"], "empresa": masters[user_input]["empresa"]})
                         logado_agora = True
                     else:
-                        # 2. VERIFICAÇÃO NO BANCO DE DADOS (CLIENTES SAAS)
+                        # 2. VERIFICAÇÃO NO BANCO DE DADOS (CLIENTES SAAS - AGORA ACEITA E-MAIL OU NOME)
                         with engine.connect() as conn:
-                            res = conn.execute(text("SELECT nome, email, senha, data_expiracao, status_assinatura FROM empresa WHERE email = :e"), {"e": user_input}).fetchone()
+                            res = conn.execute(text("""
+                                SELECT nome, email, senha, data_expiracao, status_assinatura 
+                                FROM empresa 
+                                WHERE LOWER(email) = :u OR LOWER(nome) = :u
+                            """), {"u": user_input}).fetchone()
+                            
                             if res and res[2] == pw_input:
                                 hoje = datetime.now().date()
                                 # TRAVA DE SEGURANÇA: DATA DE EXPIRAÇÃO
