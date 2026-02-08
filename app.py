@@ -463,7 +463,7 @@ else:
 
     elif aba_ativa == "👥 Minha Equipe":
         st.subheader("👥 Gestão de Equipe e Acessos")
-        st.info("💡 **Por que cadastrar motoristas?** Ao criar acessos para sua equipe, eles poderão abrir chamados diretamente pelo celular. O sistema separará automaticamente os dados de cada colaborador.")
+        st.info("💡 **Dica profissional:** Para editar senhas, altere diretamente na tabela. Para excluir, marque a caixa 'Exc' e clique no botão abaixo.")
         
         with st.expander("➕ Cadastrar Novo Integrante", expanded=True):
             with st.form("form_novo_usuario", clear_on_submit=True):
@@ -478,6 +478,7 @@ else:
                                              {"u": novo_u.lower(), "s": nova_s, "eid": emp_id})
                                 conn.commit()
                             st.success(f"✅ Acesso para '{novo_u}' criado com sucesso!")
+                            time_module.sleep(1.5)
                             st.rerun()
                         except:
                             st.error("Erro: Este login já existe ou houve um problema com o banco.")
@@ -486,8 +487,45 @@ else:
 
         st.divider()
         st.subheader("Integrantes Cadastrados")
-        df_users = pd.read_sql(text("SELECT login, perfil as cargo FROM usuarios WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
+        df_users = pd.read_sql(text("SELECT id, login, senha, perfil as cargo FROM usuarios WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
+        
         if not df_users.empty:
-            st.dataframe(df_users, use_container_width=True, hide_index=True)
+            df_users['Exc'] = False
+            # EDITOR DE DADOS PROFISSIONAL PARA A EQUIPE
+            ed_users = st.data_editor(
+                df_users[['Exc', 'login', 'senha', 'cargo', 'id']], 
+                hide_index=True, 
+                use_container_width=True,
+                column_config={
+                    "id": None, # Esconde o ID
+                    "Exc": st.column_config.CheckboxColumn("Excluir", width="small"),
+                    "senha": st.column_config.TextColumn("Senha", help="Altere a senha aqui e salve"),
+                    "cargo": st.column_config.SelectboxColumn("Cargo", options=["motorista", "admin"])
+                },
+                key="editor_equipe"
+            )
+
+            # LÓGICA DE EXCLUSÃO
+            if st.button("🗑️ Excluir Selecionados da Equipe"):
+                usuarios_para_deletar = ed_users[ed_users['Exc'] == True]['id'].tolist()
+                if usuarios_para_deletar:
+                    with engine.connect() as conn:
+                        for u_id in usuarios_para_deletar:
+                            conn.execute(text("DELETE FROM usuarios WHERE id = :id"), {"id": int(u_id)})
+                        conn.commit()
+                    st.warning("Integrantes removidos.")
+                    time_module.sleep(1)
+                    st.rerun()
+
+            # LÓGICA DE EDIÇÃO (SALVAMENTO AUTOMÁTICO AO CLICAR FORA)
+            if st.session_state.editor_equipe["edited_rows"]:
+                with engine.connect() as conn:
+                    for idx, changes in st.session_state.editor_equipe["edited_rows"].items():
+                        user_db_id = int(df_users.iloc[idx]['id'])
+                        for col, val in changes.items():
+                            if col != 'Exc':
+                                conn.execute(text(f"UPDATE usuarios SET {col} = :v WHERE id = :i"), {"v": str(val), "i": user_db_id})
+                    conn.commit()
+                st.toast("Dados da equipe atualizados!", icon="👥")
         else:
             st.write("Nenhum integrante cadastrado ainda.")
