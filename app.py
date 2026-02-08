@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, text
 from datetime import datetime, time, timedelta
 from io import BytesIO
 from fpdf import FPDF
+import time as time_module # Importado para evitar conflito com datetime.time
 
 # --- CONFIGURAÇÕES DE MARCA ---
 NOME_SISTEMA = "Up 2 Today"
@@ -60,6 +61,18 @@ def inicializar_banco():
         with engine.connect() as conn:
             conn.execute(text("CREATE TABLE IF NOT EXISTS tarefas (id SERIAL PRIMARY KEY, data TEXT, executor TEXT, prefixo TEXT, inicio_disp TEXT, fim_disp TEXT, descricao TEXT, area TEXT, turno TEXT, realizado BOOLEAN DEFAULT FALSE, id_chamado INTEGER, origem TEXT, empresa_id TEXT)"))
             conn.execute(text("CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, motorista TEXT, prefixo TEXT, descricao TEXT, data_solicitacao TEXT, status TEXT DEFAULT 'Pendente', empresa_id TEXT)"))
+            # NOVA TABELA DE EMPRESAS PARA SAAS
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS empresa (
+                    id SERIAL PRIMARY KEY,
+                    nome TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    senha TEXT NOT NULL,
+                    data_cadastro DATE DEFAULT CURRENT_DATE,
+                    status_assinatura TEXT DEFAULT 'trial',
+                    data_expiracao DATE DEFAULT (CURRENT_DATE + INTERVAL '7 days')
+                )
+            """))
             try: conn.execute(text("ALTER TABLE tarefas ADD COLUMN IF NOT EXISTS empresa_id TEXT DEFAULT 'U2T_MATRIZ'"))
             except: pass
             try: conn.execute(text("ALTER TABLE chamados ADD COLUMN IF NOT EXISTS empresa_id TEXT DEFAULT 'U2T_MATRIZ'"))
@@ -129,6 +142,7 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
 
 # --- 3. LÓGICA DE LOGIN ---
 if "logado" not in st.session_state: st.session_state["logado"] = False
+if "aba_login" not in st.session_state: st.session_state["aba_login"] = "Acessar"
 
 if not st.session_state["logado"]:
     _, col_login, _ = st.columns([1.2, 1, 1.2])
@@ -136,27 +150,71 @@ if not st.session_state["logado"]:
         placeholder_topo = st.empty()
         placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>U</span><span style='color: {COR_VERDE};'>2T</span></h1>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
-        with st.container(border=True):
-            user = st.text_input("Usuário", key="u_log").lower()
-            pw = st.text_input("Senha", type="password", key="p_log")
-            if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
-                # MAPA DE USUÁRIOS E SUAS RESPECTIVAS EMPRESAS
-                users_db = {
-                    "bruno": {"pw": "master789", "perfil": "admin", "empresa": "U2T_MATRIZ"},
-                    "cliente_demo": {"pw": "demo123", "perfil": "admin", "empresa": "EMPRESA_DEMO"},
-                    "motorista": {"pw": "12345", "perfil": "motorista", "empresa": "U2T_MATRIZ"}
-                }
-                if user in users_db and users_db[user]["pw"] == pw:
-                    if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
-                    import time
-                    with st.spinner(""):
-                        # ANIMAÇÃO: MAIÚSCULAS COM CORES DO LOGOTIPO
-                        for t in ["UP", "UP 2", "UP 2 T", "UP 2 TOD", "UP 2 TODA", "UP 2 TODAY"]:
-                            placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>{t[:2]}</span><span style='color: {COR_VERDE};'>{t[2:]}</span></h1>", unsafe_allow_html=True)
-                            time.sleep(0.05)
-                    st.session_state.update({"logado": True, "perfil": users_db[user]["perfil"], "empresa": users_db[user]["empresa"]})
-                    st.rerun()
-                else: st.error("Usuário ou senha incorretos")
+        
+        # ALTERNÂNCIA ENTRE LOGIN E CADASTRO
+        aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
+        
+        if aba == "Acessar":
+            with st.container(border=True):
+                user_input = st.text_input("E-mail ou Usuário", key="u_log").lower()
+                pw_input = st.text_input("Senha", type="password", key="p_log")
+                if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
+                    engine = get_engine()
+                    inicializar_banco()
+                    
+                    # 1. VERIFICAÇÃO DE USUÁRIOS MASTER (ESTÁTICOS)
+                    masters = {
+                        "bruno": {"pw": "master789", "perfil": "admin", "empresa": "U2T_MATRIZ"},
+                        "motorista": {"pw": "12345", "perfil": "motorista", "empresa": "U2T_MATRIZ"}
+                    }
+                    
+                    logado_agora = False
+                    if user_input in masters and masters[user_input]["pw"] == pw_input:
+                        st.session_state.update({"logado": True, "perfil": masters[user_input]["perfil"], "empresa": masters[user_input]["empresa"]})
+                        logado_agora = True
+                    else:
+                        # 2. VERIFICAÇÃO NO BANCO DE DADOS (CLIENTES SAAS)
+                        with engine.connect() as conn:
+                            res = conn.execute(text("SELECT nome, email, senha, data_expiracao, status_assinatura FROM empresa WHERE email = :e"), {"e": user_input}).fetchone()
+                            if res and res[2] == pw_input:
+                                hoje = datetime.now().date()
+                                # TRAVA DE SEGURANÇA: DATA DE EXPIRAÇÃO
+                                if res[3] < hoje and res[4] != 'ativo':
+                                    st.error(f"⚠️ O período de teste da empresa '{res[0]}' expirou em {res[3].strftime('%d/%m/%Y')}. Entre em contato para ativar.")
+                                else:
+                                    st.session_state.update({"logado": True, "perfil": "admin", "empresa": res[0]})
+                                    logado_agora = True
+                    
+                    if logado_agora:
+                        if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
+                        with st.spinner(""):
+                            for t in ["UP", "UP 2", "UP 2 T", "UP 2 TOD", "UP 2 TODA", "UP 2 TODAY"]:
+                                placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span style='color: {COR_AZUL};'>{t[:2]}</span><span style='color: {COR_VERDE};'>{t[2:]}</span></h1>", unsafe_allow_html=True)
+                                time_module.sleep(0.05)
+                        st.rerun()
+                    else:
+                        if not st.session_state.get("error_shown"): st.error("Dados incorretos ou conta inexistente.")
+
+        else: # ABA CRIAR CONTA
+            with st.container(border=True):
+                st.markdown(f"<h4 style='color:{COR_AZUL}'>🚀 7 Dias Grátis</h4>", unsafe_allow_html=True)
+                n_emp = st.text_input("Nome da Empresa")
+                n_ema = st.text_input("E-mail Corporativo")
+                n_sen = st.text_input("Senha", type="password")
+                if st.button("Criar minha conta agora", use_container_width=True, type="primary"):
+                    if n_emp and n_ema and n_sen:
+                        try:
+                            engine = get_engine()
+                            inicializar_banco()
+                            expira = datetime.now().date() + timedelta(days=7)
+                            with engine.connect() as conn:
+                                conn.execute(text("INSERT INTO empresa (nome, email, senha, data_expiracao) VALUES (:n, :e, :s, :d)"), {"n": n_emp, "e": n_ema, "s": n_sen, "d": expira})
+                                conn.commit()
+                            st.success("✅ Conta criada! Agora faça login na aba 'Acessar'.")
+                        except Exception as e:
+                            st.error("Este e-mail já está cadastrado.")
+                    else: st.warning("Preencha todos os campos.")
+
 else:
     engine = get_engine(); inicializar_banco()
     emp_id = st.session_state["empresa"] # Filtro global
@@ -228,7 +286,7 @@ else:
                     with engine.connect() as conn:
                         conn.execute(text("INSERT INTO chamados (motorista, prefixo, descricao, data_solicitacao, status, empresa_id) VALUES ('motorista', :p, :d, :dt, 'Pendente', :eid)"), {"p": p, "d": d, "dt": str(datetime.now().date()), "eid": emp_id})
                         conn.commit()
-                    st.success("✅ Solicitação enviada com sucesso! Acompanhe o status na aba ao lado.")
+                        st.success("✅ Solicitação enviada com sucesso! Acompanhe o status na aba ao lado.")
 
     elif aba_ativa == "📜 Status":
         st.subheader("📜 Status dos Meus Veículos")
@@ -258,9 +316,9 @@ else:
 
         st.info("💡 **Aviso:** O salvamento agora é automático ao editar horários ou marcar OK.")
         df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC"), engine, params={"eid": emp_id})
-        hoje, amanha = datetime.now().date(), datetime.now().date() + timedelta(days=1)
+        hoje_input, amanha = datetime.now().date(), datetime.now().date() + timedelta(days=1)
         c_per, c_pdf, c_xls = st.columns([0.6, 0.2, 0.2])
-        with c_per: p_sel = st.date_input("Filtrar Período", [hoje, amanha], key="dt_filter")
+        with c_per: p_sel = st.date_input("Filtrar Período", [hoje_input, amanha], key="dt_filter")
         if not df_a.empty and len(p_sel) == 2:
             df_a['data'] = pd.to_datetime(df_a['data']).dt.date
             df_f = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])]
@@ -292,7 +350,7 @@ else:
                                         try: conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(row['id_chamado'])})
                                         except: pass
                                 conn.commit()
-                            st.toast("Alteração salva!", icon="✅")
+                                st.toast("Alteração salva!", icon="✅")
 
     elif aba_ativa == "📋 Cadastro Direto":
         st.subheader("📝 Agendamento Direto")
@@ -312,7 +370,7 @@ else:
                 with engine.connect() as conn:
                     conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem, empresa_id) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, :tu, 'Direto', :eid)"), {"dt": str(d_i), "ex": e_i, "pr": p_i, "ti": t_ini, "tf": t_fim, "ds": ds_i, "ar": a_i, "tu": t_i, "eid": emp_id})
                     conn.commit()
-                st.success("✅ Serviço cadastrado!"); st.rerun()
+                    st.success("✅ Serviço cadastrado!"); st.rerun()
         st.divider(); st.subheader("📋 Lista de serviços")
         df_lista = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC, id DESC"), engine, params={"eid": emp_id})
         if not df_lista.empty:
