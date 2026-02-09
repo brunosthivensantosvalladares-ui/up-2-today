@@ -201,7 +201,7 @@ if not st.session_state["logado"]:
                                     st.session_state.update({"logado": True, "perfil": "admin", "empresa": res[0], "usuario_ativo": res[0]})
                                     logado_agora = True
                             else:
-                                # 3. VERIFICAÇÃO DE USUÁRIOS DA EQUIPE (MOTORISTAS OU OUTROS ADMINS)
+                                # 3. VERIFICAÇÃO DE USUÁRIOS DA EQUIPE (MOTORISTAS OU OUTROS ADMINS SECUNDÁRIOS)
                                 u_equipe = conn.execute(text("""
                                     SELECT login, senha, perfil, empresa_id FROM usuarios WHERE LOWER(login) = :u
                                 """), {"u": user_input}).fetchone()
@@ -307,7 +307,6 @@ else:
             p, d = st.text_input("Prefixo do Veículo"), st.text_area("Descrição do Problema")
             if st.form_submit_button("Enviar para Oficina"):
                 if p and d:
-                    # Captura o login de quem está logado para salvar no chamado
                     nome_motorista = st.session_state.get("usuario_ativo", "Motorista")
                     with engine.connect() as conn:
                         conn.execute(text("INSERT INTO chamados (motorista, prefixo, descricao, data_solicitacao, status, empresa_id) VALUES (:m, :p, :d, :dt, 'Pendente', :eid)"), {"m": nome_motorista, "p": p, "d": d, "dt": str(datetime.now().date()), "eid": emp_id})
@@ -340,9 +339,9 @@ else:
             st.warning("⚠️ O banco de dados está iniciando. Aguarde alguns segundos.")
             st.stop()
 
-        # INSTRUÇÃO INTUITIVA PARA LOGÍSTICA
+        # INSTRUÇÃO INTUITIVA PARA LOGÍSTICA E PCM
         st.success("✍️ **Dica para Logística:** Clique diretamente nas colunas de **Início** ou **Fim** para preencher a disponibilidade. O sistema salva automaticamente ao sair da célula.")
-        st.success("✍️ **Dica para o PCM:** Clique diretamente nas colunas de **Área** ou **Executor** para alterar/definir, caso tenha esquecido durante a aprovação do chamado. O sistema salva automaticamente ao sair da célula.")
+        st.success("✍️ **Dica para o PCM:** Clique diretamente nas colunas de **Área** ou **Executor** para alterar/definir o setor e o mecânico. O sistema salva automaticamente ao sair da célula.")
         
         # 1. Carrega os dados
         df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC"), engine, params={"eid": emp_id})
@@ -393,11 +392,12 @@ else:
                         st.markdown(f"<p class='area-header'>📍 {area}</p>", unsafe_allow_html=True)
                         df_editor_base = df_area_f.set_index('id')
                         
-                        # Colunas de Início/Fim renomeadas para preenchimento intuitivo
+                        # Colunas configuradas: 'area' adicionada para edição direta
                         edited_df = st.data_editor(
-                            df_editor_base[['realizado', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']], 
+                            df_editor_base[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']], 
                             column_config={
                                 "realizado": st.column_config.CheckboxColumn("OK", width="small"),
+                                "area": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS),
                                 "turno": st.column_config.SelectboxColumn("Turno", options=LISTA_TURNOS),
                                 "inicio_disp": st.column_config.TextColumn("Início (Preencher)", help="Digite o horário de início"),
                                 "fim_disp": st.column_config.TextColumn("Fim (Preencher)", help="Digite o horário de término"),
@@ -407,17 +407,17 @@ else:
                             hide_index=False, use_container_width=True, key=f"ed_ted_{d}_{area}"
                         )
 
-                        if not edited_df.equals(df_editor_base[['realizado', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']]):
+                        if not edited_df.equals(df_editor_base[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']]):
                             with engine.connect() as conn:
                                 for row_id, row in edited_df.iterrows():
                                     conn.execute(text("""
                                         UPDATE tarefas SET 
-                                        realizado = :r, turno = :t, prefixo = :p, 
+                                        realizado = :r, area = :ar, turno = :t, prefixo = :p, 
                                         inicio_disp = :i, fim_disp = :f, 
                                         executor = :ex, descricao = :ds 
                                         WHERE id = :id
                                     """), {
-                                        "r": bool(row['realizado']), "t": str(row['turno']), 
+                                        "r": bool(row['realizado']), "ar": str(row['area']), "t": str(row['turno']), 
                                         "p": str(row['prefixo']), "i": str(row['inicio_disp']), 
                                         "f": str(row['fim_disp']), "ex": str(row['executor']), 
                                         "ds": str(row['descricao']), "id": int(row_id)
