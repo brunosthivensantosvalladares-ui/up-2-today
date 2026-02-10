@@ -22,7 +22,7 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA FORÇAR BRANCO EM ITENS SELECIONADOS, ÍCONES E BOTÕES ---
+# --- CSS FINAL: BRANCO TOTAL EM ITENS SELECIONADOS, ÍCONES E BOTÕES ---
 st.markdown(f"""
     <style>
     /* Força fundo branco absoluto no app */
@@ -53,19 +53,21 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* TEXTO BRANCO: Botões e Calendário (Mês/Ano e Selecionados) */
-    button p, button span, button div, 
-    div[data-baseweb="calendar"] [aria-selected="true"],
-    div[data-baseweb="calendar"] [aria-live="polite"] {{
+    /* TEXTO BRANCO: Botões, Olhinho e Topo do Calendário */
+    button p, button span, button div, button svg,
+    div[data-baseweb="calendar"] [aria-live="polite"],
+    div[data-baseweb="calendar"] [role="presentation"] svg {{
         color: #FFFFFF !important;
+        fill: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         opacity: 1 !important;
     }}
 
-    /* ÍCONES BRANCOS: Olhinho e Setas do Calendário */
-    button svg, div[data-baseweb="calendar"] [role="presentation"] svg {{
-        fill: #FFFFFF !important;
+    /* ALVO DEFINITIVO: NÚMEROS SELECIONADOS NO CALENDÁRIO (BRANCO PURO) */
+    div[data-baseweb="calendar"] [aria-selected="true"] div,
+    div[data-baseweb="calendar"] [aria-selected="true"] {{
         color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
     }}
 
     /* LOGO: Azul Marinho no U e Verde no 2T */
