@@ -169,10 +169,20 @@ if not st.session_state["logado"]:
         aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
         
         if aba == "Acessar":
-            with st.container(border=True):
-                user_input = st.text_input("E-mail ou Usuário", key="u_log").lower()
-                pw_input = st.text_input("Senha", type="password", key="p_log")
+            # --- SUBSTITUA APENAS O BLOCO DO BOTÃO DE ACESSO ---
                 if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
+                    # O CSS abaixo força a cor branca no texto do botão mesmo em modos escuros agressivos
+                    st.markdown(f"""
+                        <style>
+                        div[data-testid="stButton"] button {{
+                            background-color: {COR_AZUL} !important;
+                            color: #FFFFFF !important;
+                            border: 2px solid {COR_VERDE} !important;
+                            -webkit-text-fill-color: #FFFFFF !important;
+                        }}
+                        </style>
+                    """, unsafe_allow_html=True)
+                    
                     engine = get_engine()
                     inicializar_banco()
                     
