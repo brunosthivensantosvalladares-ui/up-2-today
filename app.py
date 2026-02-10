@@ -36,6 +36,16 @@ st.markdown(f"""
         -webkit-text-fill-color: #31333F !important;
     }}
 
+    /* CENTRALIZAÇÃO DOS BOTÕES DE LOGIN/CADASTRO */
+    div[data-testid="stRadio"] > div {{
+        display: flex;
+        justify-content: center;
+        background-color: #ffffff;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }}
+
     /* BOTÃO: Fundo Azul, Texto BRANCO FIXO */
     .stButton>button {{
         background-color: #1b224c !important;
@@ -49,16 +59,6 @@ st.markdown(f"""
     /* LOGO: Azul Marinho no U e Verde no 2T */
     .logo-u {{ color: #1b224c !important; -webkit-text-fill-color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; -webkit-text-fill-color: #31ad64 !important; }}
-    
-    /* Estilização de métricas fixa */
-    div[data-testid="stMetric"] {{
-        background-color: #ffffff !important;
-        padding: 8px 12px;
-        border-radius: 8px;
-        border-left: 4px solid {COR_VERDE};
-        box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
-    }}
-    .area-header {{ color: {COR_VERDE} !important; font-weight: bold; font-size: 1.1rem; border-left: 5px solid {COR_AZUL}; padding-left: 10px; margin-top: 20px; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -173,10 +173,11 @@ if not st.session_state["logado"]:
     _, col_login, _ = st.columns([1.2, 1, 1.2])
     with col_login:
         placeholder_topo = st.empty()
+        # Logotipo centralizado com cores travadas
         placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span class='logo-u'>U</span><span class='logo-2t'>2T</span></h1>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
         
-        # ALTERNÂNCIA ENTRE LOGIN E CADASTRO
+        # ALTERNÂNCIA ENTRE LOGIN E CADASTRO (Centralizado pelo CSS acima)
         aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
         
         if aba == "Acessar":
