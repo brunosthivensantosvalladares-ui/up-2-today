@@ -25,37 +25,31 @@ st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", pa
 # --- CSS PARA TEMA CLARO FIXO E LOGOTIPO COLORIDO ---
 st.markdown(f"""
     <style>
-    /* Força o fundo branco e ignora o modo escuro */
+    /* Força o fundo branco e ignora o modo escuro do dispositivo */
     .stApp {{ background-color: #ffffff !important; }}
     
-    /* Textos do sistema em cinza escuro para leitura */
-    p, label, span, .stMarkdown {{ color: #31333F !important; }}
-    
-    /* EXCEÇÃO PARA O LOGOTIPO: Mantém as cores originais */
-    .logo-u {{ color: {COR_AZUL} !important; font-weight: bold; }}
-    .logo-2t {{ color: {COR_VERDE} !important; font-weight: bold; }}
+    /* Garante que os textos e rótulos fiquem em cinza escuro para leitura no branco */
+    h1, h2, h3, h4, h5, h6, p, label, span, div, .stMarkdown {{
+        color: #31333F !important;
+    }}
 
-    /* Botão Primário Up 2 Today */
+    /* Estilo fixo do Botão: Fundo Azul Marinho, Letras Brancas e Borda Verde */
     .stButton>button[kind="primary"] {{ 
         background-color: {COR_AZUL} !important; 
         color: white !important; 
         border-radius: 8px !important; 
-        border: none !important;
+        border: 2px solid {COR_VERDE} !important;
         font-weight: bold !important; 
-    }}
-    
-    /* Cabeçalhos de área */
-    .area-header {{ 
-        color: {COR_VERDE} !important; 
-        border-left: 5px solid {COR_AZUL} !important; 
+        width: 100%; 
     }}
 
-    /* Métricas fixas */
-    div[data-testid="stMetric"] {{
-        background-color: #ffffff !important;
-        border-left: 4px solid {COR_VERDE} !important;
-        box-shadow: 1px 1px 3px rgba(0,0,0,0.1) !important;
-    }}
+    /* Classes específicas para proteger as cores do Logo no topo */
+    .logo-u {{ color: {COR_AZUL} !important; font-weight: bold !important; }}
+    .logo-2t {{ color: {COR_VERDE} !important; font-weight: bold !important; }}
+    
+    /* Sidebar e Tabelas fixas no branco */
+    [data-testid="stSidebar"], [data-testid="stHeader"] {{ background-color: #ffffff !important; }}
+    div[data-testid="stMetric"] {{ background-color: #ffffff !important; border-left: 4px solid {COR_VERDE} !important; box-shadow: 1px 1px 3px rgba(0,0,0,0.1) !important; }}
     </style>
 """, unsafe_allow_html=True)
 
