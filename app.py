@@ -63,11 +63,13 @@ st.markdown(f"""
         opacity: 1 !important;
     }}
 
-    /* ALVO DEFINITIVO: NÚMEROS SELECIONADOS NO CALENDÁRIO (BRANCO PURO) */
+    /* ALVO DEFINITIVO: NÚMEROS SELECIONADOS NO CALENDÁRIO (FIX TOTAL) */
+    div[data-baseweb="calendar"] [aria-selected="true"],
     div[data-baseweb="calendar"] [aria-selected="true"] div,
-    div[data-baseweb="calendar"] [aria-selected="true"] {{
+    div[data-baseweb="calendar"] [aria-selected="true"] span {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
+        opacity: 1 !important;
     }}
 
     /* LOGO: Azul Marinho no U e Verde no 2T */
