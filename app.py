@@ -22,7 +22,7 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA FORÇAR TEXTO E ÍCONES BRANCOS NOS BOTÕES ---
+# --- CSS PARA FORÇAR TUDO EM BRANCO (BOTÕES, ÍCONES E CALENDÁRIO) ---
 st.markdown(f"""
     <style>
     /* Força fundo branco absoluto no app */
@@ -60,10 +60,16 @@ st.markdown(f"""
         opacity: 1 !important;
     }}
 
-    /* FORÇA O ÍCONE DO OLHINHO (SVG) A FICAR BRANCO */
-    button svg {{
+    /* FORÇA O ÍCONE DO OLHINHO E DO CALENDÁRIO (SVG) A FICAR BRANCO */
+    button svg, div[data-testid="stDateInput"] svg {{
         fill: #FFFFFF !important;
         color: #FFFFFF !important;
+    }}
+
+    /* AJUSTE PARA OS NÚMEROS E TEXTOS DENTRO DO FILTRO DE DATA */
+    div[data-testid="stDateInput"] div {{
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
     }}
 
     /* LOGO: Azul Marinho no U e Verde no 2T */
