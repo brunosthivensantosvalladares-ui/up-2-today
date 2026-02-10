@@ -22,15 +22,15 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA TEMA CLARO FIXO E BOTÕES COM LETRAS BRANCAS ---
+# --- CSS PARA FORÇAR TEXTO BRANCO ABSOLUTO NOS BOTÕES ---
 st.markdown(f"""
     <style>
-    /* Força fundo branco absoluto */
+    /* Força fundo branco absoluto no app */
     html, body, [data-testid="stAppViewContainer"], .stApp {{
         background-color: #FFFFFF !important;
     }}
 
-    /* Garante visibilidade dos textos em cinza escuro */
+    /* Garante visibilidade dos textos gerais em cinza escuro */
     p, label, span, div, .stMarkdown, [data-testid="stText"] {{
         color: #31333F !important;
         -webkit-text-fill-color: #31333F !important;
@@ -46,17 +46,17 @@ st.markdown(f"""
         border: 1px solid #e0e0e0;
     }}
 
-    /* FIX TOTAL PARA BOTÕES: FORÇA LETRA BRANCA EM TODOS OS ESTADOS */
-    div[data-testid="stButton"] button, 
-    div[data-testid="stButton"] button:hover, 
-    div[data-testid="stButton"] button:active, 
-    div[data-testid="stButton"] button:focus {{
+    /* AÇÃO DEFINITIVA PARA BOTÕES: FORÇA O TEXTO BRANCO EM TUDO QUE ESTIVER DENTRO DELE */
+    button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
-        font-weight: bold !important;
+    }}
+
+    /* Alvo específico no parágrafo/texto que o Streamlit coloca dentro do botão */
+    button p, button span, button div {{
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
         opacity: 1 !important;
     }}
 
