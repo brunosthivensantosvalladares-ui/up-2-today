@@ -22,7 +22,7 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA FORÇAR TUDO EM BRANCO (BOTÕES, ÍCONES E CALENDÁRIO) ---
+# --- CSS PARA FORÇAR BRANCO EM BOTÕES, ÍCONES E CALENDÁRIO ---
 st.markdown(f"""
     <style>
     /* Força fundo branco absoluto no app */
@@ -46,30 +46,24 @@ st.markdown(f"""
         border: 1px solid #e0e0e0;
     }}
 
-    /* AÇÃO DEFINITIVA PARA BOTÕES: FORÇA O TEXTO BRANCO EM TUDO QUE ESTIVER DENTRO DELE */
+    /* AÇÃO DEFINITIVA PARA BOTÕES: FORÇA O TEXTO BRANCO */
     button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
     }}
 
-    /* Alvo específico no parágrafo/texto dentro do botão */
-    button p, button span, button div {{
+    /* Alvo específico no texto e ícones (olhinho e datas) dentro de botões/widgets */
+    button p, button span, button div, [data-testid="stDateInput"] div {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         opacity: 1 !important;
     }}
 
-    /* FORÇA O ÍCONE DO OLHINHO E DO CALENDÁRIO (SVG) A FICAR BRANCO */
-    button svg, div[data-testid="stDateInput"] svg {{
+    /* FORÇA O ÍCONE DO OLHINHO E ÍCONE DE CALENDÁRIO (SVG) A FICAR BRANCO */
+    button svg, [data-testid="stDateInput"] svg {{
         fill: #FFFFFF !important;
         color: #FFFFFF !important;
-    }}
-
-    /* AJUSTE PARA OS NÚMEROS E TEXTOS DENTRO DO FILTRO DE DATA */
-    div[data-testid="stDateInput"] div {{
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
     }}
 
     /* LOGO: Azul Marinho no U e Verde no 2T */
