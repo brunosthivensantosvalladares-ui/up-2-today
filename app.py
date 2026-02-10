@@ -22,43 +22,38 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS OTIMIZADO PARA CONTRASTE (TEMA CLARO/ESCURO) ---
+# --- CSS OTIMIZADO PARA TEMA ESCURO E CLARO (FORÇADO) ---
 st.markdown(f"""
     <style>
-    /* Remove cor de fundo fixa para usar o padrão do sistema */
-    .stApp {{ background-color: transparent; }}
+    /* Força o fundo a seguir o tema do sistema (evita o preto absoluto se não for o padrão) */
+    .stApp {{ background-color: transparent !important; }}
     
-    /* Botão Primário com borda verde sempre visível */
+    /* Garante que os rótulos (Labels) fiquem visíveis em qualquer tema */
+    label, p, span, .stMarkdown {{
+        color: inherit !important;
+    }}
+
+    /* Botão Primário Up 2 Today com Borda Verde para destaque no Escuro */
     .stButton>button[kind="primary"] {{ 
         background-color: {COR_AZUL} !important; 
         color: white !important; 
         border: 2px solid {COR_VERDE} !important;
-        border-radius: 8px; 
-        font-weight: bold; 
-        width: 100%; 
+        border-radius: 8px !important; 
+        font-weight: bold !important; 
     }}
 
-    /* Cabeçalhos de área com as cores da marca */
-    .area-header {{ 
-        color: {COR_VERDE}; 
-        font-weight: bold; 
-        font-size: 1.1rem; 
-        border-left: 5px solid {COR_AZUL}; 
-        padding-left: 10px; 
-        margin-top: 20px; 
-    }}
-
-    /* Métricas com fundo semi-transparente para adaptar ao tema */
+    /* Estilização das métricas para não "sumirem" no fundo escuro */
     div[data-testid="stMetric"] {{
-        padding: 8px 12px;
-        border-radius: 8px;
-        border-left: 4px solid {COR_VERDE};
-        background-color: rgba(128, 128, 128, 0.1);
+        background-color: rgba(128, 128, 128, 0.1) !important;
+        border-left: 4px solid {COR_VERDE} !important;
+        border-radius: 8px !important;
     }}
-    
-    /* Borda suave no formulário de Login */
-    [data-testid="stForm"] {{
-        border: 1px solid rgba(49, 173, 100, 0.3) !important;
+
+    /* Cabeçalhos de área */
+    .area-header {{ 
+        color: {COR_VERDE} !important; 
+        font-weight: bold !important; 
+        border-left: 5px solid {COR_AZUL} !important; 
     }}
     </style>
 """, unsafe_allow_html=True)
