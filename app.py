@@ -22,7 +22,7 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA FORÇAR BRANCO APENAS EM ITENS SELECIONADOS E BOTÕES ---
+# --- CSS PARA FORÇAR BRANCO EM ITENS SELECIONADOS, ÍCONES E BOTÕES ---
 st.markdown(f"""
     <style>
     /* Força fundo branco absoluto no app */
@@ -30,7 +30,7 @@ st.markdown(f"""
         background-color: #FFFFFF !important;
     }}
 
-    /* Garante visibilidade dos textos gerais em cinza escuro */
+    /* Textos gerais em cinza escuro para fundo branco */
     p, label, span, div, .stMarkdown, [data-testid="stText"] {{
         color: #31333F !important;
         -webkit-text-fill-color: #31333F !important;
@@ -46,29 +46,24 @@ st.markdown(f"""
         border: 1px solid #e0e0e0;
     }}
 
-    /* AÇÃO PARA BOTÕES: FORÇA O TEXTO BRANCO */
+    /* BOTÕES: Fundo Azul e Borda Verde */
     button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
     }}
 
-    /* Texto branco para Botões e Olhinho */
-    button p, button span, button div, button svg {{
-        color: #FFFFFF !important;
-        fill: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }}
-
-    /* CALENDÁRIO: APENAS O DIA SELECIONADO FICA BRANCO */
-    div[data-baseweb="calendar"] [aria-selected="true"] {{
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }}
-
-    /* SETAS E TEXTO DO TOPO DO CALENDÁRIO (Mês/Ano) EM BRANCO SOBRE O AZUL */
-    div[data-baseweb="calendar"] [role="presentation"] svg,
+    /* TEXTO BRANCO: Botões e Calendário (Mês/Ano e Selecionados) */
+    button p, button span, button div, 
+    div[data-baseweb="calendar"] [aria-selected="true"],
     div[data-baseweb="calendar"] [aria-live="polite"] {{
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        opacity: 1 !important;
+    }}
+
+    /* ÍCONES BRANCOS: Olhinho e Setas do Calendário */
+    button svg, div[data-baseweb="calendar"] [role="presentation"] svg {{
         fill: #FFFFFF !important;
         color: #FFFFFF !important;
     }}
