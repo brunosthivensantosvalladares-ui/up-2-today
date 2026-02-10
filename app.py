@@ -22,7 +22,7 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA TEMA CLARO FIXO E LOGOTIPO COLORIDO ---
+# --- CSS PARA TEMA CLARO FIXO E BOTÕES COM LETRAS BRANCAS ---
 st.markdown(f"""
     <style>
     /* Força fundo branco absoluto */
@@ -46,14 +46,18 @@ st.markdown(f"""
         border: 1px solid #e0e0e0;
     }}
 
-    /* BOTÃO: Fundo Azul, Texto BRANCO FIXO */
-    .stButton>button {{
+    /* FIX TOTAL PARA BOTÕES: FORÇA LETRA BRANCA EM TODOS OS ESTADOS */
+    div[data-testid="stButton"] button, 
+    div[data-testid="stButton"] button:hover, 
+    div[data-testid="stButton"] button:active, 
+    div[data-testid="stButton"] button:focus {{
         background-color: #1b224c !important;
         color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
         font-weight: bold !important;
-        -webkit-text-fill-color: #FFFFFF !important;
+        opacity: 1 !important;
     }}
 
     /* LOGO: Azul Marinho no U e Verde no 2T */
