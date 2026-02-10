@@ -24,7 +24,6 @@ st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", pa
 
 # --- CSS PARA UNIDADE VISUAL ---
 st.markdown(f"""
-st.markdown(f"""
     <style>
     .stApp {{ background-color: {COR_FUNDO}; }}
     /* Botão Primário Adaptativo */
