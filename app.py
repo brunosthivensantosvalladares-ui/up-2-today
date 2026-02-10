@@ -22,10 +22,13 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS OTIMIZADO PARA CONTRASTE TOTAL (TEMA CLARO/ESCURO) ---
+# --- CSS OTIMIZADO PARA CONTRASTE (TEMA CLARO/ESCURO) ---
 st.markdown(f"""
     <style>
-    /* Botão Primário Adaptativo com borda visível */
+    /* Remove cor de fundo fixa para usar o padrão do sistema */
+    .stApp {{ background-color: transparent; }}
+    
+    /* Botão Primário com borda verde sempre visível */
     .stButton>button[kind="primary"] {{ 
         background-color: {COR_AZUL} !important; 
         color: white !important; 
@@ -34,13 +37,8 @@ st.markdown(f"""
         font-weight: bold; 
         width: 100%; 
     }}
-    
-    /* Garante visibilidade das letras nos inputs para temas claros/escuros */
-    input {{
-        color: inherit !important;
-    }}
 
-    /* Ajuste para cabeçalhos de área */
+    /* Cabeçalhos de área com as cores da marca */
     .area-header {{ 
         color: {COR_VERDE}; 
         font-weight: bold; 
@@ -50,7 +48,7 @@ st.markdown(f"""
         margin-top: 20px; 
     }}
 
-    /* Métricas Adaptativas */
+    /* Métricas com fundo semi-transparente para adaptar ao tema */
     div[data-testid="stMetric"] {{
         padding: 8px 12px;
         border-radius: 8px;
@@ -58,9 +56,9 @@ st.markdown(f"""
         background-color: rgba(128, 128, 128, 0.1);
     }}
     
-    /* Borda de destaque para o formulário de Login */
+    /* Borda suave no formulário de Login */
     [data-testid="stForm"] {{
-        border: 1px solid {COR_VERDE} !important;
+        border: 1px solid rgba(49, 173, 100, 0.3) !important;
     }}
     </style>
 """, unsafe_allow_html=True)
