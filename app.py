@@ -22,7 +22,7 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA FORÇAR BRANCO EM BOTÕES, ÍCONES E INTERIOR DO CALENDÁRIO ---
+# --- CSS PARA FORÇAR BRANCO APENAS EM ITENS SELECIONADOS E BOTÕES ---
 st.markdown(f"""
     <style>
     /* Força fundo branco absoluto no app */
@@ -46,24 +46,29 @@ st.markdown(f"""
         border: 1px solid #e0e0e0;
     }}
 
-    /* AÇÃO DEFINITIVA PARA BOTÕES: FORÇA O TEXTO BRANCO */
+    /* AÇÃO PARA BOTÕES: FORÇA O TEXTO BRANCO */
     button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
     }}
 
-    /* Alvo: Texto e números dentro de botões e seletores de data (incluindo o calendário aberto) */
-    button p, button span, button div, 
-    div[data-baseweb="calendar"] button,
-    div[data-baseweb="calendar"] div {{
+    /* Texto branco para Botões e Olhinho */
+    button p, button span, button div, button svg {{
         color: #FFFFFF !important;
+        fill: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
-        opacity: 1 !important;
     }}
 
-    /* FORÇA O ÍCONE DO OLHINHO E SETAS DO CALENDÁRIO A FICAR BRANCO */
-    button svg, div[data-baseweb="calendar"] svg {{
+    /* CALENDÁRIO: APENAS O DIA SELECIONADO FICA BRANCO */
+    div[data-baseweb="calendar"] [aria-selected="true"] {{
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }}
+
+    /* SETAS E TEXTO DO TOPO DO CALENDÁRIO (Mês/Ano) EM BRANCO SOBRE O AZUL */
+    div[data-baseweb="calendar"] [role="presentation"] svg,
+    div[data-baseweb="calendar"] [aria-live="polite"] {{
         fill: #FFFFFF !important;
         color: #FFFFFF !important;
     }}
