@@ -22,39 +22,30 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA TEMA CLARO FIXO, BARRA LATERAL E CALENDÁRIO ---
+# --- CSS ATUALIZADO: SIDEBAR CINZA E TRAVA DE BRANCO ---
 st.markdown(f"""
     <style>
-    /* Força fundo branco absoluto no app principal */
-    html, body, [data-testid="stAppViewContainer"], .stApp {{
-        background-color: #FFFFFF !important;
+    /* 1. Fundo branco no app e cinza na sidebar */
+    html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
+    [data-testid="stSidebar"] {{ background-color: #E0E0E1 !important; }}
+
+    /* 2. Textos gerais em cinza escuro */
+    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ 
+        color: #31333F !important; 
+        -webkit-text-fill-color: #31333F !important; 
     }}
 
-    /* AJUSTE DA BARRA LATERAL (SIDEBAR) */
-    [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {{
-        background-color: #F4F7F6 !important;
-    }}
+    /* 3. Centralização dos botões de Login/Cadastro */
+    div[data-testid="stRadio"] > div {{ display: flex; justify-content: center; }}
 
-    /* Textos gerais em cinza escuro para fundo claro */
-    p, label, span, div, .stMarkdown, [data-testid="stText"] {{
-        color: #31333F !important;
-        -webkit-text-fill-color: #31333F !important;
-    }}
-
-    /* CENTRALIZAÇÃO DOS BOTÕES DE LOGIN/CADASTRO */
-    div[data-testid="stRadio"] > div {{
-        display: flex;
-        justify-content: center;
-    }}
-
-    /* BOTÕES: Fundo Azul e Borda Verde */
+    /* 4. Botões: Fundo Azul e Borda Verde */
     button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
     }}
 
-    /* TEXTO BRANCO: Botões, Olhinho e Topo do Calendário */
+    /* 5. Texto Branco: Botões, Olhinho e Topo do Calendário */
     button p, button span, button div, button svg,
     div[data-baseweb="calendar"] [aria-live="polite"],
     div[data-baseweb="calendar"] [role="presentation"] svg {{
@@ -63,7 +54,7 @@ st.markdown(f"""
         -webkit-text-fill-color: #FFFFFF !important;
     }}
 
-    /* ATAQUE DIRETO AO CALENDÁRIO (Células de Seleção) */
+    /* 6. ATAQUE FINAL CALENDÁRIO: Branco nos dias selecionados */
     [data-baseweb="calendar"] [class*="selected"],
     [data-baseweb="calendar"] [class*="Highlighted"],
     [data-baseweb="calendar"] [aria-selected="true"],
@@ -73,7 +64,7 @@ st.markdown(f"""
         fill: #FFFFFF !important;
     }}
 
-    /* LOGO: Azul Marinho no U e Verde no 2T */
+    /* 7. Logotipo U2T */
     .logo-u {{ color: #1b224c !important; -webkit-text-fill-color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; -webkit-text-fill-color: #31ad64 !important; }}
     </style>
