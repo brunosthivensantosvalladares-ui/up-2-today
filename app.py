@@ -22,56 +22,50 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS FINAL: SIDEBAR CINZA #DFDFDF E CORREÇÃO DE ERRO ---
+# --- CSS FINAL: SIDEBAR #DFDFDF, CALENDÁRIO E ABAS EM DESTAQUE ---
 st.markdown(f"""
     <style>
-    /* 1. FUNDOS: App Branco e Sidebar Cinza #DFDFDF */
+    /* 1. FUNDOS E SIDEBAR */
     html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ background-color: #DFDFDF !important; }}
 
-    /* 2. TEXTOS: Garante legibilidade em cinza escuro */
-    p, label, span, div, .stMarkdown, [data-testid="stText"] {{
-        color: #31333F !important;
-    }}
+    /* 2. TEXTOS GERAIS */
+    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
 
-    /* 3. CENTRALIZAÇÃO DOS BOTÕES DE LOGIN/CADASTRO */
-    div[data-testid="stRadio"] > div {{
-        display: flex;
-        justify-content: center;
-        background-color: #ffffff;
-        padding: 10px;
-        border-radius: 10px;
-        border: 1px solid #e0e0e0;
-    }}
-
-    /* 4. BOTÕES: Fundo Azul Marinho e Letras Brancas */
-    button[kind="primary"], button[kind="secondary"], button {{
+    /* 3. BOTÕES DAS ABAS (DESTAQUE PARA O ATIVO) */
+    /* Botão Inativo (Secondary) */
+    button[kind="secondary"] {{
         background-color: #1b224c !important;
-        border: 2px solid #31ad64 !important;
-        border-radius: 8px !important;
+        border: 2px solid #1b224c !important;
         color: #FFFFFF !important;
     }}
 
-    /* Texto branco absoluto dentro dos botões */
-    button p, button span, button div {{
+    /* Botão Ativo (Primary) - AGORA EM VERDE PARA DESTAQUE */
+    button[kind="primary"] {{
+        background-color: #31ad64 !important;
+        border: 2px solid #1b224c !important;
         color: #FFFFFF !important;
+        font-weight: bold !important;
     }}
 
-    /* 5. ÍCONES BRANCOS: Olhinho da senha e ícone do calendário */
-    button svg, [data-testid="stDateInput"] svg {{
-        fill: #FFFFFF !important;
-        color: #FFFFFF !important;
-    }}
+    /* Garante texto branco em ambos */
+    button p, button span, button div {{ color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; }}
 
-    /* 6. CALENDÁRIO: FUNDO VERDE PARA VISIBILIDADE DOS NÚMEROS */
+    /* 4. ÍCONES BRANCOS */
+    button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
+
+    /* 5. CALENDÁRIO PADRONIZADO (AZUL COM BORDA VERDE) */
     div[data-baseweb="calendar"] [aria-selected="true"],
     div[data-baseweb="calendar"] [class*="Selected"],
     div[data-baseweb="calendar"] [class*="Highlighted"] {{
-        background-color: #31ad64 !important;
-        background: #31ad64 !important;
+        background-color: #1b224c !important;
+        border: 2px solid #31ad64 !important;
+        border-radius: 50% !important;
     }}
+    div[data-baseweb="calendar"] [aria-selected="true"] * {{ color: #FFFFFF !important; }}
 
-    /* 7. LOGOTIPO: Cores da Marca */
+    /* 6. LOGIN E LOGOTIPO */
+    div[data-testid="stRadio"] > div {{ display: flex; justify-content: center; background-color: #ffffff; padding: 10px; border-radius: 10px; border: 1px solid #e0e0e0; }}
     .logo-u {{ color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; }}
     </style>
