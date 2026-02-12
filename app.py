@@ -10,7 +10,7 @@ import time as time_module # Importado para evitar conflito com datetime.time
 # --- CONFIGURAÇÕES DE MARCA ---
 NOME_SISTEMA = "Up 2 Today"
 SLOGAN = "Seu Controle. Nossa Prioridade."
-LOGO_URL = "https://i.postimg.cc/mkj8cQf8/logo-png.png"
+LOGO_URL = "https://i.postimg.cc/QdCc3z7f/logo.png"
 ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeamento", "Limpeza"]
 LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
 
@@ -19,51 +19,50 @@ COR_AZUL = "#1b224c"  # Azul Marinho Profundo do 'U'
 COR_VERDE = "#31ad64" # Verde Esmeralda do '2T'
 COR_FUNDO = "#f4f7f6"
 
-# --- CSS REVISADO: RESTAURANDO LARGURA E CORES DO CALENDÁRIO ---
+# --- 1. CONFIGURAÇÃO DA PÁGINA ---
+st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
+
+# --- CSS PARA FORÇAR TEXTO BRANCO ABSOLUTO NOS BOTÕES ---
 st.markdown(f"""
     <style>
-    /* 1. RESTAURA A LARGURA ORIGINAL: Remove qualquer trava de largura anterior */
-    [data-testid="stAppViewBlockContainer"] {{
-        max-width: 100% !important;
-        width: auto !important;
+    /* Força fundo branco absoluto no app */
+    html, body, [data-testid="stAppViewContainer"], .stApp {{
+        background-color: #FFFFFF !important;
     }}
 
-    /* 2. FUNDOS: App Branco e Sidebar Cinza #E0E0E1 */
-    html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
-    [data-testid="stSidebar"] {{ background-color: #E0E0E1 !important; }}
+    /* Garante visibilidade dos textos gerais em cinza escuro */
+    p, label, span, div, .stMarkdown, [data-testid="stText"] {{
+        color: #31333F !important;
+        -webkit-text-fill-color: #31333F !important;
+    }}
 
-    /* 3. TEXTOS: Cinza escuro para leitura */
-    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
+    /* CENTRALIZAÇÃO DOS BOTÕES DE LOGIN/CADASTRO */
+    div[data-testid="stRadio"] > div {{
+        display: flex;
+        justify-content: center;
+        background-color: #ffffff;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }}
 
-    /* 4. BOTÕES: Azul Marinho, Borda Verde e Texto Branco */
-    .stButton>button {{
+    /* AÇÃO DEFINITIVA PARA BOTÕES: FORÇA O TEXTO BRANCO EM TUDO QUE ESTIVER DENTRO DELE */
+    button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
-        color: #FFFFFF !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
     }}
 
-    /* 5. ÍCONES: Brancos */
-    button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
-
-    /* 6. CALENDÁRIO: VERDE E BRANCO (O ALVO FINAL) */
-    /* Este seletor usa o 'wildcard' para garantir que qualquer destaque seja Verde */
-    div[data-baseweb="calendar"] [class*="selected"],
-    div[data-baseweb="calendar"] [aria-selected="true"] {{
-        background-color: #31ad64 !important;
-        color: #FFFFFF !important;
-    }}
-    
-    /* Garante que o número dentro do círculo verde perca o cinza */
-    div[data-baseweb="calendar"] [aria-selected="true"] span,
-    div[data-baseweb="calendar"] [aria-selected="true"] div {{
+    /* Alvo específico no parágrafo/texto que o Streamlit coloca dentro do botão */
+    button p, button span, button div {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
+        opacity: 1 !important;
     }}
 
-    /* 7. LOGOTIPO */
-    .logo-u {{ color: #1b224c !important; }}
-    .logo-2t {{ color: #31ad64 !important; }}
+    /* LOGO: Azul Marinho no U e Verde no 2T */
+    .logo-u {{ color: #1b224c !important; -webkit-text-fill-color: #1b224c !important; }}
+    .logo-2t {{ color: #31ad64 !important; -webkit-text-fill-color: #31ad64 !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -232,7 +231,7 @@ if not st.session_state["logado"]:
                     if logado_agora:
                         if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
                         with st.spinner(""):
-                            for t in ["UP", "UP 2", "UP 2 T", "UP 2 TOD", "UP 2 TODA", "UP 2 TODAY"]:
+                            for t in ["UP", "UP 2", "UP 2 T", "UP 2 TOD", "UP 2 TODAY"]:
                                 placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span class='logo-u'>{t[:2]}</span><span class='logo-2t'>{t[2:]}</span></h1>", unsafe_allow_html=True)
                                 time_module.sleep(0.05)
                         st.rerun()
