@@ -22,7 +22,7 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS FINAL: SIDEBAR #DFDFDF, CALENDÁRIO E ABAS EM DESTAQUE ---
+# --- CSS FINAL: BOTOES MARINHO E ABA ATIVA EM VERDE ---
 st.markdown(f"""
     <style>
     /* 1. FUNDOS E SIDEBAR */
@@ -32,29 +32,27 @@ st.markdown(f"""
     /* 2. TEXTOS GERAIS */
     p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
 
-    /* 3. BOTÕES DAS ABAS (DESTAQUE PARA O ATIVO) */
-    /* Botão Inativo (Secondary) */
-    button[kind="secondary"] {{
+    /* 3. BOTOES GERAIS (Sair, Criar, Salvar) - AZUL MARINHO */
+    button[kind="secondary"], button[kind="primary"] {{
         background-color: #1b224c !important;
-        border: 2px solid #1b224c !important;
+        border: 2px solid #31ad64 !important;
+        border-radius: 8px !important;
         color: #FFFFFF !important;
     }}
 
-    /* Botão Ativo (Primary) - AGORA EM VERDE PARA DESTAQUE */
-    button[kind="primary"] {{
+    /* 4. DESTAQUE EXCLUSIVO: ABA ATIVA EM VERDE */
+    /* Este seletor identifica o botão que o seu Python marcou como 'primary' no topo */
+    div.stHorizontalBlock button[kind="primary"] {{
         background-color: #31ad64 !important;
         border: 2px solid #1b224c !important;
-        color: #FFFFFF !important;
         font-weight: bold !important;
     }}
 
-    /* Garante texto branco em ambos */
+    /* Garante texto branco em todos os botões */
     button p, button span, button div {{ color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; }}
-
-    /* 4. ÍCONES BRANCOS */
     button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
 
-    /* 5. CALENDÁRIO PADRONIZADO (AZUL COM BORDA VERDE) */
+    /* 5. CALENDARIO PADRONIZADO (AZUL COM BORDA VERDE) */
     div[data-baseweb="calendar"] [aria-selected="true"],
     div[data-baseweb="calendar"] [class*="Selected"],
     div[data-baseweb="calendar"] [class*="Highlighted"] {{
