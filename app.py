@@ -22,47 +22,56 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS FINAL: SIDEBAR #DFDFDF E CALENDÁRIO PADRONIZADO ---
+# --- CSS FINAL: SIDEBAR CINZA #DFDFDF E CORREÇÃO DE ERRO ---
 st.markdown(f"""
     <style>
     /* 1. FUNDOS: App Branco e Sidebar Cinza #DFDFDF */
     html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ background-color: #DFDFDF !important; }}
 
-    /* 2. TEXTOS GERAIS */
-    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
+    /* 2. TEXTOS: Garante legibilidade em cinza escuro */
+    p, label, span, div, .stMarkdown, [data-testid="stText"] {{
+        color: #31333F !important;
+    }}
 
-    /* 3. BOTÕES DO APP: Azul Marinho com Borda Verde */
+    /* 3. CENTRALIZAÇÃO DOS BOTÕES DE LOGIN/CADASTRO */
+    div[data-testid="stRadio"] > div {{
+        display: flex;
+        justify-content: center;
+        background-color: #ffffff;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }}
+
+    /* 4. BOTÕES: Fundo Azul Marinho e Letras Brancas */
     button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
+        color: #FFFFFF !important;
     }}
-    button p, button span, button div {{ color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; }}
 
-    /* 4. ÍCONES BRANCOS (Olhinho e Calendário) */
-    button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
+    /* Texto branco absoluto dentro dos botões */
+    button p, button span, button div {{
+        color: #FFFFFF !important;
+    }}
 
-    /* 5. CALENDÁRIO: PADRONIZANDO A PARTE DE BAIXO COM O TOPO */
-    /* Força o Azul Marinho e Borda Verde na seleção e no intervalo */
+    /* 5. ÍCONES BRANCOS: Olhinho da senha e ícone do calendário */
+    button svg, [data-testid="stDateInput"] svg {{
+        fill: #FFFFFF !important;
+        color: #FFFFFF !important;
+    }}
+
+    /* 6. CALENDÁRIO: FUNDO VERDE PARA VISIBILIDADE DOS NÚMEROS */
     div[data-baseweb="calendar"] [aria-selected="true"],
     div[data-baseweb="calendar"] [class*="Selected"],
     div[data-baseweb="calendar"] [class*="Highlighted"] {{
-        background-color: #1b224c !important;
-        background: #1b224c !important;
-        border: 2px solid #31ad64 !important;
-        border-radius: 50% !important;
+        background-color: #31ad64 !important;
+        background: #31ad64 !important;
     }}
 
-    /* Força o número a ficar Branco Absoluto dentro da seleção */
-    div[data-baseweb="calendar"] [aria-selected="true"] *,
-    div[data-baseweb="calendar"] [class*="Selected"] * {{
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }}
-
-    /* 6. LOGOTIPO E CENTRALIZAÇÃO LOGIN */
-    div[data-testid="stRadio"] > div {{ display: flex; justify-content: center; background-color: #ffffff; padding: 10px; border-radius: 10px; border: 1px solid #e0e0e0; }}
+    /* 7. LOGOTIPO: Cores da Marca */
     .logo-u {{ color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; }}
     </style>
