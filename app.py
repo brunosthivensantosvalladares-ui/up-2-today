@@ -30,13 +30,20 @@ st.markdown(f"""
         background-color: #FFFFFF !important;
     }}
 
-    /* Garante visibilidade dos textos gerais em cinza escuro */
+    /* Garante visibilidade dos te# --- CSS FINAL: SIDEBAR CINZA #DFDFDF E CALENDÁRIO AJUSTADO ---
+st.markdown(f"""
+    <style>
+    /* 1. FUNDOS: App Branco e Sidebar Cinza #DFDFDF */
+    html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
+    [data-testid="stSidebar"] {{ background-color: #DFDFDF !important; }}
+
+    /* 2. TEXTOS: Garante visibilidade em cinza escuro */
     p, label, span, div, .stMarkdown, [data-testid="stText"] {{
         color: #31333F !important;
         -webkit-text-fill-color: #31333F !important;
     }}
 
-    /* CENTRALIZAÇÃO DOS BOTÕES DE LOGIN/CADASTRO */
+    /* 3. CENTRALIZAÇÃO DOS BOTÕES DE LOGIN/CADASTRO */
     div[data-testid="stRadio"] > div {{
         display: flex;
         justify-content: center;
@@ -46,21 +53,33 @@ st.markdown(f"""
         border: 1px solid #e0e0e0;
     }}
 
-    /* AÇÃO DEFINITIVA PARA BOTÕES: FORÇA O TEXTO BRANCO EM TUDO QUE ESTIVER DENTRO DELE */
+    /* 4. BOTÕES: Fundo Azul Marinho e Letras Brancas */
     button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
     }}
 
-    /* Alvo específico no parágrafo/texto que o Streamlit coloca dentro do botão */
     button p, button span, button div {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
-        opacity: 1 !important;
     }}
 
-    /* LOGO: Azul Marinho no U e Verde no 2T */
+    /* 5. ÍCONES BRANCOS: Olhinho da senha e calendário */
+    button svg, [data-testid="stDateInput"] svg {{
+        fill: #FFFFFF !important;
+        color: #FFFFFF !important;
+    }}
+
+    /* 6. CALENDÁRIO: FUNDO VERDE PARA VISIBILIDADE DOS NÚMEROS */
+    [data-baseweb="calendar"] [aria-selected="true"],
+    [data-baseweb="calendar"] [class*="Selected"],
+    [data-baseweb="calendar"] [class*="Highlighted"] {{
+        background-color: #31ad64 !important;
+        background: #31ad64 !important;
+    }}
+
+    /* 7. LOGOTIPO: Cores da Marca */
     .logo-u {{ color: #1b224c !important; -webkit-text-fill-color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; -webkit-text-fill-color: #31ad64 !important; }}
     </style>
