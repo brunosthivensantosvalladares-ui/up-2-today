@@ -19,51 +19,51 @@ COR_AZUL = "#1b224c"  # Azul Marinho Profundo do 'U'
 COR_VERDE = "#31ad64" # Verde Esmeralda do '2T'
 COR_FUNDO = "#f4f7f6"
 
-# --- CSS FINAL: RESTAURANDO LARGURA E CORES DO CALENDÁRIO ---
+# --- CSS PARA FORÇAR TEXTO E ÍCONES BRANCOS NOS BOTÕES ---
 st.markdown(f"""
     <style>
-    /* 1. DESTRAVA A LARGURA: Força a tela a ser ampla como antes */
-    [data-testid="stAppViewBlockContainer"] {{
-        max-width: none !important;
-        width: 100% !important;
-        padding: 1rem 5rem !important;
+    /* Força fundo branco absoluto no app */
+    html, body, [data-testid="stAppViewContainer"], .stApp {{
+        background-color: #FFFFFF !important;
     }}
 
-    /* 2. FUNDOS: App Branco e Sidebar Cinza #E0E0E1 */
-    html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
-    [data-testid="stSidebar"] {{ background-color: #E0E0E1 !important; }}
+    /* Garante visibilidade dos textos gerais em cinza escuro */
+    p, label, span, div, .stMarkdown, [data-testid="stText"] {{
+        color: #31333F !important;
+        -webkit-text-fill-color: #31333F !important;
+    }}
 
-    /* 3. TEXTOS: Garante legibilidade em cinza escuro */
-    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
+    /* CENTRALIZAÇÃO DOS BOTÕES DE LOGIN/CADASTRO */
+    div[data-testid="stRadio"] > div {{
+        display: flex;
+        justify-content: center;
+        background-color: #ffffff;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }}
 
-    /* 4. BOTÕES: Azul Marinho com Borda Verde e Texto Branco */
-    .stButton>button {{
+    /* AÇÃO DEFINITIVA PARA BOTÕES: FORÇA O TEXTO BRANCO EM TUDO QUE ESTIVER DENTRO DELE */
+    button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
     }}
 
-    /* 5. ÍCONES: Olhinho e Setas Brancos */
-    button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
-
-    /* 6. CALENDÁRIO: Círculos em VERDE e Números em BRANCO */
-    div[data-baseweb="calendar"] [aria-selected="true"],
-    div[data-baseweb="calendar"] [class*="selected"],
-    div[data-baseweb="calendar"] [class*="Highlighted"] {{
-        background-color: #31ad64 !important;
-        background: #31ad64 !important;
-        color: #FFFFFF !important;
-    }}
-    
-    div[data-baseweb="calendar"] [aria-selected="true"] *,
-    div[data-baseweb="calendar"] [class*="selected"] * {{
+    /* Alvo específico no parágrafo/texto dentro do botão */
+    button p, button span, button div {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
+        opacity: 1 !important;
     }}
 
-    /* 7. LOGOTIPO: Azul Marinho e Verde Esmeralda */
+    /* FORÇA O ÍCONE DO OLHINHO (SVG) A FICAR BRANCO */
+    button svg {{
+        fill: #FFFFFF !important;
+        color: #FFFFFF !important;
+    }}
+
+    /* LOGO: Azul Marinho no U e Verde no 2T */
     .logo-u {{ color: #1b224c !important; -webkit-text-fill-color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; -webkit-text-fill-color: #31ad64 !important; }}
     </style>
