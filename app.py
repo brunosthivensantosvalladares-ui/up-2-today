@@ -22,7 +22,7 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS REVISADO: SETA CINZA, SIDEBAR #DFDFDF E DESTAQUE DE ABA ---
+# --- CSS FINAL: LOGIN AZUL, ABAS VERDES E SETA CINZA ---
 st.markdown(f"""
     <style>
     /* 1. FUNDOS: App Branco e Sidebar Cinza #DFDFDF */
@@ -36,22 +36,10 @@ st.markdown(f"""
         color: #808080 !important;
     }}
 
-    /* 3. TEXTOS: Garante visibilidade em cinza escuro */
-    p, label, span, div, .stMarkdown, [data-testid="stText"] {{
-        color: #31333F !important;
-    }}
+    /* 3. TEXTOS: Cinza escuro */
+    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
 
-    /* 4. CENTRALIZAÇÃO DOS BOTÕES DE LOGIN/CADASTRO */
-    div[data-testid="stRadio"] > div {{
-        display: flex;
-        justify-content: center;
-        background-color: #ffffff;
-        padding: 10px;
-        border-radius: 10px;
-        border: 1px solid #e0e0e0;
-    }}
-
-    /* 5. BOTÕES GERAIS: Azul Marinho (Original) */
+    /* 4. TODOS OS BOTÕES: Azul Marinho (Inclui o Login) */
     button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
         border: 2px solid #31ad64 !important;
@@ -59,34 +47,28 @@ st.markdown(f"""
         color: #FFFFFF !important;
     }}
 
-    /* 6. DESTAQUE DA ABA ATUAL: Verde Esmeralda */
-    /* Aplica o verde apenas nos botões de navegação do topo que estão ativos */
-    div.stHorizontalBlock button[kind="primary"] {{
+    /* 5. DESTAQUE EXCLUSIVO DAS ABAS (DENTRO DE COLUNAS) */
+    /* Este seletor garante que apenas os botões nas colunas de navegação fiquem verdes */
+    [data-testid="stHorizontalBlock"] button[kind="primary"] {{
         background-color: #31ad64 !important;
         border: 2px solid #1b224c !important;
     }}
 
     /* Texto branco em todos os botões */
-    button p, button span, button div {{
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }}
+    button p, button span, button div {{ color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; }}
 
-    /* 7. ÍCONES: Olhinho e Calendário em Branco */
-    button svg, [data-testid="stDateInput"] svg {{
-        fill: #FFFFFF !important;
-        color: #FFFFFF !important;
-    }}
+    /* 6. ÍCONES: Olhinho e Calendário em Branco */
+    button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
 
-    /* 8. CALENDÁRIO: Fundo Verde para Seleção */
+    /* 7. CALENDÁRIO: Fundo Verde para Seleção */
     div[data-baseweb="calendar"] [aria-selected="true"],
-    div[data-baseweb="calendar"] [class*="Selected"],
-    div[data-baseweb="calendar"] [class*="Highlighted"] {{
+    div[data-baseweb="calendar"] [class*="Selected"] {{
         background-color: #31ad64 !important;
         background: #31ad64 !important;
     }}
 
-    /* 9. LOGOTIPO */
+    /* 8. LOGOTIPO E RÁDIO */
+    div[data-testid="stRadio"] > div {{ display: flex; justify-content: center; background-color: #ffffff; padding: 10px; border-radius: 10px; border: 1px solid #e0e0e0; }}
     .logo-u {{ color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; }}
     </style>
