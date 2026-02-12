@@ -22,14 +22,14 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS PARA SIDEBAR CINZA E CALENDÁRIO VERDE/BRANCO (VERSÃO FINAL) ---
+# --- CSS PARA SIDEBAR CINZA E CALENDÁRIO VERDE/BRANCO ---
 st.markdown(f"""
     <style>
     /* 1. FUNDOS: App Branco e Sidebar Cinza #E0E0E1 */
     html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ background-color: #E0E0E1 !important; }}
 
-    /* 2. TEXTOS: Garante legibilidade em cinza escuro */
+    /* 2. TEXTOS: Garante visibilidade em cinza escuro */
     p, label, span, div, .stMarkdown, [data-testid="stText"] {{
         color: #31333F !important;
         -webkit-text-fill-color: #31333F !important;
@@ -63,19 +63,21 @@ st.markdown(f"""
         color: #FFFFFF !important;
     }}
 
-    /* 6. CALENDÁRIO: AÇÃO DEFINITIVA PARA CÍRCULO VERDE E NÚMERO BRANCO */
-    /* Este seletor ignora classes e foca no atributo de seleção do dia */
+    /* 6. CALENDÁRIO: Círculo VERDE e Número BRANCO (AÇÃO DIRETA) */
+    /* Este seletor força a cor verde em qualquer dia selecionado ou no intervalo */
+    div[data-baseweb="calendar"] [class*="Selected"],
+    div[data-baseweb="calendar"] [class*="Highlighted"],
     div[data-baseweb="calendar"] [aria-selected="true"] {{
         background-color: #31ad64 !important;
         background: #31ad64 !important;
         color: #FFFFFF !important;
     }}
 
-    /* Força o branco em qualquer texto, div ou span que esteja dentro da seleção */
-    div[data-baseweb="calendar"] [aria-selected="true"] * {{
+    /* Garante que o número dentro do círculo verde perca o cinza e fique branco */
+    div[data-baseweb="calendar"] [aria-selected="true"] *,
+    div[data-baseweb="calendar"] [class*="Selected"] * {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
-        fill: #FFFFFF !important;
     }}
 
     /* 7. LOGOTIPO */
