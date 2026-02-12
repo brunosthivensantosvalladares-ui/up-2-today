@@ -29,7 +29,7 @@ st.markdown(f"""
     html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ background-color: #E0E0E1 !important; }}
 
-    /* 2. TEXTOS: Garante visibilidade em cinza escuro */
+    /* 2. TEXTOS: Garante visibilidade em cinza escuro no fundo branco */
     p, label, span, div, .stMarkdown, [data-testid="stText"] {{
         color: #31333F !important;
         -webkit-text-fill-color: #31333F !important;
@@ -52,37 +52,35 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
+    /* Texto branco absoluto dentro dos botões */
     button p, button span, button div {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
+        opacity: 1 !important;
     }}
 
-    /* 5. ÍCONES BRANCOS: Olhinho e ícone do calendário */
+    /* 5. ÍCONES BRANCOS: Olhinho da senha e ícone do calendário */
     button svg, [data-testid="stDateInput"] svg {{
         fill: #FFFFFF !important;
         color: #FFFFFF !important;
     }}
 
-    /* 6. CALENDÁRIO: Círculo VERDE e Número BRANCO (AÇÃO DIRETA) */
-    /* Este seletor força a cor verde em qualquer dia selecionado ou no intervalo */
-    div[data-baseweb="calendar"] [class*="Selected"],
-    div[data-baseweb="calendar"] [class*="Highlighted"],
+    /* 6. CALENDÁRIO: Círculo Verde e Número Branco */
+    /* Muda a cor da bola de seleção para o Verde do Logo */
     div[data-baseweb="calendar"] [aria-selected="true"] {{
         background-color: #31ad64 !important;
-        background: #31ad64 !important;
         color: #FFFFFF !important;
     }}
 
-    /* Garante que o número dentro do círculo verde perca o cinza e fique branco */
-    div[data-baseweb="calendar"] [aria-selected="true"] *,
-    div[data-baseweb="calendar"] [class*="Selected"] * {{
+    /* Força o número dentro da bola a ser Branco */
+    div[data-baseweb="calendar"] [aria-selected="true"] * {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
     }}
 
-    /* 7. LOGOTIPO */
-    .logo-u {{ color: #1b224c !important; }}
-    .logo-2t {{ color: #31ad64 !important; }}
+    /* 7. LOGOTIPO: Cores da Marca */
+    .logo-u {{ color: #1b224c !important; -webkit-text-fill-color: #1b224c !important; }}
+    .logo-2t {{ color: #31ad64 !important; -webkit-text-fill-color: #31ad64 !important; }}
     </style>
 """, unsafe_allow_html=True)
 
