@@ -22,14 +22,14 @@ COR_FUNDO = "#f4f7f6"
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
 
-# --- CSS REVISADO: APENAS SETA CINZA E SIDEBAR #DFDFDF ---
+# --- CSS REVISADO: SETA CINZA, SIDEBAR #DFDFDF E DESTAQUE DE ABA ---
 st.markdown(f"""
     <style>
     /* 1. FUNDOS: App Branco e Sidebar Cinza #DFDFDF */
     html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ background-color: #DFDFDF !important; }}
 
-    /* 2. FLECHINHA DA SIDEBAR EM CINZA (PARA NÃO FICAR INVISÍVEL) */
+    /* 2. FLECHINHA DA SIDEBAR EM CINZA */
     [data-testid="stSidebarCollapsedControl"] svg, 
     button[data-testid="stBaseButton-headerNoPadding"] svg {{
         fill: #808080 !important;
@@ -51,7 +51,7 @@ st.markdown(f"""
         border: 1px solid #e0e0e0;
     }}
 
-    /* 5. BOTÕES: Fundo Azul Marinho e Letras Brancas (Mantido Original) */
+    /* 5. BOTÕES GERAIS: Azul Marinho (Original) */
     button[kind="primary"], button[kind="secondary"], button {{
         background-color: #1b224c !important;
         border: 2px solid #31ad64 !important;
@@ -59,17 +59,26 @@ st.markdown(f"""
         color: #FFFFFF !important;
     }}
 
-    button p, button span, button div {{
-        color: #FFFFFF !important;
+    /* 6. DESTAQUE DA ABA ATUAL: Verde Esmeralda */
+    /* Aplica o verde apenas nos botões de navegação do topo que estão ativos */
+    div.stHorizontalBlock button[kind="primary"] {{
+        background-color: #31ad64 !important;
+        border: 2px solid #1b224c !important;
     }}
 
-    /* 6. ÍCONES: Olhinho e Calendário em Branco */
+    /* Texto branco em todos os botões */
+    button p, button span, button div {{
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }}
+
+    /* 7. ÍCONES: Olhinho e Calendário em Branco */
     button svg, [data-testid="stDateInput"] svg {{
         fill: #FFFFFF !important;
         color: #FFFFFF !important;
     }}
 
-    /* 7. CALENDÁRIO: Fundo Verde para Seleção */
+    /* 8. CALENDÁRIO: Fundo Verde para Seleção */
     div[data-baseweb="calendar"] [aria-selected="true"],
     div[data-baseweb="calendar"] [class*="Selected"],
     div[data-baseweb="calendar"] [class*="Highlighted"] {{
@@ -77,7 +86,7 @@ st.markdown(f"""
         background: #31ad64 !important;
     }}
 
-    /* 8. LOGOTIPO */
+    /* 9. LOGOTIPO */
     .logo-u {{ color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; }}
     </style>
