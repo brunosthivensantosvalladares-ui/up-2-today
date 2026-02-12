@@ -19,15 +19,21 @@ COR_AZUL = "#1b224c"  # Azul Marinho Profundo do 'U'
 COR_VERDE = "#31ad64" # Verde Esmeralda do '2T'
 COR_FUNDO = "#f4f7f6"
 
-# --- CSS REVISADO: ESTABILIDADE DE TELA E CALENDÁRIO VERDE ---
+# --- CSS REVISADO: RESTAURANDO LARGURA E CORES DO CALENDÁRIO ---
 st.markdown(f"""
     <style>
     /* 1. FUNDOS: App Branco e Sidebar Cinza #E0E0E1 */
-    html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
-    [data-testid="stSidebar"] {{ background-color: #E0E0E1 !important; }}
+    html, body, [data-testid="stAppViewContainer"], .stApp {{ 
+        background-color: #FFFFFF !important; 
+    }}
+    [data-testid="stSidebar"] {{ 
+        background-color: #E0E0E1 !important; 
+    }}
 
-    /* 2. TEXTOS: Garante legibilidade em cinza escuro no fundo branco */
-    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
+    /* 2. TEXTOS: Garante legibilidade em cinza escuro */
+    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ 
+        color: #31333F !important; 
+    }}
 
     /* 3. BOTÕES: Azul Marinho com Borda Verde e Texto Branco */
     .stButton>button {{
@@ -39,21 +45,22 @@ st.markdown(f"""
     }}
 
     /* 4. ÍCONES: Olhinho e Setas Brancos */
-    button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
+    button svg, [data-testid="stDateInput"] svg {{ 
+        fill: #FFFFFF !important; 
+        color: #FFFFFF !important; 
+    }}
 
-    /* 5. CALENDÁRIO: SELEÇÃO EM VERDE E NÚMEROS EM BRANCO */
-    /* Este seletor ataca a cor de fundo da data selecionada e do intervalo */
-    div[data-baseweb="calendar"] [aria-selected="true"],
-    div[data-baseweb="calendar"] [class*="selected"],
-    div[data-baseweb="calendar"] [class*="Highlighted"] {{
+    /* 5. CALENDÁRIO: Círculos em VERDE e Números em BRANCO */
+    /* Alvo: Fundo da seleção */
+    [data-baseweb="calendar"] [aria-selected="true"],
+    [data-baseweb="calendar"] [class*="selected"] {{
         background-color: #31ad64 !important;
         background: #31ad64 !important;
-        color: #FFFFFF !important;
     }}
     
-    /* Força o branco nos números (ex: 11, 12) que ficam dentro do círculo */
-    div[data-baseweb="calendar"] [aria-selected="true"] *,
-    div[data-baseweb="calendar"] [class*="selected"] * {{
+    /* Alvo: Texto dentro da seleção */
+    [data-baseweb="calendar"] [aria-selected="true"] *,
+    [data-baseweb="calendar"] [class*="selected"] * {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
     }}
