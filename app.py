@@ -42,14 +42,18 @@ st.markdown(f"""
     button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
 
     /* 5. CALENDÁRIO: SELEÇÃO EM VERDE E NÚMEROS EM BRANCO */
-    /* Este seletor é específico para a cor de fundo da data selecionada */
-    [data-baseweb="calendar"] [aria-selected="true"] {{
+    /* Este seletor ataca a cor de fundo da data selecionada e do intervalo */
+    div[data-baseweb="calendar"] [aria-selected="true"],
+    div[data-baseweb="calendar"] [class*="selected"],
+    div[data-baseweb="calendar"] [class*="Highlighted"] {{
         background-color: #31ad64 !important;
+        background: #31ad64 !important;
         color: #FFFFFF !important;
     }}
     
-    /* Força o branco no número (ex: 11, 12) que fica dentro do círculo */
-    [data-baseweb="calendar"] [aria-selected="true"] * {{
+    /* Força o branco nos números (ex: 11, 12) que ficam dentro do círculo */
+    div[data-baseweb="calendar"] [aria-selected="true"] *,
+    div[data-baseweb="calendar"] [class*="selected"] * {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
     }}
