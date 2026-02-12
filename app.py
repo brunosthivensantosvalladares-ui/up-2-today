@@ -19,64 +19,42 @@ COR_AZUL = "#1b224c"  # Azul Marinho Profundo do 'U'
 COR_VERDE = "#31ad64" # Verde Esmeralda do '2T'
 COR_FUNDO = "#f4f7f6"
 
-# --- CSS FINAL: TELA DE LOGIN AMPLA E CALENDÁRIO VERDE COM BRANCO ---
+# --- CSS REVISADO: ESTABILIDADE DE TELA E CALENDÁRIO VERDE ---
 st.markdown(f"""
     <style>
-    /* 1. Fundo branco e Sidebar Cinza solicitada */
+    /* 1. FUNDOS: App Branco e Sidebar Cinza #E0E0E1 */
     html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ background-color: #E0E0E1 !important; }}
 
-    /* 2. FORÇAR LARGURA TOTAL NA TELA DE LOGIN */
-    /* Remove as margens que deixam a tela pequena */
-    [data-testid="stAppViewBlockContainer"] {{
-        max-width: 100% !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-    }}
-    
-    /* Expande a coluna de login para ocupar o espaço disponível */
-    [data-testid="column"] {{
-        width: 100% !important;
-        flex: 1 1 auto !important;
-    }}
-
-    /* 3. Textos gerais e Botões de Login centralizados */
+    /* 2. TEXTOS: Garante legibilidade em cinza escuro no fundo branco */
     p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
-    div[data-testid="stRadio"] > div {{ 
-        display: flex; 
-        justify-content: center; 
-        width: 100% !important;
-        gap: 20px;
-    }}
 
-    /* 4. BOTÕES: Azul Marinho, Borda Verde e Letras Brancas */
+    /* 3. BOTÕES: Azul Marinho com Borda Verde e Texto Branco */
     .stButton>button {{
         background-color: #1b224c !important;
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
-        width: 100% !important;
-        height: 3em !important;
     }}
 
-    /* 5. ÍCONES E CALENDÁRIO: Círculos Verdes e Números Brancos */
+    /* 4. ÍCONES: Olhinho e Setas Brancos */
     button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
-    
-    [data-baseweb="calendar"] [aria-selected="true"],
-    [data-baseweb="calendar"] [class*="selected"],
-    [data-baseweb="calendar"] [class*="Highlighted"] {{
+
+    /* 5. CALENDÁRIO: SELEÇÃO EM VERDE E NÚMEROS EM BRANCO */
+    /* Este seletor é específico para a cor de fundo da data selecionada */
+    [data-baseweb="calendar"] [aria-selected="true"] {{
         background-color: #31ad64 !important;
         color: #FFFFFF !important;
     }}
-
-    [data-baseweb="calendar"] [aria-selected="true"] *,
-    [data-baseweb="calendar"] [class*="selected"] * {{
+    
+    /* Força o branco no número (ex: 11, 12) que fica dentro do círculo */
+    [data-baseweb="calendar"] [aria-selected="true"] * {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
     }}
 
-    /* 6. LOGOTIPO: Azul Marinho e Verde */
+    /* 6. LOGOTIPO: Azul Marinho e Verde Esmeralda */
     .logo-u {{ color: #1b224c !important; -webkit-text-fill-color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; -webkit-text-fill-color: #31ad64 !important; }}
     </style>
