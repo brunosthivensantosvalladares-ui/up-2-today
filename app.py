@@ -19,49 +19,59 @@ COR_AZUL = "#1b224c"  # Azul Marinho Profundo do 'U'
 COR_VERDE = "#31ad64" # Verde Esmeralda do '2T'
 COR_FUNDO = "#f4f7f6"
 
-# --- CSS ATUALIZADO: SIDEBAR CINZA E TRAVA DE BRANCO ---
+# --- CSS FINAL: TELA DE LOGIN AMPLA E CALENDÁRIO VERDE COM BRANCO ---
 st.markdown(f"""
     <style>
-    /* 1. Fundo branco no app e cinza na sidebar */
+    /* 1. Fundo branco e Sidebar Cinza solicitada */
     html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ background-color: #E0E0E1 !important; }}
 
-    /* 2. Textos gerais em cinza escuro */
-    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ 
-        color: #31333F !important; 
-        -webkit-text-fill-color: #31333F !important; 
+    /* 2. Textos gerais e Ajuste de Tamanho da Tela de Login */
+    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
+    [data-testid="stVerticalBlock"] > div {{ width: 100% !important; }}
+    
+    /* Centraliza os botões sem apertar a caixa de login */
+    div[data-testid="stRadio"] > div {{ 
+        display: flex; 
+        justify-content: center; 
+        width: 100% !important;
     }}
 
-    /* 3. Centralização dos botões de Login/Cadastro */
-    div[data-testid="stRadio"] > div {{ display: flex; justify-content: center; }}
-
-    /* 4. Botões: Fundo Azul e Borda Verde */
-    button[kind="primary"], button[kind="secondary"], button {{
+    /* 3. BOTÕES: Azul Marinho, Borda Verde e Letras Brancas */
+    .stButton>button {{
         background-color: #1b224c !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
+        width: 100% !important;
     }}
 
-    /* 5. Texto Branco: Botões, Olhinho e Topo do Calendário */
-    button p, button span, button div, button svg,
-    div[data-baseweb="calendar"] [aria-live="polite"],
-    div[data-baseweb="calendar"] [role="presentation"] svg {{
-        color: #FFFFFF !important;
-        fill: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
+    /* 4. ÍCONES: Olhinho e Calendário Brancos */
+    button svg, [data-testid="stDateInput"] svg {{ 
+        fill: #FFFFFF !important; 
+        color: #FFFFFF !important; 
     }}
 
-    /* 6. ATAQUE FINAL CALENDÁRIO: Branco nos dias selecionados */
-    [data-baseweb="calendar"] [class*="selected"],
-    [data-baseweb="calendar"] [class*="Highlighted"],
+    /* 5. CALENDÁRIO: Círculos Verdes e Números Brancos (Ação Direta) */
+    /* Muda a cor do fundo para Verde do Logo */
     [data-baseweb="calendar"] [aria-selected="true"],
-    [data-baseweb="calendar"] [aria-selected="true"] * {{
+    [data-baseweb="calendar"] [class*="Selected"],
+    [data-baseweb="calendar"] [class*="Highlighted"] {{
+        background-color: #31ad64 !important;
+        color: #FFFFFF !important;
+    }}
+
+    /* Força o branco nos números selecionados (11, 12, etc) */
+    [data-baseweb="calendar"] [aria-selected="true"] *,
+    [data-baseweb="calendar"] [class*="Selected"] *,
+    [data-baseweb="calendar"] [class*="Highlighted"] * {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         fill: #FFFFFF !important;
     }}
 
-    /* 7. Logotipo U2T */
+    /* 6. LOGOTIPO: Azul Marinho e Verde */
     .logo-u {{ color: #1b224c !important; -webkit-text-fill-color: #1b224c !important; }}
     .logo-2t {{ color: #31ad64 !important; -webkit-text-fill-color: #31ad64 !important; }}
     </style>
