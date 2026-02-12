@@ -26,18 +26,30 @@ st.markdown(f"""
     html, body, [data-testid="stAppViewContainer"], .stApp {{ background-color: #FFFFFF !important; }}
     [data-testid="stSidebar"] {{ background-color: #E0E0E1 !important; }}
 
-    /* 2. Textos gerais e Ajuste de Tamanho da Tela de Login */
-    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
-    [data-testid="stVerticalBlock"] > div {{ width: 100% !important; }}
+    /* 2. FORÇAR LARGURA TOTAL NA TELA DE LOGIN */
+    /* Remove as margens que deixam a tela pequena */
+    [data-testid="stAppViewBlockContainer"] {{
+        max-width: 100% !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }}
     
-    /* Centraliza os botões sem apertar a caixa de login */
+    /* Expande a coluna de login para ocupar o espaço disponível */
+    [data-testid="column"] {{
+        width: 100% !important;
+        flex: 1 1 auto !important;
+    }}
+
+    /* 3. Textos gerais e Botões de Login centralizados */
+    p, label, span, div, .stMarkdown, [data-testid="stText"] {{ color: #31333F !important; }}
     div[data-testid="stRadio"] > div {{ 
         display: flex; 
         justify-content: center; 
         width: 100% !important;
+        gap: 20px;
     }}
 
-    /* 3. BOTÕES: Azul Marinho, Borda Verde e Letras Brancas */
+    /* 4. BOTÕES: Azul Marinho, Borda Verde e Letras Brancas */
     .stButton>button {{
         background-color: #1b224c !important;
         color: #FFFFFF !important;
@@ -45,30 +57,23 @@ st.markdown(f"""
         border: 2px solid #31ad64 !important;
         border-radius: 8px !important;
         width: 100% !important;
+        height: 3em !important;
     }}
 
-    /* 4. ÍCONES: Olhinho e Calendário Brancos */
-    button svg, [data-testid="stDateInput"] svg {{ 
-        fill: #FFFFFF !important; 
-        color: #FFFFFF !important; 
-    }}
-
-    /* 5. CALENDÁRIO: Círculos Verdes e Números Brancos (Ação Direta) */
-    /* Muda a cor do fundo para Verde do Logo e força o branco nos números */
+    /* 5. ÍCONES E CALENDÁRIO: Círculos Verdes e Números Brancos */
+    button svg, [data-testid="stDateInput"] svg {{ fill: #FFFFFF !important; color: #FFFFFF !important; }}
+    
     [data-baseweb="calendar"] [aria-selected="true"],
     [data-baseweb="calendar"] [class*="selected"],
     [data-baseweb="calendar"] [class*="Highlighted"] {{
-        background-color: {COR_VERDE} !important;
-        background: {COR_VERDE} !important;
+        background-color: #31ad64 !important;
         color: #FFFFFF !important;
     }}
 
     [data-baseweb="calendar"] [aria-selected="true"] *,
-    [data-baseweb="calendar"] [class*="selected"] *,
-    [data-baseweb="calendar"] [class*="Highlighted"] * {{
+    [data-baseweb="calendar"] [class*="selected"] * {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
-        fill: #FFFFFF !important;
     }}
 
     /* 6. LOGOTIPO: Azul Marinho e Verde */
