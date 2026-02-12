@@ -19,10 +19,7 @@ COR_AZUL = "#1b224c"  # Azul Marinho Profundo do 'U'
 COR_VERDE = "#31ad64" # Verde Esmeralda do '2T'
 COR_FUNDO = "#f4f7f6"
 
-# --- 1. CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title=f"{NOME_SISTEMA} - Tudo em Dia", layout="wide", page_icon="🛠️")
-
-# --- CSS ATUALIZADO: SIDEBAR CINZA E TRAVA DE BRANCO ---
+# --- CSS ATUALIZADO: SIDEBAR CINZA E CALENDÁRIO COM SELEÇÃO VERDE ---
 st.markdown(f"""
     <style>
     /* 1. Fundo branco no app e cinza na sidebar */
@@ -54,11 +51,18 @@ st.markdown(f"""
         -webkit-text-fill-color: #FFFFFF !important;
     }}
 
-    /* 6. ATAQUE FINAL CALENDÁRIO: Branco nos dias selecionados */
+    /* 6. CALENDÁRIO: Círculos de Seleção em VERDE e Números em BRANCO */
+    /* Muda a cor do fundo do dia selecionado/intervalo para Verde */
     [data-baseweb="calendar"] [class*="selected"],
     [data-baseweb="calendar"] [class*="Highlighted"],
-    [data-baseweb="calendar"] [aria-selected="true"],
-    [data-baseweb="calendar"] [aria-selected="true"] * {{
+    [data-baseweb="calendar"] [aria-selected="true"] {{
+        background-color: #31ad64 !important;
+        color: #FFFFFF !important;
+    }}
+
+    /* Força o branco nos números dentro do círculo verde */
+    [data-baseweb="calendar"] [aria-selected="true"] *,
+    [data-baseweb="calendar"] [class*="selected"] * {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
         fill: #FFFFFF !important;
