@@ -451,12 +451,15 @@ else:
 
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
+        
+        # --- PAINEL DE RESUMO RÁPIDO NO TOPO (COM PROTEÇÃO CONTRA ERROS) ---
         try:
             df_stats = pd.read_sql(text("SELECT data, realizado FROM tarefas WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
             if not df_stats.empty:
                 df_stats['data'] = pd.to_datetime(df_stats['data']).dt.date
                 hoje_dt = datetime.now().date()
                 df_hoje = df_stats[df_stats['data'] == hoje_dt]
+                
                 m1, m2, m3 = st.columns(3)
                 with m1: st.metric("Agendados Hoje", len(df_hoje))
                 with m2: st.metric("Concluídos", len(df_hoje[df_hoje['realizado'] == True]))
@@ -465,34 +468,77 @@ else:
         except:
             st.warning("⚠️ O banco de dados está iniciando. Aguarde alguns segundos.")
             st.stop()
+
+        # INSTRUÇÃO INTUITIVA PARA LOGÍSTICA E PCM
         st.info("✍️ **Logística:** Clique nas colunas de **Início** ou **Fim** para preencher. **PCM:** Clique em **Área** ou **Executor** para definir. O salvamento é automático.")
+        
+        # 1. Carrega os dados
         df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC"), engine, params={"eid": emp_id})
+        hoje_input, amanha = datetime.now().date(), datetime.now().date() + timedelta(days=1)
         
-        # RESTAURAÇÃO DOS FILTROS DA ABA AGENDA
+        # 2. LINHA DE FILTROS (Data, Área e Turno)
         c_per, c_area, c_turno = st.columns([0.4, 0.3, 0.3])
-        with c_per: p_sel = st.date_input("Filtrar Período", [datetime.now().date(), datetime.now().date() + timedelta(days=1)], key="dt_filter")
-        with c_area: f_area = st.selectbox("Filtrar Área", ["Todas"] + ORDEM_AREAS)
-        with c_turno: f_turno = st.selectbox("Filtrar Turno", ["Todos"] + LISTA_TURNOS)
+        with c_per: p_sel = st.date_input("Filtrar Período", [hoje_input, amanha], key="dt_filter")
         
+        opcoes_area = ["Todas"] + ORDEM_AREAS
+        opcoes_turno = ["Todos"] + LISTA_TURNOS
+        
+        with c_area: f_area = st.selectbox("Filtrar Área", opcoes_area)
+        with c_turno: f_turno = st.selectbox("Filtrar Turno", opcoes_turno)
+        
+        c_pdf, c_xls, _ = st.columns([0.2, 0.2, 0.6])
+
         if not df_a.empty and len(p_sel) == 2:
             df_a['data'] = pd.to_datetime(df_a['data']).dt.date
             df_f = df_a[(df_a['data'] >= p_sel[0]) & (df_a['data'] <= p_sel[1])].copy()
+            
             if f_area != "Todas": df_f = df_f[df_f['area'] == f_area]
             if f_turno != "Todos": df_f = df_f[df_f['turno'] == f_turno]
             
+            ordem_turno_map = {"Não definido": 0, "Dia": 1, "Noite": 2}
+            df_f['turno_idx'] = df_f['turno'].map(ordem_turno_map).fillna(0)
+            
+            with c_pdf: st.download_button("📥 PDF", gerar_pdf_periodo(df_f, p_sel[0], p_sel[1]), f"Relatorio_U2T_{p_sel[0]}.pdf")
+            with c_xls: st.download_button("📊 Excel", to_excel_native(df_f), f"Relatorio_U2T_{p_sel[0]}.xlsx")
+            
             for d in sorted(df_f['data'].unique(), reverse=True):
                 st.markdown(f"#### 🗓️ {d.strftime('%d/%m/%Y')}")
-                for area in (ORDEM_AREAS if f_area == "Todas" else [f_area]):
-                    df_area_f = df_f[(df_f['data'] == d) & (df_f['area'] == area)].sort_values(by='id')
+                areas_para_exibir = ORDEM_AREAS if f_area == "Todas" else [f_area]
+                for area in areas_para_exibir:
+                    df_area_f = df_f[(df_f['data'] == d) & (df_f['area'] == area)].sort_values(by='turno_idx')
                     if not df_area_f.empty:
                         st.markdown(f"<p class='area-header'>📍 {area}</p>", unsafe_allow_html=True)
-                        ed = st.data_editor(df_area_f.set_index('id')[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']], 
-                            use_container_width=True, key=f"ed_ted_{d}_{area}", 
-                            column_config={"realizado": st.column_config.CheckboxColumn("OK", width="small"), "id_chamado": None})
-                        if not ed.equals(df_area_f.set_index('id')[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']]):
+                        df_editor_base = df_area_f.set_index('id')
+                        
+                        edited_df = st.data_editor(
+                            df_editor_base[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']], 
+                            column_config={
+                                "realizado": st.column_config.CheckboxColumn("OK", width="small"),
+                                "area": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS),
+                                "turno": st.column_config.SelectboxColumn("Turno", options=LISTA_TURNOS),
+                                "inicio_disp": st.column_config.TextColumn("Início (Preencher)"),
+                                "fim_disp": st.column_config.TextColumn("Fim (Preencher)"),
+                                "executor": st.column_config.TextColumn("Executor"),
+                                "id_chamado": None
+                            }, 
+                            hide_index=False, use_container_width=True, key=f"ed_ted_{d}_{area}"
+                        )
+
+                        if not edited_df.equals(df_editor_base[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']]):
                             with engine.connect() as conn:
-                                for rid, row in ed.iterrows():
-                                    conn.execute(text("UPDATE tarefas SET realizado = :r, area = :ar, turno = :t, prefixo = :p, inicio_disp = :i, fim_disp = :f, executor = :ex, descricao = :ds WHERE id = :id"), {"r": bool(row['realizado']), "ar": str(row['area']), "t": str(row['turno']), "p": str(row['prefixo']), "i": str(row['inicio_disp']), "f": str(row['fim_disp']), "ex": str(row['executor']), "ds": str(row['descricao']), "id": int(rid)})
+                                for row_id, row in edited_df.iterrows():
+                                    conn.execute(text("""
+                                        UPDATE tarefas SET 
+                                        realizado = :r, area = :ar, turno = :t, prefixo = :p, 
+                                        inicio_disp = :i, fim_disp = :f, 
+                                        executor = :ex, descricao = :ds 
+                                        WHERE id = :id
+                                    """), {
+                                        "r": bool(row['realizado']), "ar": str(row['area']), "t": str(row['turno']), 
+                                        "p": str(row['prefixo']), "i": str(row['inicio_disp']), 
+                                        "f": str(row['fim_disp']), "ex": str(row['executor']), 
+                                        "ds": str(row['descricao']), "id": int(row_id)
+                                    })
                                     if row['realizado'] and pd.notnull(row['id_chamado']):
                                         try: conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(row['id_chamado'])})
                                         except: pass
