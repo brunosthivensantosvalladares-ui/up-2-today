@@ -15,7 +15,7 @@ ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeament
 LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
 
 # PALETA DE CORES EXTRAÍDA FIELMENTE DO LOGOTIPO U2T
-COR_AZUL = "#1b224c"  # Azul Marinho Profundo do 'U'
+COR_AZUL = "#1b224c" # Azul Marinho Profundo do 'U'
 COR_VERDE = "#31ad64" # Verde Esmeralda do '2T'
 COR_FUNDO = "#f4f7f6"
 COR_DOURADO = "#FFD700" # Amarelo Dourado para Destaque
