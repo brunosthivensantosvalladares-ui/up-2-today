@@ -229,7 +229,7 @@ if not st.session_state["logado"]:
                         st.session_state.update({"logado": True, "perfil": masters[user_input]["perfil"], "empresa": masters[user_input]["empresa"], "usuario_ativo": masters[user_input]["login_original"]})
                         logado_agora = True
                     else:
-                        # 2. VERIFICAÇÃO NO BANCO DE DADOS (CLIENTES SAAS - AGORA ACEITA E-MAIL OU NOME)
+                        # 2. VERIFICAÇÃO NO BANCO DE DADOS (CLIENTES SAAS)
                         with engine.connect() as conn:
                             res = conn.execute(text("""
                                 SELECT nome, email, senha, data_expiracao, status_assinatura 
@@ -239,14 +239,19 @@ if not st.session_state["logado"]:
                             
                             if res and res[2] == pw_input:
                                 hoje = datetime.now().date()
-                                # TRAVA DE SEGURANÇA: DATA DE EXPIRAÇÃO
+                                # TRAVA DE SEGURANÇA: DATA DE EXPIRAÇÃO COM PAINEL DE PAGAMENTO
                                 if res[3] < hoje and res[4] != 'ativo':
-                                    st.error(f"⚠️ Acesso expirado em {res[3].strftime('%d/%m/%Y')}. Entre em contato para renovar.")
+                                    st.error(f"⚠️ Acesso bloqueado: Período de teste expirado em {res[3].strftime('%d/%m/%Y')}.")
+                                    st.markdown("### 💳 Renovação de Assinatura")
+                                    # QR CODE FIXO (Substitua pela sua URL real)
+                                    st.image("https://i.postimg.cc/3Nn86MF0/QRcode.png", width=250, caption="Escaneie para pagar via Pix")
+                                    st.info("💡 **Chave Pix:** SEU_EMAIL_OU_CNPJ_AQUI")
+                                    st.warning("Após pagar, envie o comprovante para o suporte para liberação imediata.")
                                 else:
                                     st.session_state.update({"logado": True, "perfil": "admin", "empresa": res[0], "usuario_ativo": res[0]})
                                     logado_agora = True
                             else:
-                                # 3. VERIFICAÇÃO DE USUÁRIOS DA EQUIPE (MOTORISTAS OU OUTROS ADMINS SECUNDÁRIOS)
+                                # 3. VERIFICAÇÃO DE USUÁRIOS DA EQUIPE
                                 u_equipe = conn.execute(text("""
                                     SELECT login, senha, perfil, empresa_id FROM usuarios WHERE LOWER(login) = :u
                                 """), {"u": user_input}).fetchone()
@@ -262,7 +267,8 @@ if not st.session_state["logado"]:
                                 time_module.sleep(0.05)
                         st.rerun()
                     else:
-                        if not st.session_state.get("error_shown"): st.error("Dados incorretos ou conta inexistente.")
+                        if not st.session_state.get("error_shown") and not (res and res[3] < hoje and res[4] != 'ativo'): 
+                            st.error("Dados incorretos ou conta inexistente.")
 
         else: # ABA CRIAR CONTA
             with st.container(border=True):
@@ -289,19 +295,20 @@ else:
     emp_id = st.session_state["empresa"] # Filtro global
     usuario_ativo = st.session_state.get("usuario_ativo", "")
     
-    # --- AVISO DE EXPIRAÇÃO PRÓXIMA NO TOPO ---
+    # --- AVISO DE EXPIRAÇÃO PRÓXIMA (3 DIAS ANTES) ---
     if st.session_state["perfil"] == "admin" and usuario_ativo != "bruno":
         with engine.connect() as conn:
             dados_exp = conn.execute(text("SELECT data_expiracao, status_assinatura FROM empresa WHERE nome = :n"), {"n": emp_id}).fetchone()
         if dados_exp and dados_exp[1] == 'trial':
             dias_rest = (pd.to_datetime(dados_exp[0]).date() - datetime.now().date()).days
             if 0 <= dias_rest <= 3:
-                st.warning(f"📢 Seu período de teste termina em {dias_rest} dias. Regularize sua assinatura para não perder o acesso!")
+                st.warning(f"📢 **Atenção:** Seu período de teste termina em {dias_rest} dias. Realize o pagamento para não perder o acesso!")
 
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
         opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores", "👥 Minha Equipe"]
+        # ADICIONA ABA MASTER APENAS PARA O BRUNO
         if usuario_ativo == "bruno":
             opcoes.append("👑 Gestão Master")
 
@@ -317,26 +324,16 @@ else:
 
     # 1. BARRA LATERAL
     with st.sidebar:
-        # LOGO DIMINUÍDO NA SIDEBAR
         _, col_img, _ = st.columns([0.15, 0.7, 0.15])
-        with col_img:
-            st.image(LOGO_URL, width=150)
+        with col_img: st.image(LOGO_URL, width=150)
         st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         st.divider()
-        
         try:
             idx_seguro = opcoes.index(st.session_state.opcao_selecionada)
         except ValueError:
             idx_seguro = 0; st.session_state.opcao_selecionada = opcoes[0]
 
-        escolha_sidebar = st.radio(
-            "NAVEGAÇÃO", 
-            opcoes, 
-            index=idx_seguro,
-            key=f"radio_nav_{st.session_state.radio_key}",
-            on_change=lambda: st.session_state.update({"opcao_selecionada": st.session_state[f"radio_nav_{st.session_state.radio_key}"]})
-        )
-        
+        escolha_sidebar = st.radio("NAVEGAÇÃO", opcoes, index=idx_seguro, key=f"radio_nav_{st.session_state.radio_key}", on_change=lambda: st.session_state.update({"opcao_selecionada": st.session_state[f"radio_nav_{st.session_state.radio_key}"]}))
         st.divider()
         st.write(f"🏢 **Empresa:** {emp_id}")
         st.write(f"👤 **{st.session_state['perfil'].capitalize()}**")
@@ -348,9 +345,7 @@ else:
     cols = st.columns(len(opcoes))
     for i, nome in enumerate(opcoes):
         eh_ativo = nome == st.session_state.opcao_selecionada
-        if cols[i].button(nome, key=f"btn_tab_{i}", use_container_width=True, 
-                         type="primary" if eh_ativo else "secondary",
-                         on_click=set_nav, args=(nome,)):
+        if cols[i].button(nome, key=f"btn_tab_{i}", use_container_width=True, type="primary" if eh_ativo else "secondary", on_click=set_nav, args=(nome,)):
             pass
 
     st.divider()
@@ -359,7 +354,6 @@ else:
     # --- 3. CONTEÚDO DAS PÁGINAS ---
     if aba_ativa == "👑 Gestão Master" and usuario_ativo == "bruno":
         st.subheader("👑 Painel de Controle Master")
-        st.info("💡 Bruno, aqui você ativa os pagamentos e define os prazos das empresas.")
         df_empresas = pd.read_sql(text("SELECT id, nome, email, data_cadastro, data_expiracao, status_assinatura FROM empresa ORDER BY id DESC"), engine)
         if not df_empresas.empty:
             for _, row in df_empresas.iterrows():
@@ -460,8 +454,6 @@ else:
 
     elif aba_ativa == "📋 Cadastro Direto":
         st.subheader("📝 Agendamento Direto")
-        st.info("💡 **Atenção:** Use este formulário para serviços que não vieram de chamados.")
-        st.warning("⚠️ **Nota:** Para reagendar ou corrigir, basta alterar diretamente na lista abaixo. O salvamento é automático.")
         with st.form("f_d", clear_on_submit=True):
             c1, c2, c3, c4 = st.columns(4)
             with c1: d_i = st.date_input("Data", datetime.now()); e_i = c2.text_input("Executor"); p_i = c3.text_input("Prefixo"); a_i = c4.selectbox("Área", ORDEM_AREAS)
@@ -497,7 +489,6 @@ else:
             if st.button("🔄 Atualizar Lista", use_container_width=True):
                 if 'df_ap_work' in st.session_state: del st.session_state.df_ap_work
                 st.rerun()
-        st.info("💡 Preencha os campos e marque 'Aprovar' na última coluna para enviar à agenda.")
         df_p = pd.read_sql(text("SELECT id, data_solicitacao, motorista, prefixo, descricao FROM chamados WHERE status = 'Pendente' AND empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
         if not df_p.empty:
             if 'df_ap_work' not in st.session_state:
