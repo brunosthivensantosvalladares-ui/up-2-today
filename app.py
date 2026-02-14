@@ -92,6 +92,30 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
+# --- FUNÇÃO DO PAINEL DE PAGAMENTO PROFISSIONAL ---
+def exibir_painel_pagamento_pro():
+    with st.container(border=True):
+        st.markdown(f"""
+            <div style='text-align: center; color: #31333F;'>
+                <h2 style='color: {COR_AZUL};'>💼 Pacote Up 2 Today Pro</h2>
+                <p style='font-size: 1.4rem; font-weight: bold; color: {COR_VERDE}; margin-bottom: 5px;'>R$ 299,00 / mês</p>
+                <p style='font-style: italic; font-size: 0.9rem;'>Sua frota sempre em dia com tecnologia de ponta.</p>
+                <div style='text-align: left; background-color: #f0f2f6; padding: 15px; border-radius: 10px; margin: 15px 0;'>
+                    <p>✅ <b>Gestão Master:</b> Agenda Principal e Cadastro de Manutenções ilimitados.</p>
+                    <p>✅ <b>Equipe Total:</b> Acessos para motoristas e mecânicos sem limite de usuários.</p>
+                    <p>✅ <b>Indicadores Inteligentes:</b> Gráficos de performance e Lead Time real.</p>
+                    <p>✅ <b>Relatórios Ilimitados:</b> Exportação profissional em PDF e Excel.</p>
+                    <p>✅ <b>Nuvem Segura:</b> Seus dados protegidos e disponíveis 24h por dia.</p>
+                </div>
+                <p>Escaneie o QR Code abaixo no app do seu banco:</p>
+            </div>
+        """, unsafe_allow_html=True)
+        _, col_qr, _ = st.columns([1, 1, 1])
+        col_qr.image("https://i.postimg.cc/3Nn86MF0/QRcode.png", use_container_width=True)
+        st.markdown("<p style='text-align: center;'><b>Chave Pix (Copie e Cole):</b></p>", unsafe_allow_html=True)
+        st.code("SEU_EMAIL_OU_CNPJ_AQUI")
+        st.warning("⚠️ Após o pagamento, envie o comprovante para o suporte para liberação.")
+
 # --- 2. FUNÇÕES DE SUPORTE E BANCO ---
 @st.cache_resource
 def get_engine():
@@ -239,20 +263,13 @@ if not st.session_state["logado"]:
                             
                             if res and res[2] == pw_input:
                                 hoje = datetime.now().date()
-                                # TRAVA DE SEGURANÇA: DATA DE EXPIRAÇÃO COM PAINEL DE PAGAMENTO PROFISSIONAL
+                                # TRAVA DE SEGURANÇA: DATA DE EXPIRAÇÃO COM BOTÃO DE RENOVAÇÃO
                                 if res[3] < hoje and res[4] != 'ativo':
                                     st.error(f"⚠️ Acesso bloqueado: Período de teste expirado em {res[3].strftime('%d/%m/%Y')}.")
-                                    with st.container(border=True):
-                                        st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
-                                        st.markdown("### 💳 Renovação de Assinatura")
-                                        st.write("Realize o pagamento via Pix para liberar seu acesso imediatamente:")
-                                        _, col_qr, _ = st.columns([0.5, 1, 0.5])
-                                        col_qr.image("https://i.postimg.cc/3Nn86MF0/QRcode.png", use_container_width=True)
-                                        st.write("**Chave Pix (Copie e Cole):**")
-                                        st.code("SEU_EMAIL_OU_CNPJ_AQUI")
-                                        st.caption("Clique no código acima para copiar")
-                                        st.warning("Após pagar, envie o comprovante para o suporte para liberação imediata.")
-                                        st.markdown("</div>", unsafe_allow_html=True)
+                                    if st.button("Renove agora a sua assinatura", use_container_width=True, type="primary", key="btn_pay_expired"):
+                                        st.session_state["ver_pagamento"] = True
+                                    if st.session_state.get("ver_pagamento"):
+                                        exibir_painel_pagamento_pro()
                                 else:
                                     st.session_state.update({"logado": True, "perfil": "admin", "empresa": res[0], "usuario_ativo": res[0]})
                                     logado_agora = True
@@ -274,10 +291,8 @@ if not st.session_state["logado"]:
                         st.rerun()
                     else:
                         # Só mostra erro se não for o caso de bloqueio por expiração já tratado acima
-                        try:
-                           expirou = res[3] < hoje and res[4] != 'ativo'
-                        except:
-                           expirou = False
+                        try: expirou = res[3] < hoje and res[4] != 'ativo'
+                        except: expirou = False
                         if not expirou: st.error("Dados incorretos ou conta inexistente.")
 
         else: # ABA CRIAR CONTA
@@ -304,8 +319,8 @@ else:
     engine = get_engine(); inicializar_banco()
     emp_id = st.session_state["empresa"] # Filtro global
     usuario_ativo = st.session_state.get("usuario_ativo", "")
-
-    # --- BANNER DE PAGAMENTO PROFISSIONAL ANTECIPADO (2 DIAS ANTES) ---
+    
+    # --- BANNER DE PAGAMENTO ANTECIPADO (2 DIAS ANTES) ---
     if st.session_state["perfil"] == "admin" and usuario_ativo != "bruno":
         with engine.connect() as conn:
             dados_exp = conn.execute(text("SELECT data_expiracao, status_assinatura FROM empresa WHERE nome = :n"), {"n": emp_id}).fetchone()
@@ -314,16 +329,11 @@ else:
             data_exp_dt = pd.to_datetime(dados_exp[0]).date()
             dias_rest = (data_exp_dt - hoje_dt).days
             if 0 <= dias_rest <= 2:
-                with st.warning(f"📢 **Atenção:** Seu período de teste termina em {dias_rest} dias ({data_exp_dt.strftime('%d/%m/%Y')}). Antecipe o pagamento para evitar bloqueios!"):
-                    c_b1, c_b2, c_b3 = st.columns([1, 1.5, 1])
-                    with c_b2:
-                        st.markdown("<div style='background-color: white; padding: 20px; border-radius: 12px; border: 1px solid #e0e0e0; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>", unsafe_allow_html=True)
-                        st.markdown("<h4 style='color: #31333F; margin-top: 0;'>💳 Renovação Pix</h4>", unsafe_allow_html=True)
-                        st.image("https://i.postimg.cc/3Nn86MF0/QRcode.png", width=180)
-                        st.write("**Chave Pix (Copie e Cole):**")
-                        st.code("SEU_EMAIL_OU_CNPJ_AQUI")
-                        st.caption("Pague e envie o comprovante para o suporte.")
-                        st.markdown("</div>", unsafe_allow_html=True)
+                with st.warning(f"📢 **Atenção:** Seu acesso expira em {dias_rest} dias ({data_exp_dt.strftime('%d/%m/%Y')})."):
+                    if st.button("Renove agora a sua assinatura", key="btn_pay_banner", type="primary"):
+                        st.session_state["ver_pagamento_banner"] = True
+                    if st.session_state.get("ver_pagamento_banner"):
+                        exibir_painel_pagamento_pro()
     
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
@@ -500,45 +510,17 @@ else:
                     conn.commit(); st.rerun()
 
     elif aba_ativa == "📥 Chamados Oficina":
-        c_tit, c_refresh = st.columns([0.8, 0.2])
-        with c_tit: st.subheader("📥 Aprovação de Chamados")
-        with c_refresh:
-            if st.button("🔄 Atualizar Lista", use_container_width=True):
-                if 'df_ap_work' in st.session_state: del st.session_state.df_ap_work
-                st.rerun()
-        df_p = pd.read_sql(text("SELECT id, data_solicitacao, motorista, prefixo, descricao FROM chamados WHERE status = 'Pendente' AND empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
+        st.subheader("📥 Chamados Oficina")
+        df_p = pd.read_sql(text("SELECT id, motorista, prefixo, descricao FROM chamados WHERE status = 'Pendente' AND empresa_id = :eid"), engine, params={"eid": emp_id})
         if not df_p.empty:
-            if 'df_ap_work' not in st.session_state:
-                df_p['Executor'], df_p['Area_Destino'], df_p['Data_Programada'], df_p['Inicio'], df_p['Fim'], df_p['Aprovar'] = "", "Mecânica", datetime.now().date(), "00:00", "00:00", False
-                st.session_state.df_ap_work = df_p
-            ed_c = st.data_editor(st.session_state.df_ap_work, hide_index=True, use_container_width=True, column_config={"data_solicitacao": "Aberto em", "motorista": "Solicitante", "Data_Programada": st.column_config.DateColumn("Data Programada"), "Area_Destino": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS), "Aprovar": st.column_config.CheckboxColumn("Aprovar?"), "id": None}, key="editor_chamados")
-            if st.button("Processar Agendamentos", type="primary"):
-                selecionados = ed_c[ed_c['Aprovar'] == True]
-                if not selecionados.empty:
-                    with engine.connect() as conn:
-                        for _, r in selecionados.iterrows():
-                            conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem, empresa_id) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, 'Não definido', :ic, 'Chamado', :eid)"), {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ti": r['Inicio'], "tf": r['Fim'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id'], "eid": emp_id})
-                            conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
-                        conn.commit(); st.success("✅ Agendamentos processados!"); del st.session_state.df_ap_work; st.rerun()
-        else: st.info("Nenhum chamado pendente no momento.")
+            ed_c = st.data_editor(df_p, use_container_width=True, hide_index=True)
+        else: st.info("Nenhum chamado pendente.")
 
     elif aba_ativa == "📊 Indicadores":
-        st.subheader("📊 Painel de Performance Operacional")
-        c1, c2 = st.columns(2)
+        st.subheader("📊 Indicadores")
         df_ind = pd.read_sql(text("SELECT area, realizado FROM tarefas WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
-        with c1: st.markdown("**Serviços por Área**"); st.bar_chart(df_ind['area'].value_counts(), color=COR_VERDE) 
-        with c2: 
-            if not df_ind.empty:
-                df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
-                st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_AZUL) 
-        st.divider(); st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
-        df_lead = pd.read_sql(text("SELECT c.data_solicitacao, t.data as data_conclusao FROM chamados c JOIN tarefas t ON c.id = t.id_chamado WHERE t.realizado = True AND t.empresa_id = :eid"), engine, params={"eid": emp_id})
-        if not df_lead.empty:
-            df_lead['data_solicitacao'], df_lead['data_conclusao'] = pd.to_datetime(df_lead['data_solicitacao']), pd.to_datetime(df_lead['data_conclusao'])
-            df_lead['dias'] = (df_lead['data_conclusao'] - df_lead['data_solicitacao']).dt.days.apply(lambda x: max(x, 0))
-            col_m1, col_m2 = st.columns([0.3, 0.7])
-            with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias")
-            with col_m2: st.line_chart(df_lead.groupby('data_conclusao')['dias'].mean().reset_index().set_index('data_conclusao'), color=COR_VERDE)
+        if not df_ind.empty:
+            st.bar_chart(df_ind['area'].value_counts())
 
     elif aba_ativa == "👥 Minha Equipe":
         st.subheader("👥 Gestão de Equipe e Acessos")
