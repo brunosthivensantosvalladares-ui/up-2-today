@@ -263,7 +263,7 @@ if res[3] < hoje and res[4] != 'ativo':
     if st.session_state.get("show_pay_login"):
         exibir_painel_pagamento_pro("login")
                     
-                    if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
+    if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
                     engine = get_engine()
                     inicializar_banco()
                     
