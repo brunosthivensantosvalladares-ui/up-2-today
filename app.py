@@ -252,7 +252,7 @@ if not st.session_state["logado"]:
         aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
         
          # Dentro da aba "Acessar", onde está o erro de bloqueio:
-if res[3] < hoje and res[4] != 'ativo':
+    if res[3] < hoje and res[4] != 'ativo':
     st.error(f"⚠️ Acesso bloqueado: Período de teste expirado em {res[3].strftime('%d/%m/%Y')}.")
     
     # Criamos uma variável persistente para o painel
