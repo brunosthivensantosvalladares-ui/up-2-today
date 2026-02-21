@@ -283,13 +283,17 @@ if not st.session_state["logado"]:
                                 # TRAVA DE SEGURANÇA: DATA DE EXPIRAÇÃO COM BOTÃO DE RENOVAÇÃO
                                 if res[3] < hoje and res[4] != 'ativo':
                                     st.error(f"⚠️ Acesso bloqueado: Período de teste expirado em {res[3].strftime('%d/%m/%Y')}.")
+                                    
+                                    # 1. O botão apenas liga a chave na memória
                                     if st.button("Renove agora a sua assinatura", use_container_width=True, key="renov_btn_login"):
                                         st.session_state["show_pay_login"] = True
-                                    if st.session_state.get("show_pay_login"):
+                                    
+                                    # 2. Esta parte garante que o painel apareça se a chave estiver ligada
+                                    if st.session_state.get("show_pay_login", False):
                                         exibir_painel_pagamento_pro("login")
                                 else:
                                     st.session_state.update({"logado": True, "perfil": "admin", "empresa": res[0], "usuario_ativo": res[0]})
-                                    logado_agora = True
+                                    st.rerun()
                             else:
                                 # 3. VERIFICAÇÃO DE USUÁRIOS DA EQUIPE (MOTORISTAS OU OUTROS ADMINS SECUNDÁRIOS)
                                 u_equipe = conn.execute(text("""
