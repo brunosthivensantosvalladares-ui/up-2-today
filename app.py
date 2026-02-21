@@ -255,11 +255,11 @@ if not st.session_state["logado"]:
             with st.container(border=True):
                 user_input = st.text_input("E-mail ou Usuário", key="u_log").lower()
                 pw_input = st.text_input("Senha", type="password", key="p_log")
+                
                 if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
                     engine = get_engine()
                     inicializar_banco()
                     
-                    # Verifique se 'masters' tem o mesmo recuo que 'engine' acima
                     masters = {
                         "bruno": {"pw": "master789", "perfil": "admin", "empresa": "U2T_MATRIZ", "login_original": "bruno"},
                         "motorista": {"pw": "12345", "perfil": "motorista", "empresa": "U2T_MATRIZ", "login_original": "motorista_padrao"}
@@ -270,50 +270,36 @@ if not st.session_state["logado"]:
                         st.session_state.update({"logado": True, "perfil": masters[user_input]["perfil"], "empresa": masters[user_input]["empresa"], "usuario_ativo": masters[user_input]["login_original"]})
                         logado_agora = True
                     else:
-                        # 2. VERIFICAÇÃO NO BANCO DE DADOS (CLIENTES SAAS - AGORA ACEITA E-MAIL OU NOME)
                         with engine.connect() as conn:
-                            res = conn.execute(text("""
-                                SELECT nome, email, senha, data_expiracao, status_assinatura 
-                                FROM empresa 
-                                WHERE LOWER(email) = :u OR LOWER(nome) = :u
-                            """), {"u": user_input}).fetchone()
-                            
+                            res = conn.execute(text("SELECT nome, email, senha, data_expiracao, status_assinatura FROM empresa WHERE LOWER(email) = :u OR LOWER(nome) = :u"), {"u": user_input}).fetchone()
                             if res and res[2] == pw_input:
                                 hoje = datetime.now().date()
-                                # TRAVA DE SEGURANÇA: DATA DE EXPIRAÇÃO COM BOTÃO DE RENOVAÇÃO
                                 if res[3] < hoje and res[4] != 'ativo':
-                                    st.error(f"⚠️ Acesso bloqueado: Período de teste expirado em {res[3].strftime('%d/%m/%Y')}.")
-                                    
-                                    # 1. O botão apenas liga a chave na memória
-                                    if st.button("Renove agora a sua assinatura", use_container_width=True, key="renov_btn_login"):
-                                        st.session_state["show_pay_login"] = True
-                                    
-                                    # 2. Esta parte garante que o painel apareça se a chave estiver ligada
-                                    if st.session_state.get("show_pay_login", False):
-                                        exibir_painel_pagamento_pro("login")
+                                    # ATENÇÃO: Aqui ligamos o erro na memória da sessão
+                                    st.session_state["erro_bloqueio"] = True
+                                    st.session_state["msg_bloqueio"] = f"⚠️ Acesso bloqueado: Período de teste expirado em {res[3].strftime('%d/%m/%Y')}."
                                 else:
                                     st.session_state.update({"logado": True, "perfil": "admin", "empresa": res[0], "usuario_ativo": res[0]})
-                                    st.rerun()
+                                    logado_agora = True
                             else:
-                                # 3. VERIFICAÇÃO DE USUÁRIOS DA EQUIPE (MOTORISTAS OU OUTROS ADMINS SECUNDÁRIOS)
-                                u_equipe = conn.execute(text("""
-                                    SELECT login, senha, perfil, empresa_id FROM usuarios WHERE LOWER(login) = :u
-                                """), {"u": user_input}).fetchone()
-                                if u_equipe and u_equipe[1] == pw_input:
-                                    st.session_state.update({"logado": True, "perfil": u_equipe[2], "empresa": u_equipe[3], "usuario_ativo": u_equipe[0]})
+                                u_eq = conn.execute(text("SELECT login, senha, perfil, empresa_id FROM usuarios WHERE LOWER(login) = :u"), {"u": user_input}).fetchone()
+                                if u_eq and u_eq[1] == pw_input:
+                                    st.session_state.update({"logado": True, "perfil": u_eq[2], "empresa": u_eq[3], "usuario_ativo": u_eq[0]})
                                     logado_agora = True
                     
                     if logado_agora:
-                        if "opcao_selecionada" in st.session_state: del st.session_state["opcao_selecionada"]
-                        with st.spinner(""):
-                            for t in ["UP", "UP 2", "UP 2 T", "UP 2 TODAY"]:
-                                placeholder_topo.markdown(f"<h1 style='text-align: center; margin-bottom: 0;'><span class='logo-u'>{t[:2]}</span><span class='logo-2t'>{t[2:]}</span></h1>", unsafe_allow_html=True)
-                                time_module.sleep(0.05)
                         st.rerun()
-                    else:
-                        try: expirou = res[3] < hoje and res[4] != 'ativo'
-                        except: expirou = False
-                        if not expirou: st.error("Dados incorretos ou conta inexistente.")
+                    elif not st.session_state.get("erro_bloqueio"):
+                        st.error("Dados incorretos.")
+
+                # ESTA PARTE É O SEGREDO: Ela fica fora do botão, vigiando a memória
+                if st.session_state.get("erro_bloqueio"):
+                    st.error(st.session_state["msg_bloqueio"])
+                    if st.button("Renove agora a sua assinatura", use_container_width=True, key="renov_btn_login"):
+                        st.session_state["show_pay_login"] = True
+                    
+                    if st.session_state.get("show_pay_login"):
+                        exibir_painel_pagamento_pro("login")
 
         else: # ABA CRIAR CONTA
             with st.container(border=True):
