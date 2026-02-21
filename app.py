@@ -319,7 +319,7 @@ if not st.session_state["logado"]:
                         except: expirou = False
                         if not expirou: st.error("Dados incorretos ou conta inexistente.")
 
-        else: # ABA CRIAR CONTA
+                    else: # ABA CRIAR CONTA
             with st.container(border=True):
                 st.markdown(f"<h4 style='color:{COR_AZUL}'>🚀 7 Dias Grátis</h4>", unsafe_allow_html=True)
                 n_emp = st.text_input("Nome da Empresa")
