@@ -422,7 +422,8 @@ else:
                     else:
                         if c4.button("🚫 Bloquear", key=f"bloq_{row['id']}", use_container_width=True):
                             with engine.connect() as conn:
-                                conn.execute(text("UPDATE empresa SET status_assinatura = 'expirado' WHERE id = :i"), {"i": row['id']})
+                                conn.execute(text("UPDATE empresa SET status_assinatura = 'ativo', data_expiracao = :d WHERE id = :i"), 
+             {"d": datetime.now().date() + timedelta(days=30), "i": row['id']})
                                 conn.commit()
                             st.rerun()
 
