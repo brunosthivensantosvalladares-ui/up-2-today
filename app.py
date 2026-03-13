@@ -450,8 +450,8 @@ else:
         st.subheader("📅 Agenda Principal")
         
         # --- GESTOR DE PENDÊNCIAS (TAREFAS ATRASADAS) ---
-        df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
-                                   engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
+        df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False"), 
+                           engine, params={"hoje": str(datetime.now().date())})
         
         if not df_atrasadas.empty:
             with st.container(border=True):
