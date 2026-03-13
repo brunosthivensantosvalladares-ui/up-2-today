@@ -6,34 +6,86 @@ from datetime import datetime, time, timedelta
 from io import BytesIO
 from fpdf import FPDF
 import time as time_module # Importado para evitar conflito com datetime.time
-def gerar_pdf_manual_oficial():
+def gerar_pdf_manual_oficial_pro():
     from fpdf import FPDF
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # --- PÁGINA 1: CAPA E IDENTIDADE ---
     pdf.add_page()
+    # Logotipo (Sigla Colorida)
+    pdf.set_font("Arial", "B", 40)
+    pdf.set_text_color(27, 34, 76) # Azul Logo
+    pdf.cell(15, 20, "U", ln=0)
+    pdf.set_text_color(49, 173, 100) # Verde Logo
+    pdf.cell(40, 20, "2T", ln=1)
     
-    # Cabeçalho Personalizado
-    pdf.set_font("Arial", "B", 20)
-    pdf.set_text_color(27, 34, 76) # Cor azul da sua marca
-    pdf.cell(190, 15, f"MANUAL DE OPERAÇÃO - {NOME_SISTEMA}", ln=True, align='C')
+    pdf.ln(20)
+    pdf.set_font("Arial", "B", 26)
+    pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 15, "MANUAL OFICIAL DO USUÁRIO", ln=True, align='C')
+    pdf.set_font("Arial", "I", 14)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(190, 10, f"{NOME_SISTEMA} - {SLOGAN}", ln=True, align='C')
     
-    pdf.set_font("Arial", "I", 10)
-    pdf.cell(190, 10, f"{SLOGAN}", ln=True, align='C')
-    pdf.ln(10)
-    
-    # Conteúdo (Exemplo de Seção)
-    pdf.set_font("Arial", "B", 14)
+    pdf.ln(30)
+    pdf.set_font("Arial", "B", 16)
+    pdf.set_text_color(49, 173, 100)
+    pdf.cell(190, 10, "POR QUE USAR O UP 2 TODAY?", ln=True)
+    pdf.set_font("Arial", "", 12)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(190, 10, "1. GESTÃO DE AGENDAMENTOS", ln=True)
+    ganhos = [
+        "- Redução de até 30% no tempo de veículo parado (Lead Time).",
+        "- Eliminação total de papéis e planilhas paralelas.",
+        "- Histórico real de manutenções por veículo.",
+        "- Comunicação instantânea entre Motorista e Oficina.",
+        "- Controle de produtividade da equipe em tempo real."
+    ]
+    for ganho in ganhos:
+        pdf.cell(190, 8, ganho, ln=True)
+
+    # --- PÁGINA 2: PERFIS DE ACESSO ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "1. PERFIS DE USUÁRIO E SEGURANÇA", ln=True)
+    pdf.ln(5)
+    
+    # Explicação Admin vs Motorista
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(190, 8, "A) Perfil ADMINISTRADOR:", ln=True)
     pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, "A Agenda Principal é o centro do sistema. Nela, voce deve monitorar as tarefas diárias, marcar o 'OK' ao concluir e utilizar o Assistente Virtual (ponto pulsante) para resolver pendências atrasadas.")
+    pdf.multi_cell(190, 7, "Acesso total ao sistema. Pode aprovar chamados, gerenciar a agenda, cadastrar novos usuários e visualizar indicadores de performance. É o perfil indicado para gestores de frota e chefes de oficina.")
     
     pdf.ln(5)
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(190, 10, "2. CHAMADOS E TRIAGEM", ln=True)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(190, 8, "B) Perfil MOTORISTA:", ln=True)
     pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, "Os chamados feitos pelos motoristas aparecem na aba 'Chamados Oficina'. O gestor deve definir o executor e a data antes de aprovar.")
+    pdf.multi_cell(190, 7, "Interface simplificada. O motorista só visualiza duas abas: 'Abrir Solicitação' e 'Status'. Ele reporta o problema e acompanha se o veículo já foi agendado ou concluído, sem interferir na agenda da oficina.")
 
-    # Retorna o PDF pronto para o Streamlit
+    # --- PÁGINA 3: FUNCIONALIDADES DAS ABAS ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "2. GUIA DE FUNCIONALIDADES", ln=True)
+    pdf.ln(5)
+
+    funcionalidades = [
+        ("📅 Agenda Principal", "Onde a mágica acontece. Exibe os serviços do dia. Use os filtros para planejar o amanhã. O Assistente Virtual (ponto pulsante) avisa se algo ficou para trás."),
+        ("📥 Chamados Oficina", "A caixa de entrada. Aqui você recebe os alertas dos motoristas e decide quem será o executor e em qual data o serviço será feito."),
+        ("📋 Cadastro Direto", "Para manutenções preventivas (trocas de óleo, revisões por KM). Cadastre aqui e o serviço 'nasce' automaticamente na agenda."),
+        ("📊 Indicadores", "Gestão baseada em dados. Veja quais áreas estão mais sobrecarregadas e qual o tempo médio de conserto dos seus veículos.")
+    ]
+
+    for titulo, desc in funcionalidades:
+        pdf.set_font("Arial", "B", 12)
+        pdf.set_text_color(49, 173, 100)
+        pdf.cell(190, 8, titulo, ln=True)
+        pdf.set_font("Arial", "", 11)
+        pdf.set_text_color(0, 0, 0)
+        pdf.multi_cell(190, 7, desc)
+        pdf.ln(4)
+
     return pdf.output(dest='S').encode('latin-1')
     
 # --- CONFIGURAÇÕES DE MARCA ---
