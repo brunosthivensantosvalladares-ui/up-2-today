@@ -454,27 +454,24 @@ else:
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
         if not df_atrasadas.empty:
+            # Forçamos a renderização na Sidebar com o elemento de chat
             with st.sidebar:
                 st.divider()
-                # O componente abaixo cria o formato de balão de conversa
-                with st.chat_message("assistant"):
+                with st.chat_message("assistant", avatar="🤖"):
                     st.write(f"Olá, **{usuario_ativo.capitalize()}**! 👋")
-                    st.write(f"Notei que existem **{len(df_atrasadas)}** tarefas atrasadas no sistema.")
-                    st.write("Como você prefere resolver isso agora?")
+                    st.write(f"Notei que existem **{len(df_atrasadas)}** tarefas atrasadas.")
                     
-                    # O Popover funciona como a aba que expande e minimiza
+                    # Aba expansível para ações
                     with st.popover("🤖 Resolver Pendências", use_container_width=True):
                         st.markdown("### 🛠️ Gestão de Atrasos")
                         
-                        # Botões de ação rápida
                         c1, c2 = st.columns(2)
                         if c1.button("✅ Concluir Tudo", use_container_width=True, key="chat_all"):
                             with engine.connect() as conn:
                                 conn.execute(text("UPDATE tarefas SET realizado = True WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                              {"hoje": str(datetime.now().date()), "eid": emp_id})
                                 conn.commit()
-                            st.success("Feito!")
-                            time_module.sleep(1); st.rerun()
+                            st.rerun()
 
                         if c2.button("📅 Hoje", use_container_width=True, key="chat_today"):
                             with engine.connect() as conn:
@@ -484,12 +481,7 @@ else:
                             st.rerun()
 
                         st.divider()
-                        st.write("🔍 **Ajuste Individual:**")
-                        
-                        # Preparando os dados para o editor
                         df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
-                        
-                        # Editor com Descrição e Executor incluídos
                         ed_pontual = st.data_editor(
                             df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'executor', 'descricao']],
                             column_config={
@@ -508,9 +500,7 @@ else:
                                     conn.execute(text("UPDATE tarefas SET realizado = :r, data = :d, executor = :ex, descricao = :ds WHERE id = :id"),
                                                  {"r": bool(row['realizado']), "d": str(row['data']), "ex": str(row['executor']), "ds": str(row['descricao']), "id": int(rid)})
                                 conn.commit()
-                            st.success("Atualizado!")
-                            time_module.sleep(1); st.rerun()
-        
+                            st.rerun()
         st.divider()
         
         # --- PAINEL DE RESUMO RÁPIDO NO TOPO ---
