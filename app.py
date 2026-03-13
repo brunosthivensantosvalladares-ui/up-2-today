@@ -449,59 +449,57 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # --- ASSISTENTE VIRTUAL DE PENDÊNCIAS (CHATBOT) ---
+        # --- ASSISTENTE VIRTUAL (CHATBOT) NO TOPO DA PÁGINA ---
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
         if not df_atrasadas.empty:
-            # Forçamos a renderização na Sidebar com o elemento de chat
-            with st.sidebar:
-                st.divider()
-                with st.chat_message("assistant", avatar="🤖"):
-                    st.write(f"Olá, **{usuario_ativo.capitalize()}**! 👋")
-                    st.write(f"Notei que existem **{len(df_atrasadas)}** tarefas atrasadas.")
+            # Removido o 'with st.sidebar' para ele ir para o centro/topo
+            with st.chat_message("assistant", avatar=LOGO_URL):
+                st.write(f"Olá, **{usuario_ativo.capitalize()}**! 👋")
+                st.markdown(f"Notei que existem **{len(df_atrasadas)}** tarefas atrasadas no sistema. Como deseja resolver?")
+                
+                # Popover para as ações (funciona como a aba que abre e fecha)
+                with st.popover("🤖 Resolver Pendências", use_container_width=True):
+                    st.markdown("### 🛠️ Gestão de Atrasos")
+                    c1, c2 = st.columns(2)
+                    if c1.button("✅ Concluir Tudo", use_container_width=True, key="chat_all_topo"):
+                        with engine.connect() as conn:
+                            conn.execute(text("UPDATE tarefas SET realizado = True WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                         {"hoje": str(datetime.now().date()), "eid": emp_id})
+                            conn.commit()
+                        st.rerun()
+
+                    if c2.button("📅 Trazer para Hoje", use_container_width=True, key="chat_today_topo"):
+                        with engine.connect() as conn:
+                            conn.execute(text("UPDATE tarefas SET data = :hoje WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                         {"hoje": str(datetime.now().date()), "eid": emp_id})
+                            conn.commit()
+                        st.rerun()
+
+                    st.divider()
+                    st.write("🔍 **Ajuste Individual:**")
+                    df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
+                    ed_chat = st.data_editor(
+                        df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'executor', 'descricao']],
+                        column_config={
+                            "realizado": st.column_config.CheckboxColumn("OK"),
+                            "data": st.column_config.DateColumn("Nova Data"),
+                            "executor": "Executor",
+                            "descricao": "Serviço"
+                        },
+                        use_container_width=True,
+                        key="ed_chat_topo_completo"
+                    )
                     
-                    # Aba expansível para ações
-                    with st.popover("🤖 Resolver Pendências", use_container_width=True):
-                        st.markdown("### 🛠️ Gestão de Atrasos")
-                        
-                        c1, c2 = st.columns(2)
-                        if c1.button("✅ Concluir Tudo", use_container_width=True, key="chat_all"):
-                            with engine.connect() as conn:
-                                conn.execute(text("UPDATE tarefas SET realizado = True WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
-                                             {"hoje": str(datetime.now().date()), "eid": emp_id})
-                                conn.commit()
-                            st.rerun()
-
-                        if c2.button("📅 Hoje", use_container_width=True, key="chat_today"):
-                            with engine.connect() as conn:
-                                conn.execute(text("UPDATE tarefas SET data = :hoje WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
-                                             {"hoje": str(datetime.now().date()), "eid": emp_id})
-                                conn.commit()
-                            st.rerun()
-
-                        st.divider()
-                        df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
-                        ed_pontual = st.data_editor(
-                            df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'executor', 'descricao']],
-                            column_config={
-                                "realizado": st.column_config.CheckboxColumn("OK"),
-                                "data": st.column_config.DateColumn("Data"),
-                                "executor": "Quem faz",
-                                "descricao": "O que fazer"
-                            },
-                            use_container_width=True,
-                            key="ed_chat_completo"
-                        )
-                        
-                        if st.button("Salvar Alterações", type="primary", use_container_width=True, key="save_chat"):
-                            with engine.connect() as conn:
-                                for rid, row in ed_pontual.iterrows():
-                                    conn.execute(text("UPDATE tarefas SET realizado = :r, data = :d, executor = :ex, descricao = :ds WHERE id = :id"),
-                                                 {"r": bool(row['realizado']), "d": str(row['data']), "ex": str(row['executor']), "ds": str(row['descricao']), "id": int(rid)})
-                                conn.commit()
-                            st.rerun()
-        st.divider()
+                    if st.button("Salvar Alterações", type="primary", use_container_width=True, key="save_chat_topo"):
+                        with engine.connect() as conn:
+                            for rid, row in ed_chat.iterrows():
+                                conn.execute(text("UPDATE tarefas SET realizado = :r, data = :d, executor = :ex, descricao = :ds WHERE id = :id"),
+                                             {"r": bool(row['realizado']), "d": str(row['data']), "ex": str(row['executor']), "ds": str(row['descricao']), "id": int(rid)})
+                            conn.commit()
+                        st.rerun()
+            st.divider() # Linha para separar o assistente do resto da agenda
         
         # --- PAINEL DE RESUMO RÁPIDO NO TOPO ---
         try:
