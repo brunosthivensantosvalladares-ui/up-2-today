@@ -510,6 +510,7 @@ else:
                                 conn.commit()
                             st.success("Atualizado!")
                             time_module.sleep(1); st.rerun()
+        
         st.divider()
         
         # --- PAINEL DE RESUMO RÁPIDO NO TOPO ---
@@ -529,10 +530,9 @@ else:
             st.warning("⚠️ O banco de dados está iniciando. Aguarde alguns segundos.")
             st.stop()
 
-        # INSTRUÇÃO INTUITIVA
         st.info("✍️ **Logística:** Clique nas colunas de **Início** ou **Fim** para preencher. **PCM:** Clique em **Área** ou **Executor** para definir. O salvamento é automático.")
         
-        # 1. Carrega os dados da agenda normal
+        # 1. Carrega os dados da agenda
         df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC"), engine, params={"eid": emp_id})
         hoje_input, amanha = datetime.now().date(), datetime.now().date() + timedelta(days=1)
         
