@@ -442,6 +442,12 @@ else:
 
     elif aba_ativa == "📜 Status":
         st.subheader("📜 Status dos Meus Veículos")
+        st.info("Aqui você pode ver se o seu veículo já foi agendado ou concluído pela oficina.")
+        df_status = pd.read_sql(text("SELECT prefixo, data_solicitacao as data, status, descricao FROM chamados WHERE empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
+        st.dataframe(df_status, use_container_width=True, hide_index=True)
+
+    elif aba_ativa == "📅 Agenda Principal":
+        st.subheader("📅 Agenda Principal")
         with st.popover("💡 Como usar a Agenda?"):
             st.markdown("""
                 ### 📅 Guia Rápido - Agenda
@@ -450,13 +456,6 @@ else:
                 3. **Conclusão:** Marque a coluna **OK** para finalizar o serviço. Isso atualiza os indicadores automaticamente.
                 4. **Relatórios:** Use os botões **PDF** ou **Excel** para baixar os dados que estão na tela.
             """)
-        st.info("Aqui você pode ver se o seu veículo já foi agendado ou concluído pela oficina.")
-        df_status = pd.read_sql(text("SELECT prefixo, data_solicitacao as data, status, descricao FROM chamados WHERE empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
-        st.dataframe(df_status, use_container_width=True, hide_index=True)
-
-    elif aba_ativa == "📅 Agenda Principal":
-        st.subheader("📅 Agenda Principal")
-        
        # --- ASSISTENTE COM ANIMAÇÃO DE ALERTA ---
         if "exibir_bot" not in st.session_state:
             st.session_state.exibir_bot = True
