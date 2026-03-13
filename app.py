@@ -449,9 +449,20 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-       # --- ASSISTENTE ESTILO NOTIFICAÇÃO (CARD DISCRETO COM POPUP AMPLIADO) ---
+       # --- ASSISTENTE COM POPUP LARGO (LARGURA DOBRADA) ---
         if "exibir_bot" not in st.session_state:
             st.session_state.exibir_bot = True
+
+        # Injetando CSS para forçar a largura do Popover
+        st.markdown("""
+            <style>
+                /* Alvo: container do popover aberto */
+                div[data-testid="stPopoverBody"] {
+                    width: 850px !important;
+                    max-width: 90vw !important;
+                }
+            </style>
+        """, unsafe_allow_html=True)
 
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
@@ -459,17 +470,14 @@ else:
         if not df_atrasadas.empty:
             if st.session_state.exibir_bot:
                 with st.container(border=True):
-                    # Mantemos os botões externos pequenos com colunas
                     c_txt, c_solve, c_close = st.columns([0.65, 0.25, 0.1])
                     
                     with c_txt:
                         st.markdown(f"🤖 **Assistente:** Você possui **{len(df_atrasadas)}** pendências atrasadas.")
                     
                     with c_solve:
-                        # O Popover abre a caixa de edição
                         with st.popover("⚙️ Resolver", use_container_width=True):
                             st.markdown("### 🛠️ Gestão de Atrasos")
-                            st.write("Escolha uma ação rápida ou ajuste individualmente abaixo:")
                             
                             c1, c2 = st.columns(2)
                             if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
@@ -484,27 +492,25 @@ else:
                                 st.rerun()
                             
                             st.divider()
-                            st.markdown("🔍 **Ajuste Pontual (Edite a tabela abaixo):**")
+                            st.markdown("🔍 **Ajuste Pontual:**")
                             
-                            # Convertendo data para exibição correta
                             df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
                             
-                            # Aumentamos a percepção de tamanho garantindo container_width e height
+                            # Tabela com largura total dentro do popover largo
                             ed_mini = st.data_editor(
                                 df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'executor', 'descricao']],
                                 column_config={
                                     "realizado": st.column_config.CheckboxColumn("OK"),
                                     "data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"),
-                                    "prefixo": "Veículo",
-                                    "executor": "Responsável",
-                                    "descricao": "O que fazer"
+                                    "prefixo": st.column_config.TextColumn("Veículo", width="small"),
+                                    "executor": st.column_config.TextColumn("Responsável", width="medium"),
+                                    "descricao": st.column_config.TextColumn("O que fazer", width="large")
                                 },
-                                use_container_width=True, # Faz a tabela usar toda a largura da caixa
-                                num_rows="fixed",
+                                use_container_width=True,
                                 key="ed_mini_ajuste_largo"
                             )
                             
-                            if st.button("💾 Salvar Alterações Pontuais", type="primary", use_container_width=True):
+                            if st.button("💾 Salvar Alterações", type="primary", use_container_width=True):
                                 with engine.connect() as conn:
                                     for rid, row in ed_mini.iterrows():
                                         conn.execute(text("UPDATE tarefas SET realizado=:r, data=:d, executor=:ex, descricao=:ds WHERE id=:id"),
@@ -513,12 +519,11 @@ else:
                                 st.rerun()
 
                     with c_close:
-                        if st.button("❌", help="Fechar assistente", key="close_assist"):
+                        if st.button("❌", key="close_assist"):
                             st.session_state.exibir_bot = False
                             st.rerun()
             else:
-                # Opção discreta de reabrir
-                if st.button("🤖 Reabrir Assistente", key="reopen_assist"):
+                if st.button("🤖 Reabrir Assistente"):
                     st.session_state.exibir_bot = True
                     st.rerun()
         
