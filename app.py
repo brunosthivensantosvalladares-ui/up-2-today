@@ -6,7 +6,36 @@ from datetime import datetime, time, timedelta
 from io import BytesIO
 from fpdf import FPDF
 import time as time_module # Importado para evitar conflito com datetime.time
+def gerar_pdf_manual_oficial():
+    from fpdf import FPDF
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Cabeçalho Personalizado
+    pdf.set_font("Arial", "B", 20)
+    pdf.set_text_color(27, 34, 76) # Cor azul da sua marca
+    pdf.cell(190, 15, f"MANUAL DE OPERAÇÃO - {NOME_SISTEMA}", ln=True, align='C')
+    
+    pdf.set_font("Arial", "I", 10)
+    pdf.cell(190, 10, f"{SLOGAN}", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Conteúdo (Exemplo de Seção)
+    pdf.set_font("Arial", "B", 14)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, "1. GESTÃO DE AGENDAMENTOS", ln=True)
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(190, 7, "A Agenda Principal é o centro do sistema. Nela, voce deve monitorar as tarefas diárias, marcar o 'OK' ao concluir e utilizar o Assistente Virtual (ponto pulsante) para resolver pendências atrasadas.")
+    
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(190, 10, "2. CHAMADOS E TRIAGEM", ln=True)
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(190, 7, "Os chamados feitos pelos motoristas aparecem na aba 'Chamados Oficina'. O gestor deve definir o executor e a data antes de aprovar.")
 
+    # Retorna o PDF pronto para o Streamlit
+    return pdf.output(dest='S').encode('latin-1')
+    
 # --- CONFIGURAÇÕES DE MARCA ---
 NOME_SISTEMA = "Up 2 Today"
 SLOGAN = "Seu Controle. Nossa Prioridade."
@@ -344,7 +373,7 @@ else:
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
-        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores", "👥 Minha Equipe"]
+        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores", "👥 Minha Equipe", "📖 Manual"]
         # ADICIONA ABA MASTER APENAS PARA O BRUNO
         if usuario_ativo == "bruno":
             opcoes.append("👑 Gestão Master")
@@ -445,7 +474,35 @@ else:
         st.info("Aqui você pode ver se o seu veículo já foi agendado ou concluído pela oficina.")
         df_status = pd.read_sql(text("SELECT prefixo, data_solicitacao as data, status, descricao FROM chamados WHERE empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
         st.dataframe(df_status, use_container_width=True, hide_index=True)
-
+    
+    elif aba_ativa == "📖 Manual":
+        st.subheader("📖 Guia Oficial do Usuário")
+        
+        # O Botão de Download fica aqui
+        pdf_conteudo = gerar_pdf_manual_oficial()
+        st.download_button(
+            label="📥 Baixar Manual em PDF",
+            data=pdf_conteudo,
+            file_name="Manual_Up2Today.pdf",
+            mime="application/pdf",
+            type="primary" # Deixa o botão em destaque
+        )
+        
+        st.divider()
+        
+        # Texto explicativo que aparece na tela
+        with st.container(border=True):
+            st.markdown(f"""
+            ### Bem-vindo ao {NOME_SISTEMA}
+            Este guia rápido ajuda você a entender o fluxo da oficina:
+            
+            1. **Agenda:** Controle diário e baixa de serviços.
+            2. **Chamados:** Recebimento de alertas dos motoristas.
+            3. **Indicadores:** Análise de produtividade e atrasos.
+            
+            **Dica:** Sempre que vir um ponto vermelho pulsante, significa que há tarefas atrasadas!
+            """)
+    
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         with st.popover("💡 Como usar a Agenda?"):
