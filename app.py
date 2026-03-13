@@ -450,69 +450,69 @@ else:
         st.subheader("📅 Agenda Principal")
         
         # --- ASSISTENTE VIRTUAL DE PENDÊNCIAS (CHATBOT) ---
-df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
-                           engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
+        df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                   engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
-if not df_atrasadas.empty:
-    with st.sidebar:
-        st.divider()
-        # O componente abaixo cria o formato de balão de conversa
-        with st.chat_message("assistant"):
-            st.write(f"Olá, **{usuario_ativo.capitalize()}**! 👋")
-            st.write(f"Notei que existem **{len(df_atrasadas)}** tarefas atrasadas no sistema.")
-            st.write("Como você prefere resolver isso agora?")
-            
-            # O Popover funciona como a aba que expande e minimiza
-            with st.popover("🤖 Resolver Pendências", use_container_width=True):
-                st.markdown("### 🛠️ Gestão de Atrasos")
-                
-                # Botões de ação rápida
-                c1, c2 = st.columns(2)
-                if c1.button("✅ Concluir Tudo", use_container_width=True, key="chat_all"):
-                    with engine.connect() as conn:
-                        conn.execute(text("UPDATE tarefas SET realizado = True WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
-                                     {"hoje": str(datetime.now().date()), "eid": emp_id})
-                        conn.commit()
-                    st.success("Feito!")
-                    time_module.sleep(1); st.rerun()
-
-                if c2.button("📅 Hoje", use_container_width=True, key="chat_today"):
-                    with engine.connect() as conn:
-                        conn.execute(text("UPDATE tarefas SET data = :hoje WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
-                                     {"hoje": str(datetime.now().date()), "eid": emp_id})
-                        conn.commit()
-                    st.rerun()
-
+        if not df_atrasadas.empty:
+            with st.sidebar:
                 st.divider()
-                st.write("🔍 **Ajuste Individual:**")
-                
-                # Preparando os dados para o editor
-                df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
-                
-                # Editor com Descrição e Executor incluídos
-                ed_pontual = st.data_editor(
-                    df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'executor', 'descricao']],
-                    column_config={
-                        "realizado": st.column_config.CheckboxColumn("OK"),
-                        "data": st.column_config.DateColumn("Data"),
-                        "executor": "Quem faz",
-                        "descricao": "O que fazer"
-                    },
-                    use_container_width=True,
-                    key="ed_chat_completo"
-                )
-                
-                if st.button("Salvar Alterações", type="primary", use_container_width=True, key="save_chat"):
-                    with engine.connect() as conn:
-                        for rid, row in ed_pontual.iterrows():
-                            conn.execute(text("UPDATE tarefas SET realizado = :r, data = :d, executor = :ex, descricao = :ds WHERE id = :id"),
-                                         {"r": bool(row['realizado']), "d": str(row['data']), "ex": str(row['executor']), "ds": str(row['descricao']), "id": int(rid)})
-                        conn.commit()
-                    st.success("Atualizado!")
-                    time_module.sleep(1); st.rerun()
+                # O componente abaixo cria o formato de balão de conversa
+                with st.chat_message("assistant"):
+                    st.write(f"Olá, **{usuario_ativo.capitalize()}**! 👋")
+                    st.write(f"Notei que existem **{len(df_atrasadas)}** tarefas atrasadas no sistema.")
+                    st.write("Como você prefere resolver isso agora?")
+                    
+                    # O Popover funciona como a aba que expande e minimiza
+                    with st.popover("🤖 Resolver Pendências", use_container_width=True):
+                        st.markdown("### 🛠️ Gestão de Atrasos")
+                        
+                        # Botões de ação rápida
+                        c1, c2 = st.columns(2)
+                        if c1.button("✅ Concluir Tudo", use_container_width=True, key="chat_all"):
+                            with engine.connect() as conn:
+                                conn.execute(text("UPDATE tarefas SET realizado = True WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                             {"hoje": str(datetime.now().date()), "eid": emp_id})
+                                conn.commit()
+                            st.success("Feito!")
+                            time_module.sleep(1); st.rerun()
+
+                        if c2.button("📅 Hoje", use_container_width=True, key="chat_today"):
+                            with engine.connect() as conn:
+                                conn.execute(text("UPDATE tarefas SET data = :hoje WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                             {"hoje": str(datetime.now().date()), "eid": emp_id})
+                                conn.commit()
+                            st.rerun()
+
+                        st.divider()
+                        st.write("🔍 **Ajuste Individual:**")
+                        
+                        # Preparando os dados para o editor
+                        df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
+                        
+                        # Editor com Descrição e Executor incluídos
+                        ed_pontual = st.data_editor(
+                            df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'executor', 'descricao']],
+                            column_config={
+                                "realizado": st.column_config.CheckboxColumn("OK"),
+                                "data": st.column_config.DateColumn("Data"),
+                                "executor": "Quem faz",
+                                "descricao": "O que fazer"
+                            },
+                            use_container_width=True,
+                            key="ed_chat_completo"
+                        )
+                        
+                        if st.button("Salvar Alterações", type="primary", use_container_width=True, key="save_chat"):
+                            with engine.connect() as conn:
+                                for rid, row in ed_pontual.iterrows():
+                                    conn.execute(text("UPDATE tarefas SET realizado = :r, data = :d, executor = :ex, descricao = :ds WHERE id = :id"),
+                                                 {"r": bool(row['realizado']), "d": str(row['data']), "ex": str(row['executor']), "ds": str(row['descricao']), "id": int(rid)})
+                                conn.commit()
+                            st.success("Atualizado!")
+                            time_module.sleep(1); st.rerun()
         st.divider()
         
-        # --- PAINEL DE RESUMO RÁPIDO NO TOPO (COM PROTEÇÃO CONTRA ERROS) ---
+        # --- PAINEL DE RESUMO RÁPIDO NO TOPO ---
         try:
             df_stats = pd.read_sql(text("SELECT data, realizado FROM tarefas WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
             if not df_stats.empty:
@@ -529,14 +529,14 @@ if not df_atrasadas.empty:
             st.warning("⚠️ O banco de dados está iniciando. Aguarde alguns segundos.")
             st.stop()
 
-        # INSTRUÇÃO INTUITIVA PARA LOGÍSTICA E PCM
+        # INSTRUÇÃO INTUITIVA
         st.info("✍️ **Logística:** Clique nas colunas de **Início** ou **Fim** para preencher. **PCM:** Clique em **Área** ou **Executor** para definir. O salvamento é automático.")
         
-        # 1. Carrega os dados
+        # 1. Carrega os dados da agenda normal
         df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC"), engine, params={"eid": emp_id})
         hoje_input, amanha = datetime.now().date(), datetime.now().date() + timedelta(days=1)
         
-        # 2. LINHA DE FILTROS (Data, Área e Turno)
+        # 2. LINHA DE FILTROS
         c_per, c_area, c_turno = st.columns([0.4, 0.3, 0.3])
         with c_per: p_sel = st.date_input("Filtrar Período", [hoje_input, amanha], key="dt_filter")
         
