@@ -449,6 +449,60 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
+        # --- GESTOR DE PENDÊNCIAS (TAREFAS ATRASADAS) ---
+        df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                   engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
+        
+        if not df_atrasadas.empty:
+            with st.container(border=True):
+                st.markdown(f"<h4 style='color:{COR_AZUL}'>⚠️ Pendências de Dias Anteriores</h4>", unsafe_allow_html=True)
+                st.write(f"Identificamos **{len(df_atrasadas)}** atividades que não foram concluídas no prazo.")
+                
+                # Ações em Massa
+                c1, c2, c3 = st.columns([1, 1, 1.2])
+                if c1.button("✅ Concluir Todas", use_container_width=True, key="conc_all"):
+                    with engine.connect() as conn:
+                        conn.execute(text("UPDATE tarefas SET realizado = True WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                     {"hoje": str(datetime.now().date()), "eid": emp_id})
+                        conn.commit()
+                    st.rerun()
+                
+                if c2.button("📅 Reagendar para Hoje", use_container_width=True, key="reag_hoje"):
+                    with engine.connect() as conn:
+                        conn.execute(text("UPDATE tarefas SET data = :hoje WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                     {"hoje": str(datetime.now().date()), "eid": emp_id})
+                        conn.commit()
+                    st.rerun()
+
+                with c3:
+                    nova_dt = st.date_input("Reagendar Massa para:", datetime.now().date(), key="dt_massa_pend")
+                    if st.button("Confirmar Data em Massa", use_container_width=True):
+                        with engine.connect() as conn:
+                            conn.execute(text("UPDATE tarefas SET data = :nova WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                         {"nova": str(nova_dt), "hoje": str(datetime.now().date()), "eid": emp_id})
+                            conn.commit()
+                        st.rerun()
+
+                # Edição Pontual
+                with st.expander("🔍 Tratar individualmente"):
+                    ed_p = st.data_editor(
+                        df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'descricao']],
+                        column_config={
+                            "realizado": st.column_config.CheckboxColumn("OK"),
+                            "data": st.column_config.DateColumn("Nova Data")
+                        },
+                        use_container_width=True,
+                        key="ed_pontual_pend"
+                    )
+                    if st.button("Salvar Alterações Pontuais", type="primary"):
+                        with engine.connect() as conn:
+                            for rid, row in ed_p.iterrows():
+                                conn.execute(text("UPDATE tarefas SET realizado = :r, data = :d WHERE id = :id"),
+                                             {"r": bool(row['realizado']), "d": str(row['data']), "id": int(rid)})
+                            conn.commit()
+                        st.rerun()
+        st.divider()
+        
         # --- PAINEL DE RESUMO RÁPIDO NO TOPO (COM PROTEÇÃO CONTRA ERROS) ---
         try:
             df_stats = pd.read_sql(text("SELECT data, realizado FROM tarefas WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
