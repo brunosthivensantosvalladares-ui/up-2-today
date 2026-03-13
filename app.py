@@ -646,6 +646,13 @@ else:
 
     elif aba_ativa == "📋 Cadastro Direto":
         st.subheader("📝 Agendamento Direto")
+        with st.popover("💡 Como usar o Cadastro Direto?"):
+            st.markdown("""
+                ### 📝 Guia Rápido - Cadastro
+                1. **Uso:** Utilize para preventivas ou serviços que não vieram de uma reclamação de motorista.
+                2. **Formulário:** Preencha os campos e confirme.
+                3. **Gestão:** Na lista abaixo, você pode excluir registros marcando a coluna **Exc** e clicando em excluir.
+            """)
         st.info("💡 **Atenção:** Use este formulário para serviços que não vieram de chamados.")
         st.warning("⚠️ **Nota:** Para reagendar ou corrigir, basta alterar diretamente na lista abaixo. O salvamento é automático.")
         with st.form("f_d", clear_on_submit=True):
@@ -684,6 +691,14 @@ else:
     elif aba_ativa == "📥 Chamados Oficina":
         c_tit, c_refresh = st.columns([0.8, 0.2])
         with c_tit: st.subheader("📥 Aprovação de Chamados")
+        with st.popover("💡 Como usar os Chamados?"):
+            st.markdown("""
+                ### 📥 Guia Rápido - Chamados
+                1. **Triagem:** Veja o que os motoristas relataram. 
+                2. **Planejamento:** Preencha o Executor e a Data Programada diretamente na tabela.
+                3. **Aprovação:** Marque a caixa **Aprovar?** e clique no botão **Processar Agendamentos**. 
+                *O serviço sairá desta lista e irá direto para a Agenda Principal.*
+            """)
         with c_refresh:
             if st.button("🔄 Atualizar Lista", use_container_width=True):
                 if 'df_ap_work' in st.session_state: del st.session_state.df_ap_work
