@@ -449,17 +449,34 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-       # --- ASSISTENTE COM POPUP LARGO (LARGURA DOBRADA) ---
+       # --- ASSISTENTE COM ANIMAÇÃO DE ALERTA ---
         if "exibir_bot" not in st.session_state:
             st.session_state.exibir_bot = True
 
-        # Injetando CSS para forçar a largura do Popover
+        # Injetando CSS para o Popover Largo e a Animação do Ponto Pulsante
         st.markdown("""
             <style>
-                /* Alvo: container do popover aberto */
+                /* Largura do Popover */
                 div[data-testid="stPopoverBody"] {
                     width: 850px !important;
                     max-width: 90vw !important;
+                }
+                
+                /* Animação do Ponto Pulsante */
+                .pulsing-dot {
+                    height: 10px;
+                    width: 10px;
+                    background-color: #ff4b4b;
+                    border-radius: 50%;
+                    display: inline-block;
+                    margin-right: 5px;
+                    box-shadow: 0 0 0 0 rgba(255, 75, 75, 1);
+                    animation: pulse 1.5s infinite;
+                }
+                @keyframes pulse {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.7); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 75, 75, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 75, 75, 0); }
                 }
             </style>
         """, unsafe_allow_html=True)
@@ -473,12 +490,15 @@ else:
                     c_txt, c_solve, c_close = st.columns([0.65, 0.25, 0.1])
                     
                     with c_txt:
-                        st.markdown(f"🤖 **Assistente:** Você possui **{len(df_atrasadas)}** pendências atrasadas.")
+                        # O ponto pulsante e o ícone de atenção
+                        st.markdown(f"""
+                            <span class="pulsing-dot"></span> 
+                            <b style='color: #ff4b4b;'>🔔 ATENÇÃO:</b> Você possui <b>{len(df_atrasadas)}</b> pendências atrasadas.
+                        """, unsafe_allow_html=True)
                     
                     with c_solve:
                         with st.popover("⚙️ Resolver", use_container_width=True):
                             st.markdown("### 🛠️ Gestão de Atrasos")
-                            
                             c1, c2 = st.columns(2)
                             if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
                                 with engine.connect() as conn:
@@ -493,23 +513,17 @@ else:
                             
                             st.divider()
                             st.markdown("🔍 **Ajuste Pontual:**")
-                            
                             df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
-                            
-                            # Tabela com largura total dentro do popover largo
                             ed_mini = st.data_editor(
                                 df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'executor', 'descricao']],
                                 column_config={
                                     "realizado": st.column_config.CheckboxColumn("OK"),
                                     "data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"),
-                                    "prefixo": st.column_config.TextColumn("Veículo", width="small"),
-                                    "executor": st.column_config.TextColumn("Responsável", width="medium"),
-                                    "descricao": st.column_config.TextColumn("O que fazer", width="large")
+                                    "descricao": st.column_config.TextColumn("Serviço", width="large")
                                 },
                                 use_container_width=True,
-                                key="ed_mini_ajuste_largo"
+                                key="ed_mini_ajuste_animado"
                             )
-                            
                             if st.button("💾 Salvar Alterações", type="primary", use_container_width=True):
                                 with engine.connect() as conn:
                                     for rid, row in ed_mini.iterrows():
@@ -523,7 +537,8 @@ else:
                             st.session_state.exibir_bot = False
                             st.rerun()
             else:
-                if st.button("🤖 Reabrir Assistente"):
+                # Botão de reabrir também ganha um ícone para não ser esquecido
+                if st.button("🔔 Ver Pendências", help="Existem tarefas atrasadas!"):
                     st.session_state.exibir_bot = True
                     st.rerun()
         
