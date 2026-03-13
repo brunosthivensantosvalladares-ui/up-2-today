@@ -453,9 +453,9 @@ else:
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                            engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
-if not df_atrasadas.empty:
-    with st.sidebar:
-        st.divider()
+            if not df_atrasadas.empty:
+        with st.sidebar:
+            st.divider()
         with st.chat_message("assistant"):
             st.write(f"Olá {usuario_ativo.capitalize()}! 👋")
             st.markdown(f"Identifiquei **{len(df_atrasadas)} atividades atrasadas**. Como deseja tratar?")
