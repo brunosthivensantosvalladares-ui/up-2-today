@@ -449,18 +449,9 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-       # --- ASSISTENTE ESTILO NOTIFICAÇÃO (JANELA AMPLIADA) ---
+       # --- ASSISTENTE ESTILO NOTIFICAÇÃO (CAIXA EXPANDIDA) ---
         if "exibir_bot" not in st.session_state:
             st.session_state.exibir_bot = True
-
-        # CSS para aumentar a largura do Popover (a caixa que abre)
-        st.markdown("""
-            <style>
-                [data-testid="stPopoverBody"] {
-                    width: 600px !important; /* Aproximadamente 2.5x o padrão */
-                }
-            </style>
-        """, unsafe_allow_html=True)
 
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
@@ -468,45 +459,50 @@ else:
         if not df_atrasadas.empty:
             if st.session_state.exibir_bot:
                 with st.container(border=True):
+                    # Mantemos o balão de fora discreto com colunas
                     c_txt, c_solve, c_close = st.columns([0.6, 0.3, 0.1])
                     
                     with c_txt:
                         st.markdown(f"🤖 **Assistente:** Você possui **{len(df_atrasadas)}** pendências.")
                     
                     with c_solve:
-                        # A caixa que abre aqui será maior por causa do CSS acima
+                        # O segredo para a caixa ser maior está aqui: use_container_width=True
                         with st.popover("⚙️ Resolver", use_container_width=True):
-                            st.markdown("### 🛠️ Ações Rápidas")
-                            c1, c2 = st.columns(2)
-                            if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
+                            st.markdown("### 🛠️ Gestão de Pendências")
+                            
+                            # Botões de ação rápida (mantidos pequenos/discretos em colunas internas)
+                            ci1, ci2, _ = st.columns([1, 1, 1])
+                            if ci1.button("✅ Tudo OK", key="mini_all"):
                                 with engine.connect() as conn:
                                     conn.execute(text("UPDATE tarefas SET realizado=True WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
                                     conn.commit()
                                 st.rerun()
-                            if c2.button("📅 Hoje", use_container_width=True, key="mini_today"):
+                            if ci2.button("📅 P/ Hoje", key="mini_today"):
                                 with engine.connect() as conn:
                                     conn.execute(text("UPDATE tarefas SET data=:hoje WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
                                     conn.commit()
                                 st.rerun()
                             
                             st.divider()
-                            st.markdown("🔍 **Ajuste Pontual:**")
-                            df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
+                            st.markdown("🔍 **Ajuste Detalhado (Pontual):**")
                             
-                            # A tabela agora terá muito mais espaço lateral
+                            # Para a caixa parecer maior, o editor de dados deve ocupar 100% do espaço
+                            df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
                             ed_mini = st.data_editor(
                                 df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'executor', 'descricao']],
                                 column_config={
                                     "realizado": st.column_config.CheckboxColumn("OK"),
                                     "data": st.column_config.DateColumn("Data"),
-                                    "executor": "Executor",
-                                    "descricao": "Descrição"
+                                    "prefixo": "Veículo",
+                                    "executor": "Quem faz",
+                                    "descricao": "Serviço"
                                 },
-                                use_container_width=True,
-                                key="ed_mini_ajuste_largo"
+                                use_container_width=True, # Isso faz a caixa se expandir horizontalmente
+                                height=400, # Aumenta a altura vertical da caixa de edição (3.5x maior que o padrão)
+                                key="ed_mini_ajuste_grande"
                             )
                             
-                            if st.button("Salvar Alterações", type="primary", use_container_width=True):
+                            if st.button("Salvar Alterações Pontuais", type="primary", use_container_width=True):
                                 with engine.connect() as conn:
                                     for rid, row in ed_mini.iterrows():
                                         conn.execute(text("UPDATE tarefas SET realizado=:r, data=:d, executor=:ex, descricao=:ds WHERE id=:id"),
