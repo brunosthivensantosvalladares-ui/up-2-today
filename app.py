@@ -449,17 +449,21 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # --- ASSISTENTE VIRTUAL (CHATBOT) NO TOPO DA PÁGINA ---
+        # --- ASSISTENTE VIRTUAL (CHATBOT) COM FORMATO DE BALÃO REAL ---
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
         if not df_atrasadas.empty:
-            # Removido o 'with st.sidebar' para ele ir para o centro/topo
-            with st.chat_message("assistant", avatar=LOGO_URL):
-                st.write(f"Olá, **{usuario_ativo.capitalize()}**! 👋")
-                st.markdown(f"Notei que existem **{len(df_atrasadas)}** tarefas atrasadas no sistema. Como deseja resolver?")
+            # Criamos o balão visual usando um container com borda e fundo leve
+            with st.container(border=True):
+                col_bot, col_txt = st.columns([0.1, 0.9])
+                with col_bot:
+                    st.image(LOGO_URL, width=50) # Sua logo como avatar
+                with col_txt:
+                    st.markdown(f"**Assistente Up 2 Today**")
+                    st.write(f"Olá, **{usuario_ativo.capitalize()}**! 👋 Notei que existem **{len(df_atrasadas)}** tarefas atrasadas no sistema. Como deseja resolver?")
                 
-                # Popover para as ações (funciona como a aba que abre e fecha)
+                # Aba expansível para as ações
                 with st.popover("🤖 Resolver Pendências", use_container_width=True):
                     st.markdown("### 🛠️ Gestão de Atrasos")
                     c1, c2 = st.columns(2)
@@ -499,7 +503,7 @@ else:
                                              {"r": bool(row['realizado']), "d": str(row['data']), "ex": str(row['executor']), "ds": str(row['descricao']), "id": int(rid)})
                             conn.commit()
                         st.rerun()
-            st.divider() # Linha para separar o assistente do resto da agenda
+            st.divider()
         
         # --- PAINEL DE RESUMO RÁPIDO NO TOPO ---
         try:
