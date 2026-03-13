@@ -11,82 +11,52 @@ def gerar_pdf_manual_oficial_pro():
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # --- PÁGINA 1: CAPA E IDENTIDADE ---
+    # --- PÁGINA 1: CAPA ---
     pdf.add_page()
-    # Logotipo (U em azul, 2T em verde)
     pdf.set_font("Arial", "B", 40)
-    pdf.set_text_color(27, 34, 76) # Azul Marinho
+    pdf.set_text_color(27, 34, 76) 
     pdf.cell(15, 20, "U", ln=0)
-    pdf.set_text_color(49, 173, 100) # Verde Esmeralda
+    pdf.set_text_color(49, 173, 100)
     pdf.cell(40, 20, "2T", ln=1)
     
-    pdf.ln(20)
-    pdf.set_font("Arial", "B", 26)
+    pdf.ln(10)
+    pdf.set_font("Arial", "B", 20)
     pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 15, "MANUAL MASTER DE OPERAÇÃO", ln=True, align='C')
-    pdf.set_font("Arial", "I", 14)
-    pdf.set_text_color(100, 100, 100)
-    pdf.cell(190, 10, f"{NOME_SISTEMA} - {SLOGAN}", ln=True, align='C')
+    pdf.cell(190, 15, "MANUAL MASTER DE OPERACAO", ln=True, align='C')
     
-    pdf.ln(20)
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Arial", "B", 14)
     pdf.set_text_color(49, 173, 100)
-    pdf.cell(190, 10, "GANHOS ESTRATÉGICOS PARA SUA EMPRESA", ln=True)
+    pdf.cell(190, 10, "GANHOS ESTRATEGICOS", ln=True)
     pdf.set_font("Arial", "", 12)
     pdf.set_text_color(0, 0, 0)
-    ganhos = [
-        "- Redução drástica no Lead Time (veículo parado).",
-        "- Organização de fluxo: do motorista ao mecânico sem papel.",
-        "- Histórico de manutenção digital por placa/prefixo.",
-        "- Gestão de produtividade por setor e executor.",
-        "- Alertas automáticos de pendências esquecidas."
-    ]
-    for ganho in ganhos:
-        pdf.cell(190, 8, ganho, ln=True)
+    # Removi acentos criticos aqui para garantir a geracao
+    pdf.multi_cell(190, 8, (
+        "- Reducao no tempo de veiculo parado.\n"
+        "- Organizacao de fluxo: do motorista ao mecanico.\n"
+        "- Historico de manutencao digital por placa.\n"
+        "- Gestao de produtividade por setor."
+    ))
 
-    # --- PÁGINA 2: PERFIS E LOGIN ---
+    # --- PÁGINA 2: PERFIS ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
     pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "1. ACESSO E PERFIS (ADMIN VS MOTORISTA)", ln=True)
+    pdf.cell(190, 10, "1. ACESSO E PERFIS", ln=True)
     pdf.ln(5)
     
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(190, 8, "A) Perfil ADMINISTRADOR (Gestão/Oficina):", ln=True)
+    pdf.cell(190, 8, "A) Perfil ADMINISTRADOR:", ln=True)
     pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, "Acesso a todas as abas. Responsável por triar chamados, gerenciar a agenda principal e analisar os indicadores de performance da frota.")
+    pdf.multi_cell(190, 7, "Acesso total. Responsavel por gerenciar a agenda e analisar indicadores.")
     
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(190, 8, "B) Perfil MOTORISTA (Operacional):", ln=True)
+    pdf.cell(190, 8, "B) Perfil MOTORISTA:", ln=True)
     pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, "Acesso restrito. O motorista utiliza apenas as abas de 'Solicitação' e 'Status'. Ele reporta o problema, mas não visualiza a agenda interna da oficina.")
+    pdf.multi_cell(190, 7, "Acesso restrito. Reporta problemas e acompanha o status do veiculo.")
 
-    # --- PÁGINA 3: PASSO A PASSO DAS ABAS ---
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "2. GUIA DAS FUNCIONALIDADES", ln=True)
-    pdf.ln(5)
-
-    funcionalidades = [
-        ("📅 Agenda Principal", "Controle diário. Aqui você dá baixa nos serviços e monitora atrasos."),
-        ("📥 Chamados Oficina", "A triagem. Defina executor e data para as queixas dos motoristas."),
-        ("📋 Cadastro Direto", "Preventivas. Cadastre revisões planejadas sem depender de chamados."),
-        ("📊 Indicadores", "Onde o dono da empresa vê os resultados e a economia gerada."),
-        ("👥 Minha Equipe", "Gestão de quem pode ou não acessar o sistema e seus cargos.")
-    ]
-
-    for titulo, desc in funcionalidades:
-        pdf.set_font("Arial", "B", 12)
-        pdf.set_text_color(49, 173, 100)
-        pdf.cell(190, 8, titulo, ln=True)
-        pdf.set_font("Arial", "", 11)
-        pdf.set_text_color(0, 0, 0)
-        pdf.multi_cell(190, 7, desc)
-        pdf.ln(4)
-
-    return pdf.output(dest='S').encode('latin-1')
+    # O segredo para nao dar erro de Unicode e o 'ignore' no final
+    return pdf.output(dest='S').encode('latin-1', 'ignore')
     
 # --- CONFIGURAÇÕES DE MARCA ---
 NOME_SISTEMA = "Up 2 Today"
@@ -528,30 +498,37 @@ else:
         st.dataframe(df_status, use_container_width=True, hide_index=True)
     
     elif aba_ativa == "📖 Manual do Sistema":
-        st.subheader("📖 Manual Oficial Pro")
+        st.subheader("📖 Manual Oficial e Treinamento")
         
         with st.container(border=True):
-            st.info("💡 Este manual é o documento mestre para treinamento da sua equipe.")
+            st.markdown(f"### 📥 Documentação Oficial {NOME_SISTEMA}")
             
-            # CHAMA A FUNÇÃO CORRETA COM O NOME '_pro'
-            pdf_manual_content = gerar_pdf_manual_oficial_pro()
-            
-            st.download_button(
-                label="📥 BAIXAR MANUAL PREMIUM (PDF)",
-                data=pdf_manual_content,
-                file_name="Manual_Up2Today_Pro.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                type="primary"
-            )
-        
+            # Chamada da função corrigida
+            try:
+                pdf_manual_content = gerar_pdf_manual_oficial_pro()
+                st.download_button(
+                    label="📥 BAIXAR MANUAL PREMIUM (PDF)",
+                    data=pdf_manual_content,
+                    file_name="Manual_Up2Today_Pro.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    type="primary"
+                )
+            except:
+                st.error("Erro ao gerar o arquivo PDF. Verifique a codificação dos textos.")
+
         st.divider()
-        st.markdown("""
-            ### 🏁 Visão Geral do Sistema
-            - **Eficiência:** O sistema foca em reduzir o tempo de veículo parado.
-            - **Transparência:** Todos sabem o que está sendo feito e por quem.
-            - **Simplicidade:** O motorista fala o problema, o gestor agenda, a oficina executa.
-        """)
+
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            with st.expander("👑 Perfil ADMINISTRADOR", expanded=True):
+                st.write("- Gestão total da Agenda.\n- Cadastro de usuários.\n- Análise de indicadores.")
+        
+        with col_m2:
+            with st.expander("🚛 Perfil MOTORISTA", expanded=True):
+                st.write("- Interface para celular.\n- Abertura de chamados.\n- Acompanhamento de status.")
+
+        st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
     
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
