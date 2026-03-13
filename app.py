@@ -531,7 +531,7 @@ else:
         st.subheader("📖 Guia Oficial do Usuário")
         
         # O Botão de Download fica aqui
-        pdf_conteudo = gerar_pdf_manual_oficial()
+        pdf_conteudo = gerar_pdf_manual_oficial_pro()
         st.download_button(
             label="📥 Baixar Manual em PDF",
             data=pdf_conteudo,
