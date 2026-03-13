@@ -425,7 +425,7 @@ else:
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
-        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores", "👥 Minha Equipe", "📖 Manual"]
+        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores", "👥 Minha Equipe", "📖 Manual do Sistema"]
         # ADICIONA ABA MASTER APENAS PARA O BRUNO
         if usuario_ativo == "bruno":
             opcoes.append("👑 Gestão Master")
