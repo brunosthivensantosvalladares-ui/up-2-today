@@ -527,33 +527,31 @@ else:
         df_status = pd.read_sql(text("SELECT prefixo, data_solicitacao as data, status, descricao FROM chamados WHERE empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
         st.dataframe(df_status, use_container_width=True, hide_index=True)
     
-    elif aba_ativa == "📖 Manual":
-        st.subheader("📖 Guia Oficial do Usuário")
+    elif aba_ativa == "📖 Manual do Sistema":
+        st.subheader("📖 Manual Oficial Pro")
         
-        # O Botão de Download fica aqui
-        pdf_conteudo = gerar_pdf_manual_oficial_pro()
-        st.download_button(
-            label="📥 Baixar Manual em PDF",
-            data=pdf_conteudo,
-            file_name="Manual_Up2Today.pdf",
-            mime="application/pdf",
-            type="primary" # Deixa o botão em destaque
-        )
+        with st.container(border=True):
+            st.info("💡 Este manual é o documento mestre para treinamento da sua equipe.")
+            
+            # CHAMA A FUNÇÃO CORRETA COM O NOME '_pro'
+            pdf_manual_content = gerar_pdf_manual_oficial_pro()
+            
+            st.download_button(
+                label="📥 BAIXAR MANUAL PREMIUM (PDF)",
+                data=pdf_manual_content,
+                file_name="Manual_Up2Today_Pro.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+                type="primary"
+            )
         
         st.divider()
-        
-        # Texto explicativo que aparece na tela
-        with st.container(border=True):
-            st.markdown(f"""
-            ### Bem-vindo ao {NOME_SISTEMA}
-            Este guia rápido ajuda você a entender o fluxo da oficina:
-            
-            1. **Agenda:** Controle diário e baixa de serviços.
-            2. **Chamados:** Recebimento de alertas dos motoristas.
-            3. **Indicadores:** Análise de produtividade e atrasos.
-            
-            **Dica:** Sempre que vir um ponto vermelho pulsante, significa que há tarefas atrasadas!
-            """)
+        st.markdown("""
+            ### 🏁 Visão Geral do Sistema
+            - **Eficiência:** O sistema foca em reduzir o tempo de veículo parado.
+            - **Transparência:** Todos sabem o que está sendo feito e por quem.
+            - **Simplicidade:** O motorista fala o problema, o gestor agenda, a oficina executa.
+        """)
     
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
