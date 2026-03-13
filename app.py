@@ -450,61 +450,58 @@ else:
         st.subheader("📅 Agenda Principal")
         
         # --- GESTOR DE PENDÊNCIAS (TAREFAS ATRASADAS) ---
-        df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False"), 
-                           engine, params={"hoje": str(datetime.now().date())})
-        
-        if not df_atrasadas.empty:
-            with st.container(border=True):
-                st.markdown(f"<h4 style='color:{COR_AZUL}'>⚠️ Pendências de Dias Anteriores</h4>", unsafe_allow_html=True)
-                st.write(f"Identificamos **{len(df_atrasadas)}** atividades que não foram concluídas no prazo.")
+        df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                           engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
+
+if not df_atrasadas.empty:
+    with st.sidebar:
+        st.divider()
+        with st.chat_message("assistant"):
+            st.write(f"Olá {usuario_ativo.capitalize()}! 👋")
+            st.markdown(f"Identifiquei **{len(df_atrasadas)} atividades atrasadas**. Como deseja tratar?")
+            
+            # Botão que abre as opções detalhadas (o Popover funciona como a "aba minimizável")
+            with st.popover("⚙️ Resolver Pendências", use_container_width=True):
+                st.info("Escolha uma ação para os serviços atrasados:")
                 
-                # Ações em Massa
-                c1, c2, c3 = st.columns([1, 1, 1.2])
-                if c1.button("✅ Concluir Todas", use_container_width=True, key="conc_all"):
+                # Ações rápidas
+                if st.button("✅ Concluir Tudo", use_container_width=True, key="bot_chat_all"):
                     with engine.connect() as conn:
                         conn.execute(text("UPDATE tarefas SET realizado = True WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                      {"hoje": str(datetime.now().date()), "eid": emp_id})
                         conn.commit()
+                    st.success("Tudo concluído!")
+                    time_module.sleep(1)
                     st.rerun()
-                
-                if c2.button("📅 Reagendar para Hoje", use_container_width=True, key="reag_hoje"):
+
+                if st.button("📅 Trazer para Hoje", use_container_width=True, key="bot_chat_today"):
                     with engine.connect() as conn:
                         conn.execute(text("UPDATE tarefas SET data = :hoje WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                      {"hoje": str(datetime.now().date()), "eid": emp_id})
                         conn.commit()
                     st.rerun()
-
-                with c3:
-                    nova_dt = st.date_input("Reagendar Massa para:", datetime.now().date(), key="dt_massa_pend")
-                    if st.button("Confirmar Data em Massa", use_container_width=True):
-                        with engine.connect() as conn:
-                            conn.execute(text("UPDATE tarefas SET data = :nova WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
-                                         {"nova": str(nova_dt), "hoje": str(datetime.now().date()), "eid": emp_id})
-                            conn.commit()
-                        st.rerun()
-
-                # Edição Pontual
-                with st.expander("🔍 Tratar individualmente"):
-                    # AJUSTE AQUI: Convertendo o texto do banco para Data real
-                    df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
-                    
-                    ed_p = st.data_editor(
-                        df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'descricao']],
-                        column_config={
-                            "realizado": st.column_config.CheckboxColumn("OK"),
-                            "data": st.column_config.DateColumn("Nova Data", format="DD/MM/YYYY")
-                        },
-                        use_container_width=True,
-                        key="ed_pontual_pend"
-                    )
-                    
-                    if st.button("Salvar Alterações Pontuais", type="primary"):
-                        with engine.connect() as conn:
-                            for rid, row in ed_p.iterrows():
-                                conn.execute(text("UPDATE tarefas SET realizado = :r, data = :d WHERE id = :id"),
-                                             {"r": bool(row['realizado']), "d": str(row['data']), "id": int(rid)})
-                            conn.commit()
-                        st.rerun()
+                
+                st.divider()
+                st.write("📝 **Ajuste Pontual:**")
+                # O editor de dados dentro da "janela" do popover
+                df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
+                ed_pontual = st.data_editor(
+                    df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo']],
+                    column_config={
+                        "realizado": st.column_config.CheckboxColumn("OK"),
+                        "data": st.column_config.DateColumn("Data")
+                    },
+                    use_container_width=True,
+                    key="ed_chat_pontual"
+                )
+                
+                if st.button("Salvar Alterações", type="primary", use_container_width=True):
+                    with engine.connect() as conn:
+                        for rid, row in ed_pontual.iterrows():
+                            conn.execute(text("UPDATE tarefas SET realizado = :r, data = :d WHERE id = :id"),
+                                         {"r": bool(row['realizado']), "d": str(row['data']), "id": int(rid)})
+                        conn.commit()
+                    st.rerun()
         st.divider()
         
         # --- PAINEL DE RESUMO RÁPIDO NO TOPO (COM PROTEÇÃO CONTRA ERROS) ---
