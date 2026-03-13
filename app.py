@@ -454,11 +454,11 @@ else:
                            engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
         if not df_atrasadas.empty:
-        with st.sidebar:
-            st.divider()
-        with st.chat_message("assistant"):
-            st.write(f"Olá {usuario_ativo.capitalize()}! 👋")
-            st.markdown(f"Identifiquei **{len(df_atrasadas)} atividades atrasadas**. Como deseja tratar?")
+            with st.sidebar:
+                st.divider()
+            with st.chat_message("assistant"):
+                st.write(f"Olá {usuario_ativo.capitalize()}! 👋")
+                st.markdown(f"Identifiquei **{len(df_atrasadas)} atividades atrasadas**. Como deseja tratar?")
             
             # Botão que abre as opções detalhadas (o Popover funciona como a "aba minimizável")
             with st.popover("⚙️ Resolver Pendências", use_container_width=True):
