@@ -485,15 +485,19 @@ else:
 
                 # Edição Pontual
                 with st.expander("🔍 Tratar individualmente"):
+                    # AJUSTE AQUI: Convertendo o texto do banco para Data real
+                    df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
+                    
                     ed_p = st.data_editor(
                         df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'descricao']],
                         column_config={
                             "realizado": st.column_config.CheckboxColumn("OK"),
-                            "data": st.column_config.DateColumn("Nova Data")
+                            "data": st.column_config.DateColumn("Nova Data", format="DD/MM/YYYY")
                         },
                         use_container_width=True,
                         key="ed_pontual_pend"
                     )
+                    
                     if st.button("Salvar Alterações Pontuais", type="primary"):
                         with engine.connect() as conn:
                             for rid, row in ed_p.iterrows():
