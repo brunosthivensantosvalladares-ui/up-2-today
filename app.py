@@ -449,61 +449,56 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # --- ASSISTENTE VIRTUAL (CHATBOT) COM FORMATO DE BALÃO REAL ---
+        # --- LÓGICA DO ASSISTENTE DESLIZANTE (NOTIFICAÇÃO) ---
+        # 1. Inicializa os estados de visibilidade
+        if "exibir_bot" not in st.session_state:
+            st.session_state.exibir_bot = True
+
+        # 2. Busca as tarefas atrasadas
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
+        # 3. Se houver atrasos e o usuário não tiver fechado o balão
         if not df_atrasadas.empty:
-            # Criamos o balão visual usando um container com borda e fundo leve
-            with st.container(border=True):
-                col_bot, col_txt = st.columns([0.1, 0.9])
-                with col_bot:
-                    st.image(LOGO_URL, width=50) # Sua logo como avatar
-                with col_txt:
-                    st.markdown(f"**Assistente Up 2 Today**")
-                    st.write(f"Olá, **{usuario_ativo.capitalize()}**! 👋 Notei que existem **{len(df_atrasadas)}** tarefas atrasadas no sistema. Como deseja resolver?")
-                
-                # Aba expansível para as ações
-                with st.popover("🤖 Resolver Pendências", use_container_width=True):
-                    st.markdown("### 🛠️ Gestão de Atrasos")
-                    c1, c2 = st.columns(2)
-                    if c1.button("✅ Concluir Tudo", use_container_width=True, key="chat_all_topo"):
-                        with engine.connect() as conn:
-                            conn.execute(text("UPDATE tarefas SET realizado = True WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
-                                         {"hoje": str(datetime.now().date()), "eid": emp_id})
-                            conn.commit()
-                        st.rerun()
-
-                    if c2.button("📅 Trazer para Hoje", use_container_width=True, key="chat_today_topo"):
-                        with engine.connect() as conn:
-                            conn.execute(text("UPDATE tarefas SET data = :hoje WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
-                                         {"hoje": str(datetime.now().date()), "eid": emp_id})
-                            conn.commit()
-                        st.rerun()
-
-                    st.divider()
-                    st.write("🔍 **Ajuste Individual:**")
-                    df_atrasadas['data'] = pd.to_datetime(df_atrasadas['data']).dt.date
-                    ed_chat = st.data_editor(
-                        df_atrasadas.set_index('id')[['realizado', 'data', 'prefixo', 'executor', 'descricao']],
-                        column_config={
-                            "realizado": st.column_config.CheckboxColumn("OK"),
-                            "data": st.column_config.DateColumn("Nova Data"),
-                            "executor": "Executor",
-                            "descricao": "Serviço"
-                        },
-                        use_container_width=True,
-                        key="ed_chat_topo_completo"
-                    )
+            if st.session_state.exibir_bot:
+                # Criamos um container com borda para parecer um balão de recado
+                with st.container(border=True):
+                    # Dividimos em: Texto (grande), Botão Resolver (médio), Botão Fechar (pequeno)
+                    c_txt, c_solve, c_close = st.columns([0.7, 0.2, 0.1])
                     
-                    if st.button("Salvar Alterações", type="primary", use_container_width=True, key="save_chat_topo"):
-                        with engine.connect() as conn:
-                            for rid, row in ed_chat.iterrows():
-                                conn.execute(text("UPDATE tarefas SET realizado = :r, data = :d, executor = :ex, descricao = :ds WHERE id = :id"),
-                                             {"r": bool(row['realizado']), "d": str(row['data']), "ex": str(row['executor']), "ds": str(row['descricao']), "id": int(rid)})
-                            conn.commit()
-                        st.rerun()
-            st.divider()
+                    with c_txt:
+                        st.markdown(f"🤖 **Assistente:** Você possui **{len(df_atrasadas)}** pendências atrasadas.")
+                    
+                    with c_solve:
+                        # Popover discreto
+                        with st.popover("⚙️ Resolver", use_container_width=True):
+                            st.markdown("### 🛠️ Ações Rápidas")
+                            if st.button("✅ Concluir Tudo", use_container_width=True, key="btn_all"):
+                                with engine.connect() as conn:
+                                    conn.execute(text("UPDATE tarefas SET realizado = True WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                                 {"hoje": str(datetime.now().date()), "eid": emp_id})
+                                    conn.commit()
+                                st.rerun()
+                            if st.button("📅 Hoje", use_container_width=True, key="btn_today"):
+                                with engine.connect() as conn:
+                                    conn.execute(text("UPDATE tarefas SET data = :hoje WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
+                                                 {"hoje": str(datetime.now().date()), "eid": emp_id})
+                                    conn.commit()
+                                st.rerun()
+
+                    with c_close:
+                        # Botão X bem pequeno para fechar
+                        if st.button("❌", help="Fechar recado", key="close_assist"):
+                            st.session_state.exibir_bot = False
+                            st.rerun()
+            else:
+                # 4. Opção de Reabrir (fica um botãozinho discreto no canto ou topo)
+                c_reabrir, _ = st.columns([0.2, 0.8])
+                if c_reabrir.button("🤖 Abrir Assistente", icon="🔔"):
+                    st.session_state.exibir_bot = True
+                    st.rerun()
+
+        st.divider() # Separa o assistente da Agenda
         
         # --- PAINEL DE RESUMO RÁPIDO NO TOPO ---
         try:
