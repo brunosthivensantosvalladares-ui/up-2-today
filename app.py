@@ -8,54 +8,87 @@ from fpdf import FPDF
 import time as time_module # Importado para evitar conflito com datetime.time
 def gerar_pdf_manual_oficial_pro():
     from fpdf import FPDF
-    pdf = FPDF()
+    # Criamos uma classe herdada para configurar o cabeçalho com a logo em todas as páginas
+    class PDF(FPDF):
+        def header(self):
+            # Sigla Colorida no topo
+            self.set_font("Arial", "B", 25)
+            self.set_text_color(27, 34, 76) # Azul
+            self.cell(10, 10, "U", 0, 0)
+            self.set_text_color(49, 173, 100) # Verde
+            self.cell(20, 10, "2T", 0, 1)
+            self.ln(5)
+
+    pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # --- PÁGINA 1: CAPA ---
+    # --- PÁGINA 1: CAPA E INTRODUÇÃO ---
     pdf.add_page()
-    pdf.set_font("Arial", "B", 40)
-    pdf.set_text_color(27, 34, 76) 
-    pdf.cell(15, 20, "U", ln=0)
-    pdf.set_text_color(49, 173, 100)
-    pdf.cell(40, 20, "2T", ln=1)
+    pdf.set_font("Arial", "B", 22)
+    pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 15, "MANUAL OFICIAL DO SISTEMA TED", ln=True, align='C')
+    pdf.set_font("Arial", "I", 12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, "Tudo em Dia | Seu Controle. Nossa Prioridade.", ln=True, align='C')
     
     pdf.ln(10)
-    pdf.set_font("Arial", "B", 20)
-    pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 15, "MANUAL MASTER DE OPERACAO", ln=True, align='C')
-    
     pdf.set_font("Arial", "B", 14)
-    pdf.set_text_color(49, 173, 100)
-    pdf.cell(190, 10, "GANHOS ESTRATEGICOS", ln=True)
-    pdf.set_font("Arial", "", 12)
-    pdf.set_text_color(0, 0, 0)
-    # Removi acentos criticos aqui para garantir a geracao
-    pdf.multi_cell(190, 8, (
-        "- Reducao no tempo de veiculo parado.\n"
-        "- Organizacao de fluxo: do motorista ao mecanico.\n"
-        "- Historico de manutencao digital por placa.\n"
-        "- Gestao de produtividade por setor."
+    pdf.cell(190, 10, "1. INTRODUCAO E GANHOS ESTRATEGICOS", ln=True)
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(190, 7, (
+        "O Up 2 Today (TED) e uma plataforma de gestao integrada que une a operacao de pista (Motoristas), "
+        "o planejamento (Logistica) e a execucao (Oficina). O uso do sistema garante:\n"
+        "- Reducao de ate 30% no Lead Time de manutencao.\n"
+        "- Fim do uso de papel e planilhas paralelas de controle.\n"
+        "- Transparencia total: o motorista sabe quando sera atendido.\n"
+        "- PCM Digital: Historico real por prefixo para tomadas de decisao."
     ))
 
-    # --- PÁGINA 2: PERFIS ---
+    # --- PÁGINA 2: PERFIS E ACESSOS ---
     pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "1. ACESSO E PERFIS", ln=True)
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(190, 10, "2. PERFIS DE ACESSO (ADMIN VS MOTORISTA)", ln=True)
     pdf.ln(5)
     
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(190, 8, "A) Perfil ADMINISTRADOR:", ln=True)
+    pdf.cell(190, 8, "A) Perfil ADMINISTRADOR (Gestao e Oficina):", ln=True)
     pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, "Acesso total. Responsavel por gerenciar a agenda e analisar indicadores.")
+    pdf.multi_cell(190, 7, (
+        "Destinado aos gestores e encarregados. Possui acesso as abas de Agenda, Chamados, Cadastro e Indicadores. "
+        "E responsavel por filtrar o que os motoristas pedem e transformar em ordens de servico programadas."
+    ))
     
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(190, 8, "B) Perfil MOTORISTA:", ln=True)
+    pdf.cell(190, 8, "B) Perfil MOTORISTA (Pista):", ln=True)
     pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, "Acesso restrito. Reporta problemas e acompanha o status do veiculo.")
+    pdf.multi_cell(190, 7, (
+        "Interface simplificada para uso em celular ou tablet. O motorista so visualiza a opcao de reportar falhas "
+        "e consultar o status do seu veiculo. Isso evita poluicao visual e foco na operacao."
+    ))
 
-    # O segredo para nao dar erro de Unicode e o 'ignore' no final
+    # --- PÁGINA 3: OPERACAO DA LOGISTICA E OFICINA ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(190, 10, "3. OPERACAO DA LOGISTICA (CONCEITO DE JANELAS)", ln=True)
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(190, 7, (
+        "O sucesso do TED baseia-se na definicao de janelas de disponibilidade:\n"
+        "1. Solicitacao: O motorista aponta a falha.\n"
+        "2. Aprovacao: O gestor define a prioridade e a area (Mecanica, Eletrica, etc).\n"
+        "3. Janela de Execucao: A logistica informa quando o carro estara livre, e a oficina confirma o executor.\n"
+        "4. Encerramento: O check no 'OK' da Agenda Principal alimenta os graficos de performance instantaneamente."
+    ))
+
+    pdf.ln(10)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(190, 10, "4. ASSISTENTE VIRTUAL E PENDENCIAS", ln=True)
+    pdf.multi_cell(190, 7, (
+        "O sistema possui um robo de inteligencia que monitora servicos atrasados. O ponto pulsante vermelho "
+        "no topo da tela e um alerta critico para o gestor resolver pendencias que ficaram 'esquecidas' de dias anteriores."
+    ))
+
+    # O 'ignore' no final garante que o PDF gere mesmo se houver algum caractere estranho
     return pdf.output(dest='S').encode('latin-1', 'ignore')
     
 # --- CONFIGURAÇÕES DE MARCA ---
