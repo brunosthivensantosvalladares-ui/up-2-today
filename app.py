@@ -4,29 +4,48 @@ import os
 from sqlalchemy import create_engine, text
 from datetime import datetime, time, timedelta
 from io import BytesIO
-from fpdf import FPDF
-import time as time_module # Importado para evitar conflito com datetime.time
-        elif aba_ativa == "📖 Manual do Sistema":
-        st.subheader("📖 Manual Oficial Up 2 Today")
-        
-        with st.container(border=True):
-            st.markdown("### 📥 Documentação Premium")
-            st.write("Gere o Manual Master em formato de livro (PDF) com sumário detalhado e guias de preenchimento.")
-            
-            # Gera o PDF usando a nova função com sumário pontilhado
-            pdf_data = gerar_pdf_manual_oficial_pro()
-            
-            st.download_button(
-                label="📥 BAIXAR MANUAL PRO (PDF)",
-                data=pdf_data,
-                file_name="Manual_Up2Today_Pro.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                type="primary"
-            )
-        
-        st.divider()
-        st.info("💡 **Dica:** O manual impresso é uma ótima ferramenta para treinar novos mecânicos e motoristas no uso da plataforma.")
+def gerar_pdf_manual_oficial_pro():
+    from fpdf import FPDF
+    class PDF(FPDF):
+        def header(self):
+            self.set_font("Arial", "B", 25)
+            self.set_text_color(27, 34, 76)
+            self.cell(10, 10, "U", 0, 0)
+            self.set_text_color(49, 173, 100)
+            self.cell(20, 10, "2T", 0, 1)
+            self.ln(5)
+        def footer(self):
+            self.set_y(-15)
+            self.set_font("Arial", "I", 8)
+            self.cell(0, 10, f"Pagina {self.page_no()}", 0, 0, 'C')
+
+    pdf = PDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # Capa
+    pdf.add_page()
+    pdf.ln(50)
+    pdf.set_font("Arial", "B", 32); pdf.cell(190, 20, "MANUAL MASTER", ln=True, align='C')
+    pdf.set_font("Arial", "B", 26); pdf.set_text_color(49, 173, 100); pdf.cell(190, 15, "UP 2 TODAY", ln=True, align='C')
+    
+    # Sumário Estilo Livro
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 18); pdf.set_text_color(27, 34, 76); pdf.cell(190, 15, "SUMARIO", ln=True); pdf.ln(10)
+    
+    itens = [
+        ("Identidade e Ganhos Estrategicos", "1"),
+        ("Perfis de Acesso (Admin vs Motorista)", "3"),
+        ("Fluxo: Chamados Oficina", "4"),
+        ("Fluxo: Agenda Principal", "5"),
+        ("Cadastro de Preventivas", "6")
+    ]
+    for titulo, pagina in itens:
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(pdf.get_string_width(titulo), 10, titulo)
+        pdf.cell(190 - pdf.get_string_width(titulo) - pdf.get_string_width(pagina) - 10, 10, "." * 100, 0, 0, 'C')
+        pdf.cell(pdf.get_string_width(pagina), 10, pagina, 0, 1, 'R')
+
+    return pdf.output(dest='S').encode('latin-1', 'ignore')
     
 # --- CONFIGURAÇÕES DE MARCA ---
 NOME_SISTEMA = "Up 2 Today"
