@@ -6,7 +6,7 @@ from datetime import datetime, time, timedelta
 from io import BytesIO
 from fpdf import FPDF
 import time as time_module # Importado para evitar conflito com datetime.time
-elif aba_ativa == "📖 Manual do Sistema":
+        elif aba_ativa == "📖 Manual do Sistema":
         st.subheader("📖 Manual Oficial Up 2 Today")
         
         with st.container(border=True):
