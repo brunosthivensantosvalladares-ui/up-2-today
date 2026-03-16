@@ -55,7 +55,7 @@ def gerar_pdf_manual_oficial_pro():
         ("4. Perfis de Acesso (Admin vs Motorista)", "6"),
         ("5. Guia: Chamados Oficina", "7"),
         ("6. Guia: Agenda Principal", "8"),
-        ("7. Guia: Cadastro de Preventivas", "9"),
+        ("7. Guia: Cadastro Direto", "9"),
         ("8. Assistente Virtual e Pendências", "10")
     ]
     
@@ -147,7 +147,7 @@ def gerar_pdf_manual_oficial_pro():
     # --- PÁGINA 9: PREVENTIVAS ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "7. GUIA: CADASTRO DE PREVENTIVAS", ln=True)
+    pdf.cell(190, 10, "7. GUIA: CADASTRO DIRETO", ln=True)
     pdf.set_font("Arial", "", 11)
     pdf.multi_cell(190, 7, (
         "Utilize esta aba para manutenções programadas (revisões e trocas de óleo).\n"
