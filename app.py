@@ -10,42 +10,125 @@ def gerar_pdf_manual_oficial_pro():
     from fpdf import FPDF
     class PDF(FPDF):
         def header(self):
+            # Sigla Up 2 Today Colorida em todas as páginas
             self.set_font("Arial", "B", 25)
-            self.set_text_color(27, 34, 76)
+            self.set_text_color(27, 34, 76) # Azul
             self.cell(10, 10, "U", 0, 0)
-            self.set_text_color(49, 173, 100)
+            self.set_text_color(49, 173, 100) # Verde
             self.cell(20, 10, "2T", 0, 1)
             self.ln(5)
+
         def footer(self):
             self.set_y(-15)
             self.set_font("Arial", "I", 8)
+            self.set_text_color(128, 128, 128)
             self.cell(0, 10, f"Pagina {self.page_no()}", 0, 0, 'C')
 
     pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # Capa
+    # --- PÁGINA 1: CAPA ---
     pdf.add_page()
     pdf.ln(50)
-    pdf.set_font("Arial", "B", 32); pdf.cell(190, 20, "MANUAL MASTER", ln=True, align='C')
-    pdf.set_font("Arial", "B", 26); pdf.set_text_color(49, 173, 100); pdf.cell(190, 15, "UP 2 TODAY", ln=True, align='C')
+    pdf.set_font("Arial", "B", 35)
+    pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 20, "MANUAL MASTER", ln=True, align='C')
+    pdf.set_font("Arial", "B", 28)
+    pdf.set_text_color(49, 173, 100)
+    pdf.cell(190, 15, "UP 2 TODAY", ln=True, align='C')
+    pdf.ln(10)
+    pdf.set_font("Arial", "I", 14)
+    pdf.set_text_color(80, 80, 80)
+    pdf.cell(190, 10, "Gestao Inteligente de Manutencao de Frota", ln=True, align='C')
     
-    # Sumário Estilo Livro
+    # --- PÁGINA 2: SUMÁRIO ALINHADO ---
     pdf.add_page()
-    pdf.set_font("Arial", "B", 18); pdf.set_text_color(27, 34, 76); pdf.cell(190, 15, "SUMARIO", ln=True); pdf.ln(10)
+    pdf.set_font("Arial", "B", 18)
+    pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 15, "SUMARIO", ln=True)
+    pdf.ln(10)
     
-    itens = [
+    itens_sumario = [
         ("Identidade e Ganhos Estrategicos", "1"),
         ("Perfis de Acesso (Admin vs Motorista)", "3"),
-        ("Fluxo: Chamados Oficina", "4"),
-        ("Fluxo: Agenda Principal", "5"),
-        ("Cadastro de Preventivas", "6")
+        ("Fluxo de Trabalho: Chamados Oficina", "4"),
+        ("Fluxo de Trabalho: Agenda Principal", "5"),
+        ("Cadastro de Preventivas e Equipe", "6"),
+        ("Assistente Virtual e Pendencias", "7")
     ]
-    for titulo, pagina in itens:
+    
+    for titulo, pagina in itens_sumario:
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(pdf.get_string_width(titulo), 10, titulo)
-        pdf.cell(190 - pdf.get_string_width(titulo) - pdf.get_string_width(pagina) - 10, 10, "." * 100, 0, 0, 'C')
-        pdf.cell(pdf.get_string_width(pagina), 10, pagina, 0, 1, 'R')
+        largura_titulo = pdf.get_string_width(titulo)
+        pdf.cell(largura_titulo + 2, 10, titulo, 0, 0)
+        
+        # Preenchimento de pontos com largura fixa para alinhar perfeitamente
+        largura_pontos = 175 - largura_titulo
+        pdf.set_font("Arial", "", 12)
+        pdf.cell(largura_pontos, 10, "." * int(largura_pontos/1.5), 0, 0)
+        
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(10, 10, pagina, 0, 1, 'R')
+
+    # --- PÁGINA 3: GANHOS E PERFIS ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "1. IDENTIDADE E GANHOS ESTRATEGICOS", ln=True)
+    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(190, 7, (
+        "O Up 2 Today foi projetado para transformar a manutencao em um ativo de lucro. "
+        "Ao utilizar o sistema, a empresa ganha em rastreabilidade e reduz o Lead Time em ate 30%.\n\n"
+        "PERFIS DE ACESSO:\n"
+        "- ADMINISTRADOR: Controle total da oficina, gestao de equipe e indicadores.\n"
+        "- MOTORISTA: Interface simplificada para reportar falhas e acompanhar status."
+    ))
+
+    # --- PÁGINA 4: CHAMADOS ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "2. FLUXO DE TRABALHO: CHAMADOS", ln=True)
+    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(190, 7, (
+        "1. O Motorista abre a solicitacao pelo portal.\n"
+        "2. O Gestor acessa a aba 'Chamados Oficina'.\n"
+        "3. Preenche Executor, Data Programada e Area.\n"
+        "4. Clica em 'Aprovar' para enviar o servico para a Agenda Principal.\n"
+        "Este fluxo elimina ruidos de comunicacao e organiza a fila de espera."
+    ))
+
+    # --- PÁGINA 5: AGENDA ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "3. FLUXO DE TRABALHO: AGENDA PRINCIPAL", ln=True)
+    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(190, 7, (
+        "A Agenda e o coracao da oficina. Aqui o mecanico visualiza o que deve ser feito.\n"
+        "- Horarios: Preencha 'Inicio Disp.' e 'Fim Disp.' para medir produtividade.\n"
+        "- Baixa: O check no campo 'OK' finaliza o processo e alimenta os indicadores.\n"
+        "- Filtros: Use os filtros no topo para planejar turnos (Dia/Noite)."
+    ))
+
+    # --- PÁGINA 6: PREVENTIVAS ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "4. CADASTRO DE PREVENTIVAS", ln=True)
+    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(190, 7, (
+        "Use esta aba para servicos planejados (troca de oleo, revisao por KM).\n"
+        "Ao cadastrar no formulario, o servico nasce direto na agenda, sem passar "
+        "pela triagem de chamados. Utilize a lista inferior para excluir registros incorretos."
+    ))
+
+    # --- PÁGINA 7: ASSISTENTE ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "5. ASSISTENTE VIRTUAL E PENDENCIAS", ln=True)
+    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(190, 7, (
+        "O Assistente Virtual monitora tarefas atrasadas. O ponto pulsante vermelho 🔴 "
+        "no topo da tela e um alerta de prioridade. Use o botao 'Resolver' para "
+        "concluir em massa ou reagendar tarefas que ficaram para tras."
+    ))
 
     return pdf.output(dest='S').encode('latin-1', 'ignore')
     
