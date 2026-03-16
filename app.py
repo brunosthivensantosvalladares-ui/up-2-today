@@ -10,7 +10,7 @@ def gerar_pdf_manual_oficial_pro():
     from fpdf import FPDF
     class PDF(FPDF):
         def header(self):
-            # Sigla Up 2 Today Colorida em todas as páginas
+            # Sigla Up 2 Today Colorida
             self.set_font("Arial", "B", 25)
             self.set_text_color(27, 34, 76) # Azul
             self.cell(10, 10, "U", 0, 0)
@@ -39,97 +39,135 @@ def gerar_pdf_manual_oficial_pro():
     pdf.ln(10)
     pdf.set_font("Arial", "I", 14)
     pdf.set_text_color(80, 80, 80)
-    pdf.cell(190, 10, "Gestao Inteligente de Manutencao de Frota", ln=True, align='C')
+    pdf.cell(190, 10, "Seu Controle. Nossa Prioridade.", ln=True, align='C')
     
     # --- PÁGINA 2: SUMÁRIO ALINHADO ---
     pdf.add_page()
-    pdf.set_font("Arial", "B", 18)
-    pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 15, "SUMARIO", ln=True)
-    pdf.ln(10)
+    pdf.set_font("Arial", "B", 18); pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 15, "SUMARIO", ln=True); pdf.ln(10)
     
     itens_sumario = [
-        ("Identidade e Ganhos Estrategicos", "1"),
-        ("Perfis de Acesso (Admin vs Motorista)", "3"),
-        ("Fluxo de Trabalho: Chamados Oficina", "4"),
-        ("Fluxo de Trabalho: Agenda Principal", "5"),
-        ("Cadastro de Preventivas e Equipe", "6"),
-        ("Assistente Virtual e Pendencias", "7")
+        ("1. Introducao e Ganhos Estrategicos", "3"),
+        ("2. Fluxo de Trabalho (Workflow)", "4"),
+        ("3. Operacao da Logistica (Janelas)", "5"),
+        ("4. Perfis de Acesso (Admin vs Motorista)", "6"),
+        ("5. Guia: Chamados Oficina", "7"),
+        ("6. Guia: Agenda Principal", "8"),
+        ("7. Guia: Cadastro de Preventivas", "9"),
+        ("8. Assistente Virtual e Pendencias", "10")
     ]
     
     for titulo, pagina in itens_sumario:
-        pdf.set_font("Arial", "B", 12)
+        pdf.set_font("Arial", "B", 12); pdf.set_text_color(0)
         largura_titulo = pdf.get_string_width(titulo)
         pdf.cell(largura_titulo + 2, 10, titulo, 0, 0)
         
-        # Preenchimento de pontos com largura fixa para alinhar perfeitamente
-        largura_pontos = 175 - largura_titulo
+        # Alinhamento preciso dos pontos
+        espaco_pontos = 175 - largura_titulo
         pdf.set_font("Arial", "", 12)
-        pdf.cell(largura_pontos, 10, "." * int(largura_pontos/1.5), 0, 0)
+        pdf.cell(espaco_pontos, 10, "." * int(espaco_pontos/1.5), 0, 0)
         
         pdf.set_font("Arial", "B", 12)
         pdf.cell(10, 10, pagina, 0, 1, 'R')
 
-    # --- PÁGINA 3: GANHOS E PERFIS ---
+    # --- PÁGINA 3: INTRODUÇÃO E GANHOS ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "1. IDENTIDADE E GANHOS ESTRATEGICOS", ln=True)
-    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, "1. INTRODUCAO E GANHOS ESTRATEGICOS", ln=True)
+    pdf.set_font("Arial", "", 11); pdf.set_text_color(0)
     pdf.multi_cell(190, 7, (
-        "O Up 2 Today foi projetado para transformar a manutencao em um ativo de lucro. "
-        "Ao utilizar o sistema, a empresa ganha em rastreabilidade e reduz o Lead Time em ate 30%.\n\n"
-        "PERFIS DE ACESSO:\n"
-        "- ADMINISTRADOR: Controle total da oficina, gestao de equipe e indicadores.\n"
-        "- MOTORISTA: Interface simplificada para reportar falhas e acompanhar status."
+        "O Up 2 Today e uma plataforma de gestao integrada que une a operacao de pista (Motoristas), "
+        "o planejamento (Logistica) e a execucao (Oficina). O objetivo central e garantir que nenhum "
+        "veiculo fique parado alem do tempo estritamente necessario.\n\n"
+        "GANHOS PARA A EMPRESA:\n"
+        "- Reducao de ate 30% no Lead Time de manutencao.\n"
+        "- Eliminacao total de papeis e planilhas paralelas.\n"
+        "- Historico digital real por prefixo e placa.\n"
+        "- Comunicacao instantanea entre motorista e oficina."
     ))
 
-    # --- PÁGINA 4: CHAMADOS ---
+    # --- PÁGINA 4: WORKFLOW ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "2. FLUXO DE TRABALHO: CHAMADOS", ln=True)
-    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, "2. FLUXO DE TRABALHO (WORKFLOW)", ln=True)
+    pdf.set_font("Arial", "", 11)
     pdf.multi_cell(190, 7, (
-        "1. O Motorista abre a solicitacao pelo portal.\n"
-        "2. O Gestor acessa a aba 'Chamados Oficina'.\n"
-        "3. Preenche Executor, Data Programada e Area.\n"
-        "4. Clica em 'Aprovar' para enviar o servico para a Agenda Principal.\n"
-        "Este fluxo elimina ruidos de comunicacao e organiza a fila de espera."
+        "O ciclo de vida de uma manutencao no Up 2 Today segue tres etapas:\n\n"
+        "1. Solicitacao: O motorista aponta a falha via portal.\n"
+        "2. Aprovacao: O gestor avalia o chamado e define a prioridade e area.\n"
+        "3. Execucao: A oficina realiza o servico dentro da janela de tempo combinada."
     ))
 
-    # --- PÁGINA 5: AGENDA ---
+    # --- PÁGINA 5: LOGÍSTICA ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "3. FLUXO DE TRABALHO: AGENDA PRINCIPAL", ln=True)
-    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, "3. OPERACAO DA LOGISTICA (CONCEITO DE JANELAS)", ln=True)
+    pdf.set_font("Arial", "", 11)
     pdf.multi_cell(190, 7, (
-        "A Agenda e o coracao da oficina. Aqui o mecanico visualiza o que deve ser feito.\n"
-        "- Horarios: Preencha 'Inicio Disp.' e 'Fim Disp.' para medir produtividade.\n"
-        "- Baixa: O check no campo 'OK' finaliza o processo e alimenta os indicadores.\n"
-        "- Filtros: Use os filtros no topo para planejar turnos (Dia/Noite)."
+        "A logistica e responsavel por preencher a disponibilidade do veiculo na Agenda Principal.\n"
+        "Os campos 'Inicio Disp.' e 'Fim Disp.' permitem que a oficina saiba exatamente em qual "
+        "intervalo de tempo o veiculo estara no box, otimizando o uso da mao de obra e evitando ociosidade."
     ))
 
-    # --- PÁGINA 6: PREVENTIVAS ---
+    # --- PÁGINA 6: PERFIS ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "4. CADASTRO DE PREVENTIVAS", ln=True)
-    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, "4. PERFIS DE ACESSO (ADMIN VS MOTORISTA)", ln=True)
+    pdf.set_font("Arial", "", 11)
     pdf.multi_cell(190, 7, (
-        "Use esta aba para servicos planejados (troca de oleo, revisao por KM).\n"
-        "Ao cadastrar no formulario, o servico nasce direto na agenda, sem passar "
-        "pela triagem de chamados. Utilize a lista inferior para excluir registros incorretos."
+        "PERFIL ADMINISTRADOR: Acesso a todas as abas. Responsavel por triar chamados, gerenciar a "
+        "agenda principal, cadastrar usuarios e analisar indicadores de performance.\n\n"
+        "PERFIL MOTORISTA: Interface simplificada. O motorista so visualiza as abas de "
+        "'Abrir Solicitacao' e 'Status'. Ele reporta o problema, mas nao visualiza a agenda interna."
     ))
 
-    # --- PÁGINA 7: ASSISTENTE ---
+    # --- PÁGINA 7: CHAMADOS ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "5. ASSISTENTE VIRTUAL E PENDENCIAS", ln=True)
-    pdf.set_font("Arial", "", 11); pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, "5. GUIA: CHAMADOS OFICINA", ln=True)
+    pdf.set_font("Arial", "", 11)
     pdf.multi_cell(190, 7, (
-        "O Assistente Virtual monitora tarefas atrasadas. O ponto pulsante vermelho 🔴 "
-        "no topo da tela e um alerta de prioridade. Use o botao 'Resolver' para "
-        "concluir em massa ou reagendar tarefas que ficaram para tras."
+        "1. Analise a descricao do motorista.\n"
+        "2. Preencha o Executor, Data Programada e Area de destino.\n"
+        "3. Marque 'Aprovar?' e clique em 'Processar Agendamentos'.\n"
+        "*O servico saira desta aba e nascera automaticamente na Agenda Principal.*"
     ))
 
+    # --- PÁGINA 8: AGENDA ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "6. GUIA: AGENDA PRINCIPAL", ln=True)
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(190, 7, (
+        "Esta e a tela de execucao diaria.\n"
+        "- Filtros: Utilize os filtros de data e turno no topo.\n"
+        "- Edicao: Clique direto na tabela para ajustar executor ou descricao.\n"
+        "- Baixa: O check no campo 'OK' finaliza o servico e alimenta os indicadores."
+    ))
+
+    # --- PÁGINA 9: PREVENTIVAS ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "7. GUIA: CADASTRO DE PREVENTIVAS", ln=True)
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(190, 7, (
+        "Utilize esta aba para servicos planejados (revisoes, troca de oleo).\n"
+        "Ao cadastrar aqui, o servico vai direto para a agenda sem precisar de aprovacao. "
+        "A lista inferior permite excluir registros feitos por engano."
+    ))
+
+    # --- PÁGINA 10: ASSISTENTE ---
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
+    pdf.cell(190, 10, "8. ASSISTENTE VIRTUAL E PENDENCIAS", ln=True)
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(190, 7, (
+        "O sistema monitora tarefas atrasadas. O alerta pulsante no topo da tela e um aviso "
+        "de que existem servicos de dias anteriores nao concluidos. Use o botao 'Resolver' "
+        "para limpar pendencias ou traze-las para a data de hoje."
+    ))
+
+    # O 'ignore' no final e o segredo para nao dar erro de Unicode
     return pdf.output(dest='S').encode('latin-1', 'ignore')
     
 # --- CONFIGURAÇÕES DE MARCA ---
