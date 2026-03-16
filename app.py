@@ -4,6 +4,8 @@ import os
 from sqlalchemy import create_engine, text
 from datetime import datetime, time, timedelta
 from io import BytesIO
+from fpdf import FPDF
+import time as time_module # Importado para evitar conflito com datetime.time
 def gerar_pdf_manual_oficial_pro():
     from fpdf import FPDF
     class PDF(FPDF):
