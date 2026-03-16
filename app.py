@@ -6,115 +6,27 @@ from datetime import datetime, time, timedelta
 from io import BytesIO
 from fpdf import FPDF
 import time as time_module # Importado para evitar conflito com datetime.time
-def gerar_pdf_manual_oficial_pro():
-    from fpdf import FPDF
-    class PDF(FPDF):
-        def header(self):
-            # Sigla Up 2 Today Colorida no topo de todas as páginas
-            self.set_font("Arial", "B", 25)
-            self.set_text_color(27, 34, 76) # Azul Marinho
-            self.cell(10, 10, "U", 0, 0)
-            self.set_text_color(49, 173, 100) # Verde Esmeralda
-            self.cell(20, 10, "2T", 0, 1)
-            self.set_font("Arial", "I", 8)
-            self.set_text_color(150, 150, 150)
-            self.cell(0, 5, "Manual de Operacao Oficial - Up 2 Today", 0, 1, 'R')
-            self.ln(5)
-
-    pdf = PDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    
-    # --- PÁGINA 1: CAPA E GANHOS ---
-    pdf.add_page()
-    pdf.ln(30)
-    pdf.set_font("Arial", "B", 26)
-    pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 15, "MANUAL MASTER DE OPERACAO", ln=True, align='C')
-    pdf.set_font("Arial", "B", 22)
-    pdf.set_text_color(49, 173, 100)
-    pdf.cell(190, 12, "UP 2 TODAY", ln=True, align='C')
-    
-    pdf.ln(20)
-    pdf.set_font("Arial", "B", 14)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(190, 10, "GANHOS ESTRATEGICOS PARA A FROTA", ln=True)
-    pdf.set_font("Arial", "", 11)
-    ganhos = [
-        "- Maximizacao da disponibilidade da frota: menos tempo parado, mais tempo rodando.",
-        "- Digitalizacao completa: rastreabilidade total sem uso de papel ou pranchetas.",
-        "- PCM Inteligente: planejamento baseado em dados reais de execucao.",
-        "- Comunicacao sem ruidos: a oficina sabe exatamente o que o motorista reportou."
-    ]
-    for ganho in ganhos:
-        pdf.multi_cell(190, 7, ganho)
-
-    # --- PÁGINA 2: PERFIS E LOGIN ---
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "1. PERFIS E NIVEIS DE ACESSO", ln=True)
-    pdf.ln(5)
-    
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(190, 8, "A) Perfil ADMINISTRADOR (Gestao e Oficina):", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, "Acesso a todas as ferramentas de controle. O Admin e responsavel por organizar a 'bagunca' de chamados e transformar queixas em servicos agendados com data e executor.")
-    
-    pdf.ln(5)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(190, 8, "B) Perfil MOTORISTA (Pista e Operacao):", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, "Interface simplificada. O foco e apenas reportar o problema (Abertura) e acompanhar o Status. O motorista nao tem acesso a agenda interna para nao poluir o fluxo da oficina.")
-
-    # --- PÁGINA 3: PASSO A PASSO DE PREENCHIMENTO ---
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "2. PASSO A PASSO DE PREENCHIMENTO", ln=True)
-    
-    # Aba 1
-    pdf.set_font("Arial", "B", 12)
-    pdf.set_text_color(49, 173, 100)
-    pdf.cell(190, 8, "Aba: Chamados Oficina (A Triagem)", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(190, 7, (
-        "1. Analise a descricao enviada pelo motorista.\n"
-        "2. Preencha o 'Executor' (quem vai consertar).\n"
-        "3. Defina a 'Data Programada' e a 'Area' (Mecanica, Eletrica, etc).\n"
-        "4. Marque 'Aprovar?' e clique em 'Processar Agendamentos'.\n"
-        "*O servico saira desta aba e nascera automaticamente na Agenda Principal.*"
-    ))
-    
-    pdf.ln(5)
-    # Aba 2
-    pdf.set_font("Arial", "B", 12)
-    pdf.set_text_color(49, 173, 100)
-    pdf.cell(190, 8, "Aba: Agenda Principal (O Controle)", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(190, 7, (
-        "1. Utilize os filtros de data no topo para ver o trabalho do dia.\n"
-        "2. Preencha 'Inicio Disp.' e 'Fim Disp.' para medir o tempo de box.\n"
-        "3. Ao concluir o trabalho, clique no checkbox 'OK'.\n"
-        "4. O sistema salvara automaticamente cada alteracao feita na tabela."
-    ))
-
-    # Aba 3
-    pdf.ln(5)
-    pdf.set_font("Arial", "B", 12)
-    pdf.set_text_color(49, 173, 100)
-    pdf.cell(190, 8, "Aba: Cadastro Direto (Preventivas)", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(190, 7, (
-        "1. Use o formulario superior para servicos que NAO vieram de chamados.\n"
-        "2. Escolha a data, o turno (Dia/Noite) e o executor.\n"
-        "3. Clique em 'Confirmar Agendamento'.\n"
-        "4. Para excluir um agendamento errado, use a lista inferior, marque 'Exc' e confirme a exclusao."
-    ))
-
-    return pdf.output(dest='S').encode('latin-1', 'ignore')
+elif aba_ativa == "📖 Manual do Sistema":
+        st.subheader("📖 Manual Oficial Up 2 Today")
+        
+        with st.container(border=True):
+            st.markdown("### 📥 Documentação Premium")
+            st.write("Gere o Manual Master em formato de livro (PDF) com sumário detalhado e guias de preenchimento.")
+            
+            # Gera o PDF usando a nova função com sumário pontilhado
+            pdf_data = gerar_pdf_manual_oficial_pro()
+            
+            st.download_button(
+                label="📥 BAIXAR MANUAL PRO (PDF)",
+                data=pdf_data,
+                file_name="Manual_Up2Today_Pro.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+                type="primary"
+            )
+        
+        st.divider()
+        st.info("💡 **Dica:** O manual impresso é uma ótima ferramenta para treinar novos mecânicos e motoristas no uso da plataforma.")
     
 # --- CONFIGURAÇÕES DE MARCA ---
 NOME_SISTEMA = "Up 2 Today"
