@@ -8,21 +8,20 @@ from fpdf import FPDF
 import time as time_module # Importado para evitar conflito com datetime.time
 def gerar_pdf_manual_oficial_pro():
     from fpdf import FPDF
+    import re
+
+    # Função interna para tratar acentos sem quebrar o PDF
+    def tratar_texto(txt):
+        return txt.encode('latin-1', 'replace').decode('latin-1')
+
     class PDF(FPDF):
         def header(self):
-            # Sigla Up 2 Today Colorida
             self.set_font("Arial", "B", 25)
-            self.set_text_color(27, 34, 76) # Azul
+            self.set_text_color(27, 34, 76) 
             self.cell(10, 10, "U", 0, 0)
-            self.set_text_color(49, 173, 100) # Verde
+            self.set_text_color(49, 173, 100)
             self.cell(20, 10, "2T", 0, 1)
             self.ln(5)
-
-        def footer(self):
-            self.set_y(-15)
-            self.set_font("Arial", "I", 8)
-            self.set_text_color(128, 128, 128)
-            self.cell(0, 10, f"Pagina {self.page_no()}", 0, 0, 'C')
 
     pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -32,142 +31,85 @@ def gerar_pdf_manual_oficial_pro():
     pdf.ln(50)
     pdf.set_font("Arial", "B", 35)
     pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 20, "MANUAL MASTER", ln=True, align='C')
+    pdf.cell(190, 20, tratar_texto("MANUAL MASTER"), ln=True, align='C')
     pdf.set_font("Arial", "B", 28)
     pdf.set_text_color(49, 173, 100)
     pdf.cell(190, 15, "UP 2 TODAY", ln=True, align='C')
     pdf.ln(10)
     pdf.set_font("Arial", "I", 14)
     pdf.set_text_color(80, 80, 80)
-    pdf.cell(190, 10, "Seu Controle. Nossa Prioridade.", ln=True, align='C')
+    pdf.cell(190, 10, tratar_texto("Seu Controle. Nossa Prioridade."), ln=True, align='C')
     
     # --- PÁGINA 2: SUMÁRIO ALINHADO ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 18); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 15, "SUMARIO", ln=True); pdf.ln(10)
+    pdf.cell(190, 15, "SUMÁRIO", ln=True); pdf.ln(10)
     
-    itens_sumario = [
-        ("1. Introducao e Ganhos Estrategicos", "3"),
+    itens = [
+        ("1. Introdução e Ganhos Estratégicos", "3"),
         ("2. Fluxo de Trabalho (Workflow)", "4"),
-        ("3. Operacao da Logistica (Janelas)", "5"),
-        ("4. Perfis de Acesso (Admin vs Motorista)", "6"),
-        ("5. Guia: Chamados Oficina", "7"),
-        ("6. Guia: Agenda Principal", "8"),
-        ("7. Guia: Cadastro de Preventivas", "9"),
-        ("8. Assistente Virtual e Pendencias", "10")
+        ("3. Perfis de Acesso (Admin vs Motorista)", "5"),
+        ("4. Guia: Chamados Oficina", "6"),
+        ("5. Guia: Agenda Principal", "7"),
+        ("6. Assistente Virtual e Pendências", "8")
     ]
     
-    for titulo, pagina in itens_sumario:
+    for titulo, pagina in itens:
         pdf.set_font("Arial", "B", 12); pdf.set_text_color(0)
-        largura_titulo = pdf.get_string_width(titulo)
-        pdf.cell(largura_titulo + 2, 10, titulo, 0, 0)
-        
-        # Alinhamento preciso dos pontos
-        espaco_pontos = 175 - largura_titulo
-        pdf.set_font("Arial", "", 12)
-        pdf.cell(espaco_pontos, 10, "." * int(espaco_pontos/1.5), 0, 0)
-        
-        pdf.set_font("Arial", "B", 12)
+        pdf.cell(pdf.get_string_width(titulo) + 2, 10, tratar_texto(titulo))
+        largura_pontos = 175 - pdf.get_string_width(titulo)
+        pdf.cell(largura_pontos, 10, "." * int(largura_pontos/1.5), 0, 0)
         pdf.cell(10, 10, pagina, 0, 1, 'R')
 
-    # --- PÁGINA 3: INTRODUÇÃO E GANHOS ---
+    # --- PÁGINA 3: INTRODUÇÃO ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "1. INTRODUCAO E GANHOS ESTRATEGICOS", ln=True)
+    pdf.cell(190, 10, tratar_texto("1. INTRODUÇÃO E GANHOS"), ln=True)
     pdf.set_font("Arial", "", 11); pdf.set_text_color(0)
-    pdf.multi_cell(190, 7, (
-        "O Up 2 Today e uma plataforma de gestao integrada que une a operacao de pista (Motoristas), "
-        "o planejamento (Logistica) e a execucao (Oficina). O objetivo central e garantir que nenhum "
-        "veiculo fique parado alem do tempo estritamente necessario.\n\n"
-        "GANHOS PARA A EMPRESA:\n"
-        "- Reducao de ate 30% no Lead Time de manutencao.\n"
-        "- Eliminacao total de papeis e planilhas paralelas.\n"
-        "- Historico digital real por prefixo e placa.\n"
-        "- Comunicacao instantanea entre motorista e oficina."
+    pdf.multi_cell(190, 7, tratar_texto(
+        "O Up 2 Today é uma plataforma de gestão integrada. O uso do sistema garante:\n"
+        "- Redução de até 30% no Lead Time de manutenção.\n"
+        "- Digitalização completa: Fim das planilhas de papel.\n"
+        "- Comunicação instantânea e histórico real por prefixo."
     ))
 
-    # --- PÁGINA 4: WORKFLOW ---
+    # --- PÁGINA 4: CHAMADOS (Com Corte Ilustrativo) ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "2. FLUXO DE TRABALHO (WORKFLOW)", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, (
-        "O ciclo de vida de uma manutencao no Up 2 Today segue tres etapas:\n\n"
-        "1. Solicitacao: O motorista aponta a falha via portal.\n"
-        "2. Aprovacao: O gestor avalia o chamado e define a prioridade e area.\n"
-        "3. Execucao: A oficina realiza o servico dentro da janela de tempo combinada."
+    pdf.cell(190, 10, tratar_texto("2. GUIA: CHAMADOS OFICINA"), ln=True)
+    
+    # Corte ilustrativo simulado por um quadro
+    pdf.set_fill_color(240, 240, 240)
+    pdf.rect(10, 50, 180, 30, 'F')
+    pdf.set_font("Arial", "B", 9); pdf.set_text_color(100)
+    pdf.text(15, 55, tratar_texto("[ CORTE ILUSTRATIVO: TABELA DE TRIAGEM ]"))
+    pdf.text(15, 65, tratar_texto("Coluna: Executor | Coluna: Data Programada | Botão: Aprovar?"))
+    
+    pdf.ln(40)
+    pdf.set_font("Arial", "", 11); pdf.set_text_color(0)
+    pdf.multi_cell(190, 7, tratar_texto(
+        "Na aba de Chamados, você realiza a triagem. Preencha quem fará o serviço e a data programada. "
+        "Ao clicar em 'Processar', o chamado é convertido em agendamento na agenda principal."
     ))
 
-    # --- PÁGINA 5: LOGÍSTICA ---
+    # --- PÁGINA 5: AGENDA (Com Corte Ilustrativo) ---
     pdf.add_page()
     pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "3. OPERACAO DA LOGISTICA (CONCEITO DE JANELAS)", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, (
-        "A logistica e responsavel por preencher a disponibilidade do veiculo na Agenda Principal.\n"
-        "Os campos 'Inicio Disp.' e 'Fim Disp.' permitem que a oficina saiba exatamente em qual "
-        "intervalo de tempo o veiculo estara no box, otimizando o uso da mao de obra e evitando ociosidade."
+    pdf.cell(190, 10, tratar_texto("3. GUIA: AGENDA PRINCIPAL"), ln=True)
+    
+    pdf.set_fill_color(240, 240, 240)
+    pdf.rect(10, 50, 180, 30, 'F')
+    pdf.set_font("Arial", "B", 9); pdf.set_text_color(100)
+    pdf.text(15, 55, tratar_texto("[ CORTE ILUSTRATIVO: QUADRO DE OPERAÇÕES ]"))
+    pdf.text(15, 65, tratar_texto("Início Disp. | Fim Disp. | Checkbox OK | Status: Em Execução"))
+
+    pdf.ln(40)
+    pdf.set_font("Arial", "", 11); pdf.set_text_color(0)
+    pdf.multi_cell(190, 7, tratar_texto(
+        "A Agenda é o painel de controle diário. Utilize o checkbox 'OK' para dar baixa. "
+        "Lembre-se de preencher os horários de disponibilidade para gerar indicadores debox."
     ))
 
-    # --- PÁGINA 6: PERFIS ---
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "4. PERFIS DE ACESSO (ADMIN VS MOTORISTA)", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, (
-        "PERFIL ADMINISTRADOR: Acesso a todas as abas. Responsavel por triar chamados, gerenciar a "
-        "agenda principal, cadastrar usuarios e analisar indicadores de performance.\n\n"
-        "PERFIL MOTORISTA: Interface simplificada. O motorista so visualiza as abas de "
-        "'Abrir Solicitacao' e 'Status'. Ele reporta o problema, mas nao visualiza a agenda interna."
-    ))
-
-    # --- PÁGINA 7: CHAMADOS ---
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "5. GUIA: CHAMADOS OFICINA", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, (
-        "1. Analise a descricao do motorista.\n"
-        "2. Preencha o Executor, Data Programada e Area de destino.\n"
-        "3. Marque 'Aprovar?' e clique em 'Processar Agendamentos'.\n"
-        "*O servico saira desta aba e nascera automaticamente na Agenda Principal.*"
-    ))
-
-    # --- PÁGINA 8: AGENDA ---
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "6. GUIA: AGENDA PRINCIPAL", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, (
-        "Esta e a tela de execucao diaria.\n"
-        "- Filtros: Utilize os filtros de data e turno no topo.\n"
-        "- Edicao: Clique direto na tabela para ajustar executor ou descricao.\n"
-        "- Baixa: O check no campo 'OK' finaliza o servico e alimenta os indicadores."
-    ))
-
-    # --- PÁGINA 9: PREVENTIVAS ---
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "7. GUIA: CADASTRO DE PREVENTIVAS", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, (
-        "Utilize esta aba para servicos planejados (revisoes, troca de oleo).\n"
-        "Ao cadastrar aqui, o servico vai direto para a agenda sem precisar de aprovacao. "
-        "A lista inferior permite excluir registros feitos por engano."
-    ))
-
-    # --- PÁGINA 10: ASSISTENTE ---
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16); pdf.set_text_color(27, 34, 76)
-    pdf.cell(190, 10, "8. ASSISTENTE VIRTUAL E PENDENCIAS", ln=True)
-    pdf.set_font("Arial", "", 11)
-    pdf.multi_cell(190, 7, (
-        "O sistema monitora tarefas atrasadas. O alerta pulsante no topo da tela e um aviso "
-        "de que existem servicos de dias anteriores nao concluidos. Use o botao 'Resolver' "
-        "para limpar pendencias ou traze-las para a data de hoje."
-    ))
-
-    # O 'ignore' no final e o segredo para nao dar erro de Unicode
     return pdf.output(dest='S').encode('latin-1', 'ignore')
     
 # --- CONFIGURAÇÕES DE MARCA ---
