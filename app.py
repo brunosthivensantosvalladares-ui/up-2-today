@@ -658,7 +658,7 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         # --- INTERFACE DE RETORNO POR VOZ ---
-    with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
+        with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
         col_os, col_audio = st.columns([1, 2])
         
         # Lista as OS pendentes para o selectbox
@@ -902,9 +902,9 @@ else:
             ds_i, t_i = st.text_area("Descrição"), st.selectbox("Turno", LISTA_TURNOS)
             if st.form_submit_button("Confirmar Agendamento"):
         # ADICIONE ESTA LINHA ABAIXO:
-            nova_os = obter_proxima_os(engine, emp_id)
+        nova_os = obter_proxima_os(engine, emp_id)
         
-            with engine.connect() as conn:
+        with engine.connect() as conn:
             # ADICIONE 'numero_os' NO INSERT E NO VALUES ABAIXO:
             conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem, empresa_id, numero_os) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, :tu, 'Direto', :eid, :nos)"), 
                          {"dt": str(d_i), "ex": e_i, "pr": p_i, "ti": t_ini, "tf": t_fim, "ds": ds_i, "ar": a_i, "tu": t_i, "eid": emp_id, "nos": nova_os})
