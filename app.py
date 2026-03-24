@@ -729,8 +729,8 @@ else:
                                 st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY.")
                         else:
                             st.error(f"Erro na IA: {e}")
-            else:
-                st.info("Nenhuma OS pendente para retorno.")
+                        else:
+                            st.info("Nenhuma OS pendente para retorno.")
         with st.popover("💡 Como usar a Agenda?"):
             st.markdown("""
                 ### 📅 Guia Rápido - Agenda
