@@ -681,12 +681,12 @@ else:
                     os_sel = st.selectbox("Selecione a OS", os_pendentes if os_pendentes else ["Nenhuma OS pendente"])
                 
                 with col_audio:
-            # PRIMEIRO: Definimos a variável audio_data aqui
-            audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
+                    # PRIMEIRO: Definimos a variável audio_data aqui
+                    audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
-        # SEGUNDO: Só agora verificamos se ela existe (Alinhado com o 'with col_audio')
-        if audio_data and os_sel != "Nenhuma OS pendente":
-            with st.spinner("🤖 Analisando seu áudio..."):
+                # SEGUNDO: Só agora verificamos se ela existe (Alinhado com o 'with col_audio')
+            if audio_data and os_sel != "Nenhuma OS pendente":
+                with st.spinner("🤖 Analisando seu áudio..."):
                 try:
                     # 1. Tente usar o flash padrão
                     model = genai.GenerativeModel('gemini-1.5-flash')
