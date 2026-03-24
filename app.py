@@ -658,15 +658,15 @@ else:
 
         st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
     
-    if aba_ativa == "📅 Agenda Principal":
+    elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # Carrega dados para o Selectbox de OS
+        # 1. BUSCA OS DADOS PRIMEIRO (Movido para o topo da aba)
         df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC"), engine, params={"eid": emp_id})
-    
-    # Adicione esta linha logo abaixo para evitar o erro se a coluna vier vazia:
-    if 'numero_os' not in df_a.columns:
-        df_a['numero_os'] = None
+        
+        # 2. PROTEÇÃO: Se a coluna não existir no banco ainda, cria na memória para não dar erro
+        if 'numero_os' not in df_a.columns:
+            df_a['numero_os'] = None
 
         # --- INTERFACE DE RETORNO POR VOZ ---
         with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
