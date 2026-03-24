@@ -688,25 +688,47 @@ else:
                 if audio_data and os_sel != "Nenhuma OS pendente":
                     with st.spinner("🤖 Analisando seu áudio..."):
                         try:
-                            model = genai.GenerativeModel('gemini-1.5-flash-latest')
-                            # Usamos audio_data.read() para pegar os dados binários
-                            response = model.generate_content([
-                                "Transcreva este áudio de manutenção de forma técnica e resumida.",
-                                {"mime_type": "audio/wav", "data": audio_data.getvalue()}
+                    # 1. Tente usar o flash padrão (é o mais compatível com v1)
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    # 2. Vamos converter o áudio para um formato que a IA aceita sem erro de versão
+                    audio_bytes = audio_data.getvalue()
+                    
+                    # 3. Chamada simplificada
+                    response = model.generate_content([
+                        "Transcreva este áudio de manutenção mecânica de forma técnica e resumida.",
+                        {"mime_type": "audio/wav", "data": audio_bytes}
+                    ])
+                    
+                    # Garantir que pegamos o texto com segurança
+                    if response.text:
+                        texto_real = response.text
+                        st.info(f"📝 Transcrição: {texto_real}")
+                        
+                        if st.button("Confirmar Baixa e Salvar"):
+                            with engine.connect() as conn:
+                                conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
+                                             {"ds": texto_real, "os": os_sel, "eid": emp_id})
+                                conn.commit()
+                            st.success(f"OS {os_sel} baixada com sucesso!")
+                            st.rerun()
+                    else:
+                        st.warning("A IA não conseguiu processar o som. Tente falar mais perto do microfone.")
+                        
+                except Exception as e:
+                    # Se o erro 404 persistir, vamos tentar o modelo 'pro' como plano B automático
+                    if "404" in str(e):
+                        try:
+                            model_pro = genai.GenerativeModel('gemini-1.5-pro')
+                            response = model_pro.generate_content([
+                                "Transcreva o áudio técnico:",
+                                {"mime_type": "audio/wav", "data": audio_bytes}
                             ])
-                            
-                            texto_real = response.text
-                            st.info(f"📝 Transcrição: {texto_real}")
-                            
-                            if st.button("Confirmar Baixa e Salvar"):
-                                with engine.connect() as conn:
-                                    conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
-                                                 {"ds": texto_real, "os": os_sel, "eid": emp_id})
-                                    conn.commit()
-                                st.success(f"OS {os_sel} baixada com sucesso!")
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro na IA: {e}")
+                            st.info(f"📝 Transcrição (Pro): {response.text}")
+                        except:
+                            st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY nos Secrets.")
+                    else:
+                        st.error(f"Erro na IA: {e}")
             else:
                 st.info("Nenhuma OS pendente para retorno.")
         with st.popover("💡 Como usar a Agenda?"):
