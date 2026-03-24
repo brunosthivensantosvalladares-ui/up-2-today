@@ -665,7 +665,7 @@ else:
 
         st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
     
-elif aba_ativa == "📅 Agenda Principal":
+    elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
         # 1. Carrega os dados primeiro para evitar o NameError no df_a
