@@ -324,7 +324,8 @@ def inicializar_banco():
             conn.execute(text("CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, motorista TEXT, prefixo TEXT, descricao TEXT, data_solicitacao TEXT, status TEXT DEFAULT 'Pendente', empresa_id TEXT)"))
             conn.execute(text("ALTER TABLE tarefas ADD COLUMN IF NOT EXISTS numero_os INTEGER"))
             conn.commit()
-            
+            except: 
+                pass
             # NOVA TABELA DE EMPRESAS PARA SAAS
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS empresa (
