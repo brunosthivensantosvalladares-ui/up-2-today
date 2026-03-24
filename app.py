@@ -688,7 +688,7 @@ else:
                 if audio_data and os_sel != "Nenhuma OS pendente":
                     with st.spinner("🤖 Analisando seu áudio..."):
                         try:
-                            model = genai.GenerativeModel('gemini-1.5-flash')
+                            model = genai.GenerativeModel('gemini-1.5-flash-latest')
                             # Usamos audio_data.read() para pegar os dados binários
                             response = model.generate_content([
                                 "Transcreva este áudio de manutenção de forma técnica e resumida.",
