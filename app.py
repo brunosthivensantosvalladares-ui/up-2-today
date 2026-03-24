@@ -685,7 +685,7 @@ else:
                     audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
                 # SEGUNDO: Só agora verificamos se ela existe (Alinhado com o 'with col_audio')
-if audio_data and os_sel != "Nenhuma OS pendente":
+        if audio_data and os_sel != "Nenhuma OS pendente":
                 with st.spinner("🤖 Analisando seu áudio..."):
                     try:
                         # 1. Tente usar o flash padrão
