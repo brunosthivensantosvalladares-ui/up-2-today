@@ -322,6 +322,12 @@ def inicializar_banco():
         with engine.connect() as conn:
             conn.execute(text("CREATE TABLE IF NOT EXISTS tarefas (id SERIAL PRIMARY KEY, data TEXT, executor TEXT, prefixo TEXT, inicio_disp TEXT, fim_disp TEXT, descricao TEXT, area TEXT, turno TEXT, realizado BOOLEAN DEFAULT FALSE, id_chamado INTEGER, origem TEXT, empresa_id TEXT)"))
             conn.execute(text("CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, motorista TEXT, prefixo TEXT, descricao TEXT, data_solicitacao TEXT, status TEXT DEFAULT 'Pendente', empresa_id TEXT)"))
+            conn.execute(text("ALTER TABLE tarefas ADD COLUMN IF NOT EXISTS numero_os INTEGER"))
+                conn.commit()
+            except: 
+                pass
+    except: 
+        pass
             # NOVA TABELA DE EMPRESAS PARA SAAS
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS empresa (
@@ -660,6 +666,10 @@ else:
         
         # Carrega dados para o Selectbox de OS
         df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC"), engine, params={"eid": emp_id})
+    
+    # Adicione esta linha logo abaixo para evitar o erro se a coluna vier vazia:
+    if 'numero_os' not in df_a.columns:
+        df_a['numero_os'] = None
 
         # --- INTERFACE DE RETORNO POR VOZ ---
         with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
