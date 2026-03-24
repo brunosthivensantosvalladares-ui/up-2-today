@@ -7,7 +7,11 @@ from io import BytesIO
 from fpdf import FPDF
 import google.generativeai as genai
 # Certifique-se de ter a sua API KEY configurada nas secrets
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+# Tenta configurar a IA, mas não trava o app se a chave faltar
+if "GEMINI_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+else:
+    st.error("⚠️ Configuração de IA ausente. Cadastre a GEMINI_API_KEY nos Secrets.")
 import time as time_module # Importado para evitar conflito com datetime.time
 def gerar_pdf_manual_oficial_pro():
     from fpdf import FPDF
@@ -664,39 +668,47 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # 1. BUSCA OS DADOS PRIMEIRO (Movido para o topo da aba)
-        df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC"), engine, params={"eid": emp_id})
+        # 1. Carrega os dados primeiro para evitar o NameError no df_a
+        df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY numero_os DESC"), engine, params={"eid": emp_id})
         
-        # 2. PROTEÇÃO: Se a coluna não existir no banco ainda, cria na memória para não dar erro
-        if 'numero_os' not in df_a.columns:
-            df_a['numero_os'] = None
+        # 2. Interface de Voz
+        with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
+            if not df_a.empty:
+                col_os, col_audio = st.columns([1, 2])
+                os_pendentes = df_a[df_a['realizado'] == False]['numero_os'].dropna().unique().tolist()
+                
+                with col_os:
+                    os_sel = st.selectbox("Selecione a OS", os_pendentes if os_pendentes else ["Nenhuma OS pendente"])
+                
+                with col_audio:
+                    # PRIMEIRO: Definimos a variável audio_data aqui
+                    audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
-        if audio_data and os_sel != "Nenhuma OS pendente":
-            with st.spinner("🤖 IA do Up 2 Today processando seu áudio..."):
-                try:
-                    # 1. Prepara o arquivo para a IA
-                    model = genai.GenerativeModel('gemini-1.5-flash')
-                    
-                    # 2. Envia o áudio e pede a transcrição técnica
-                    # O audio_data.read() lê o que você gravou no microfone
-                    response = model.generate_content([
-                        "Transcreva este áudio de manutenção mecânica de forma direta e técnica. Remova gírias e foque no que foi feito.",
-                        {"mime_type": "audio/wav", "data": audio_data.read()}
-                    ])
-                    
-                    texto_real = response.text
-                    st.info(f"📝 Transcrição Real: {texto_real}")
-                    
-                    if st.button("Confirmar Baixa e Salvar"):
-                        with engine.connect() as conn:
-                            conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
-                                         {"ds": texto_real, "os": os_sel, "eid": emp_id})
-                            conn.commit()
-                        st.success(f"OS {os_sel} atualizada com o seu relato!")
-                        st.rerun()
-                        
-                except Exception as e:
-                    st.error("Erro na transcrição. Verifique sua chave de API ou conexão.")
+                # SEGUNDO: Só agora verificamos se ela existe
+                if audio_data and os_sel != "Nenhuma OS pendente":
+                    with st.spinner("🤖 Analisando seu áudio..."):
+                        try:
+                            model = genai.GenerativeModel('gemini-1.5-flash')
+                            # Usamos audio_data.read() para pegar os dados binários
+                            response = model.generate_content([
+                                "Transcreva este áudio de manutenção de forma técnica e resumida.",
+                                {"mime_type": "audio/wav", "data": audio_data.getvalue()}
+                            ])
+                            
+                            texto_real = response.text
+                            st.info(f"📝 Transcrição: {texto_real}")
+                            
+                            if st.button("Confirmar Baixa e Salvar"):
+                                with engine.connect() as conn:
+                                    conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
+                                                 {"ds": texto_real, "os": os_sel, "eid": emp_id})
+                                    conn.commit()
+                                st.success(f"OS {os_sel} baixada com sucesso!")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro na IA: {e}")
+            else:
+                st.info("Nenhuma OS pendente para retorno.")
         with st.popover("💡 Como usar a Agenda?"):
             st.markdown("""
                 ### 📅 Guia Rápido - Agenda
