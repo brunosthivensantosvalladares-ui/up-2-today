@@ -658,7 +658,7 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         # --- INTERFACE DE RETORNO POR VOZ ---
-        with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
+    with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
         col_os, col_audio = st.columns([1, 2])
         
         # Lista as OS pendentes para o selectbox
