@@ -665,7 +665,7 @@ else:
 
         st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
     
-    elif aba_ativa == "📅 Agenda Principal":
+elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
         # 1. Carrega os dados primeiro para evitar o NameError no df_a
@@ -675,7 +675,12 @@ else:
         with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
             if not df_a.empty:
                 col_os, col_audio = st.columns([1, 2])
-                os_pendentes = df_a[df_a['realizado'] == False]['numero_os'].dropna().unique().tolist()
+                
+                # Proteção para garantir que a coluna existe antes de filtrar
+                if 'numero_os' in df_a.columns:
+                    os_pendentes = df_a[df_a['realizado'] == False]['numero_os'].dropna().unique().tolist()
+                else:
+                    os_pendentes = []
                 
                 with col_os:
                     os_sel = st.selectbox("Selecione a OS", os_pendentes if os_pendentes else ["Nenhuma OS pendente"])
@@ -684,60 +689,62 @@ else:
                     # PRIMEIRO: Definimos a variável audio_data aqui
                     audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
-                # SEGUNDO: Só agora verificamos se ela existe (Alinhado com o 'with col_audio')
-        if audio_data and os_sel != "Nenhuma OS pendente":
-                with st.spinner("🤖 Analisando seu áudio..."):
-                    try:
-                        # 1. Tente usar o flash padrão
-                        model = genai.GenerativeModel('gemini-1.5-flash')
-                        
-                        # 2. Vamos converter o áudio para um formato que a IA aceita
-                        audio_bytes = audio_data.getvalue()
-                        
-                        # 3. Chamada simplificada
-                        response = model.generate_content([
-                            "Transcreva este áudio de manutenção mecânica de forma técnica e resumida.",
-                            {"mime_type": "audio/wav", "data": audio_bytes}
-                        ])
-                        
-                        # Garantir que pegamos o texto com segurança
-                        if response.text:
-                            texto_real = response.text
-                            st.info(f"📝 Transcrição: {texto_real}")
+                # SEGUNDO: Verificamos se ela existe (DENTRO do 'if not df_a.empty')
+                if audio_data and os_sel != "Nenhuma OS pendente":
+                    with st.spinner("🤖 Analisando seu áudio..."):
+                        try:
+                            # 1. Tente usar o flash padrão
+                            model = genai.GenerativeModel('gemini-1.5-flash')
                             
-                            if st.button("Confirmar Baixa e Salvar"):
-                                with engine.connect() as conn:
-                                    conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
-                                                 {"ds": texto_real, "os": os_sel, "eid": emp_id})
-                                    conn.commit()
-                                st.success(f"OS {os_sel} baixada com sucesso!")
-                                st.rerun()
-                        else:
-                            st.warning("A IA não conseguiu processar o som. Tente falar mais perto do microfone.")
+                            # 2. Vamos converter o áudio para um formato que a IA aceita
+                            audio_bytes = audio_data.getvalue()
                             
-                    except Exception as e:
-                        # Se o erro 404 persistir, tenta o modelo 'pro' como plano B
-                        if "404" in str(e):
-                            try:
-                                model_pro = genai.GenerativeModel('gemini-1.5-pro')
-                                response = model_pro.generate_content([
-                                    "Transcreva o áudio técnico:",
-                                    {"mime_type": "audio/wav", "data": audio_bytes}
-                                ])
-                                st.info(f"📝 Transcrição (Pro): {response.text}")
-                            except:
-                                st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY.")
-                        else:
-                            st.error(f"Erro na IA: {e}")
+                            # 3. Chamada simplificada
+                            response = model.generate_content([
+                                "Transcreva este áudio de manutenção mecânica de forma técnica e resumida.",
+                                {"mime_type": "audio/wav", "data": audio_bytes}
+                            ])
+                            
+                            # Garantir que pegamos o texto com segurança
+                            if response.text:
+                                texto_real = response.text
+                                st.info(f"📝 Transcrição: {texto_real}")
+                                
+                                if st.button("Confirmar Baixa e Salvar"):
+                                    with engine.connect() as conn:
+                                        conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
+                                                     {"ds": texto_real, "os": os_sel, "eid": emp_id})
+                                        conn.commit()
+                                    st.success(f"OS {os_sel} baixada com sucesso!")
+                                    st.rerun()
                             else:
-                                st.info("Nenhuma OS pendente para retorno.")
+                                st.warning("A IA não conseguiu processar o som. Tente falar mais perto do microfone.")
+                                
+                        except Exception as e:
+                            # Se o erro 404 persistir, tenta o modelo 'pro' como plano B
+                            if "404" in str(e):
+                                try:
+                                    model_pro = genai.GenerativeModel('gemini-1.5-pro')
+                                    response = model_pro.generate_content([
+                                        "Transcreva o áudio técnico:",
+                                        {"mime_type": "audio/wav", "data": audio_bytes}
+                                    ])
+                                    st.info(f"📝 Transcrição (Pro): {response.text}")
+                                except:
+                                    st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY.")
+                            else:
+                                st.error(f"Erro na IA: {e}")
+            else:
+                st.info("Nenhuma OS pendente para retorno no momento.")
+
+        # Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
             st.markdown("""
                 ### 📅 Guia Rápido - Agenda
                 1. **Filtros:** No topo, escolha o período, setor ou turno para filtrar a visualização.
-                2. **Edição:** Clique diretamente em qualquer célula (Executor, Descrição, Horários) para alterar. O sistema salva sozinho!
-                3. **Conclusão:** Marque a coluna **OK** para finalizar o serviço. Isso atualiza os indicadores automaticamente.
-                4. **Relatórios:** Use os botões **PDF** ou **Excel** para baixar os dados que estão na tela.
+                2. **Edição:** Clique diretamente em qualquer célula para alterar. O sistema salva sozinho!
+                3. **Conclusão:** Marque a coluna **OK** para finalizar o serviço.
+                4. **Relatórios:** Use os botões **PDF** ou **Excel**.
             """)
        # --- ASSISTENTE COM ANIMAÇÃO DE ALERTA ---
         if "exibir_bot" not in st.session_state:
