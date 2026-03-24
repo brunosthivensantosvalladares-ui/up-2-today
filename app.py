@@ -690,27 +690,25 @@ else:
                     audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
                 # SEGUNDO: Verificamos se ela existe (DENTRO do 'if not df_a.empty')
-                if audio_data and os_sel != "Nenhuma OS pendente":
-                    with st.spinner("🤖 Analisando seu áudio..."):
-                        try:
-                            # 1. Tente usar o flash padrão
-                            model = genai.GenerativeModel('gemini-1.5-flash')
-                            
-                            # 2. Vamos converter o áudio para um formato que a IA aceita
-                            audio_bytes = audio_data.getvalue()
-                            
-                            # 3. Chamada simplificada
-                            response = model.generate_content([
-                                "Transcreva este áudio de manutenção mecânica de forma técnica e resumida.",
-                                {"mime_type": "audio/wav", "data": audio_bytes}
-                            ])
-                            
-                            # Garantir que pegamos o texto com segurança
-                            if response.text:
-                                texto_real = response.text
-                                st.info(f"📝 Transcrição: {texto_real}")
-                                
-                                if st.button("Confirmar Baixa e Salvar"):
+                # Verifique se esta parte está assim no seu app.py:
+        if audio_data and os_sel != "Nenhuma OS pendente":
+            with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
+                try:
+                    # Configura o modelo com a chave que você passou
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    # Envia o áudio para a transcrição real
+                    response = model.generate_content([
+                        "Transcreva este áudio de manutenção de forma técnica e direta:",
+                        {"mime_type": "audio/wav", "data": audio_data.getvalue()}
+                    ])
+                    
+                    texto_final = response.text
+                    st.info(f"📝 Transcrição: {texto_final}")
+                    
+                    if st.button("Confirmar Baixa na OS"):
+                        # ... lógica de salvar no banco ...
+                        st.success(f"OS {os_sel} concluída com sucesso!")
                                     with engine.connect() as conn:
                                         conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
                                                      {"ds": texto_real, "os": os_sel, "eid": emp_id})
