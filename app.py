@@ -691,7 +691,7 @@ else:
 
                 # SEGUNDO: Verificamos se ela existe (DENTRO do 'if not df_a.empty')
                 # Verifique se esta parte está assim no seu app.py:
-if audio_data and os_sel != "Nenhuma OS pendente":
+        if audio_data and os_sel != "Nenhuma OS pendente":
             with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
                 try:
                     # Configura o modelo com a chave que você passou
