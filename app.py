@@ -902,19 +902,14 @@ else:
             with c6: t_fim = st.text_input("Fim (Ex: 10:00)", "00:00")
             ds_i, t_i = st.text_area("Descrição"), st.selectbox("Turno", LISTA_TURNOS)
             if st.form_submit_button("Confirmar Agendamento"):
-        # ADICIONE ESTA LINHA ABAIXO:
-        nova_os = obter_proxima_os(engine, emp_id)
-        
-        with engine.connect() as conn:
-            # ADICIONE 'numero_os' NO INSERT E NO VALUES ABAIXO:
-            conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem, empresa_id, numero_os) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, :tu, 'Direto', :eid, :nos)"), 
-                         {"dt": str(d_i), "ex": e_i, "pr": p_i, "ti": t_ini, "tf": t_fim, "ds": ds_i, "ar": a_i, "tu": t_i, "eid": emp_id, "nos": nova_os})
-            conn.commit()
-        
-        # ADICIONE ESTE RECADO PARA O USUÁRIO:
-        st.success(f"✅ SERVIÇO AGENDADO!")
-        st.code(f"NÚMERO DA ORDEM DE SERVIÇO: {nova_os}", language="markdown")
-        st.rerun()
+                nova_os = obter_proxima_os(engine, emp_id)
+                with engine.connect() as conn:
+                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem, empresa_id, numero_os) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, :tu, 'Direto', :eid, :nos)"), 
+                                 {"dt": str(d_i), "ex": e_i, "pr": p_i, "ti": t_ini, "tf": t_fim, "ds": ds_i, "ar": a_i, "tu": t_i, "eid": emp_id, "nos": nova_os})
+                    conn.commit()
+                st.success(f"✅ SERVIÇO AGENDADO!")
+                st.code(f"NÚMERO DA ORDEM DE SERVIÇO: {nova_os}", language="markdown")
+                st.rerun()
         
         st.divider(); st.subheader("📋 Lista de serviços")
         df_lista = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC, id DESC"), engine, params={"eid": emp_id})
