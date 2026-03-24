@@ -177,6 +177,19 @@ LOGO_URL = "https://i.postimg.cc/85HwzdmP/logo-png.png"
 ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeamento", "Limpeza"]
 LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
 
+# --- LÓGICA DE GERAÇÃO DE OS SEQUENCIAL ---
+def obter_proxima_os(engine, emp_id):
+    try:
+        with engine.connect() as conn:
+            # Busca o maior número de OS da empresa no banco
+            result = conn.execute(text("SELECT MAX(numero_os) FROM tarefas WHERE empresa_id = :eid"), {"eid": emp_id}).fetchone()
+            maior_os = result[0]
+            if maior_os is None:
+                return 1001 # Primeira OS do sistema
+            return int(maior_os) + 1
+    except:
+        return 1001
+
 # PALETA DE CORES EXTRAÍDA FIELMENTE DO LOGOTIPO U2T
 COR_AZUL = "#1b224c" # Azul Marinho Profundo do 'U'
 COR_VERDE = "#31ad64" # Verde Esmeralda do '2T'
@@ -644,6 +657,32 @@ else:
     
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
+        # --- INTERFACE DE RETORNO POR VOZ ---
+    with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
+        col_os, col_audio = st.columns([1, 2])
+        
+        # Lista as OS pendentes para o selectbox
+        os_pendentes = df_a[df_a['realizado'] == False]['numero_os'].tolist()
+        
+        with col_os:
+            os_sel = st.selectbox("Selecione a OS", os_pendentes)
+        
+        with col_audio:
+            # NOVO WIDGET DE ÁUDIO DO STREAMLIT
+            audio_data = st.audio_input(f"Descreva o serviço para a OS {os_sel}")
+
+        if audio_data:
+            # Simulando transcrição (Em breve via API Gemini/OpenAI)
+            texto_transcrito = "Serviço concluído conforme solicitado. Sem pendências técnicas."
+            st.info(f"📝 Transcrição: {texto_transcrito}")
+            
+            if st.button("Confirmar Baixa e Salvar"):
+                with engine.connect() as conn:
+                    conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
+                                 {"ds": texto_voz, "os": os_sel, "eid": emp_id})
+                    conn.commit()
+                st.success(f"OS {os_sel} baixada com sucesso!")
+                st.rerun()
         with st.popover("💡 Como usar a Agenda?"):
             st.markdown("""
                 ### 📅 Guia Rápido - Agenda
@@ -862,10 +901,20 @@ else:
             with c6: t_fim = st.text_input("Fim (Ex: 10:00)", "00:00")
             ds_i, t_i = st.text_area("Descrição"), st.selectbox("Turno", LISTA_TURNOS)
             if st.form_submit_button("Confirmar Agendamento"):
-                with engine.connect() as conn:
-                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem, empresa_id) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, :tu, 'Direto', :eid)"), {"dt": str(d_i), "ex": e_i, "pr": p_i, "ti": t_ini, "tf": t_fim, "ds": ds_i, "ar": a_i, "tu": t_i, "eid": emp_id})
-                    conn.commit()
-                    st.success("✅ Serviço cadastrado!"); st.rerun()
+        # ADICIONE ESTA LINHA ABAIXO:
+        nova_os = obter_proxima_os(engine, emp_id)
+        
+        with engine.connect() as conn:
+            # ADICIONE 'numero_os' NO INSERT E NO VALUES ABAIXO:
+            conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, origem, empresa_id, numero_os) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, :tu, 'Direto', :eid, :nos)"), 
+                         {"dt": str(d_i), "ex": e_i, "pr": p_i, "ti": t_ini, "tf": t_fim, "ds": ds_i, "ar": a_i, "tu": t_i, "eid": emp_id, "nos": nova_os})
+            conn.commit()
+        
+        # ADICIONE ESTE RECADO PARA O USUÁRIO:
+        st.success(f"✅ SERVIÇO AGENDADO!")
+        st.code(f"NÚMERO DA ORDEM DE SERVIÇO: {nova_os}", language="markdown")
+        st.rerun()
+        
         st.divider(); st.subheader("📋 Lista de serviços")
         df_lista = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC, id DESC"), engine, params={"eid": emp_id})
         if not df_lista.empty:
@@ -908,12 +957,16 @@ else:
                 st.session_state.df_ap_work = df_p
             ed_c = st.data_editor(st.session_state.df_ap_work, hide_index=True, use_container_width=True, column_config={"data_solicitacao": "Aberto em", "motorista": "Solicitante", "Data_Programada": st.column_config.DateColumn("Data Programada"), "Area_Destino": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS), "Aprovar": st.column_config.CheckboxColumn("Aprovar?"), "id": None}, key="editor_chamados")
             if st.button("Processar Agendamentos", type="primary"):
-                selecionados = ed_c[ed_c['Aprovar'] == True]
-                if not selecionados.empty:
-                    with engine.connect() as conn:
-                        for _, r in selecionados.iterrows():
-                            conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem, empresa_id) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, 'Não definido', :ic, 'Chamado', :eid)"), {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ti": r['Inicio'], "tf": r['Fim'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id'], "eid": emp_id})
-                            conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
+        selecionados = ed_c[ed_c['Aprovar'] == True]
+        if not selecionados.empty:
+            with engine.connect() as conn:
+                for _, r in selecionados.iterrows():
+                    # ADICIONE ESTA LINHA DENTRO DO LOOP:
+                    v_os = obter_proxima_os(engine, emp_id)
+                    
+                    # ADICIONE 'numero_os' NO INSERT E NO VALUES ABAIXO:
+                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem, empresa_id, numero_os) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, 'Não definido', :ic, 'Chamado', :eid, :nos)"), 
+                                 {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ti": r['Inicio'], "tf": r['Fim'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id'], "eid": emp_id, "nos": v_os})
                         conn.commit()
                     st.success("✅ Agendamentos processados!"); del st.session_state.df_ap_work; st.rerun()
         else: st.info("Nenhum chamado pendente no momento.")
