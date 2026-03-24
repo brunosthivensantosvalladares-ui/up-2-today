@@ -953,7 +953,7 @@ else:
                 st.session_state.df_ap_work = df_p
             ed_c = st.data_editor(st.session_state.df_ap_work, hide_index=True, use_container_width=True, column_config={"data_solicitacao": "Aberto em", "motorista": "Solicitante", "Data_Programada": st.column_config.DateColumn("Data Programada"), "Area_Destino": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS), "Aprovar": st.column_config.CheckboxColumn("Aprovar?"), "id": None}, key="editor_chamados")
             if st.button("Processar Agendamentos", type="primary"):
-            selecionados = ed_c[ed_c['Aprovar'] == True]
+                selecionados = ed_c[ed_c['Aprovar'] == True]
             if not selecionados.empty:
                 with engine.connect() as conn:
                     for _, r in selecionados.iterrows():
