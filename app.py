@@ -953,18 +953,16 @@ else:
                 st.session_state.df_ap_work = df_p
             ed_c = st.data_editor(st.session_state.df_ap_work, hide_index=True, use_container_width=True, column_config={"data_solicitacao": "Aberto em", "motorista": "Solicitante", "Data_Programada": st.column_config.DateColumn("Data Programada"), "Area_Destino": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS), "Aprovar": st.column_config.CheckboxColumn("Aprovar?"), "id": None}, key="editor_chamados")
             if st.button("Processar Agendamentos", type="primary"):
-        selecionados = ed_c[ed_c['Aprovar'] == True]
-        if not selecionados.empty:
-            with engine.connect() as conn:
-                for _, r in selecionados.iterrows():
-                    # ADICIONE ESTA LINHA DENTRO DO LOOP:
-                    v_os = obter_proxima_os(engine, emp_id)
-                    
-                    # ADICIONE 'numero_os' NO INSERT E NO VALUES ABAIXO:
-                    conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem, empresa_id, numero_os) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, 'Não definido', :ic, 'Chamado', :eid, :nos)"), 
-                                 {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ti": r['Inicio'], "tf": r['Fim'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id'], "eid": emp_id, "nos": v_os})
-                        conn.commit()
-                    st.success("✅ Agendamentos processados!"); del st.session_state.df_ap_work; st.rerun()
+            selecionados = ed_c[ed_c['Aprovar'] == True]
+            if not selecionados.empty:
+                with engine.connect() as conn:
+                    for _, r in selecionados.iterrows():
+                        v_os = obter_proxima_os(engine, emp_id)
+                        conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem, empresa_id, numero_os) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, 'Não definido', :ic, 'Chamado', :eid, :nos)"), 
+                                     {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ti": r['Inicio'], "tf": r['Fim'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id'], "eid": emp_id, "nos": v_os})
+                        conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
+                    conn.commit()
+                st.success("✅ Agendamentos processados!"); st.rerun()
         else: st.info("Nenhum chamado pendente no momento.")
 
     elif aba_ativa == "📊 Indicadores":
