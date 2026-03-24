@@ -704,34 +704,34 @@ else:
                     ])
                     
                     texto_final = response.text
-                    st.info(f"📝 Transcrição: {texto_final}")
                     
-                    if st.button("Confirmar Baixa na OS"):
-                        # ... lógica de salvar no banco ...
-                        st.success(f"OS {os_sel} concluída com sucesso!")
-                                    with engine.connect() as conn:
-                                        conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
-                                                     {"ds": texto_real, "os": os_sel, "eid": emp_id})
-                                        conn.commit()
-                                    st.success(f"OS {os_sel} baixada com sucesso!")
-                                    st.rerun()
-                            else:
-                                st.warning("A IA não conseguiu processar o som. Tente falar mais perto do microfone.")
-                                
-                        except Exception as e:
-                            # Se o erro 404 persistir, tenta o modelo 'pro' como plano B
-                            if "404" in str(e):
-                                try:
-                                    model_pro = genai.GenerativeModel('gemini-1.5-pro')
-                                    response = model_pro.generate_content([
-                                        "Transcreva o áudio técnico:",
-                                        {"mime_type": "audio/wav", "data": audio_bytes}
-                                    ])
-                                    st.info(f"📝 Transcrição (Pro): {response.text}")
-                                except:
-                                    st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY.")
-                            else:
-                                st.error(f"Erro na IA: {e}")
+                    if texto_final:
+                        st.info(f"📝 Transcrição: {texto_final}")
+                        
+                        if st.button("Confirmar Baixa na OS"):
+                            with engine.connect() as conn:
+                                conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
+                                             {"ds": texto_final, "os": os_sel, "eid": emp_id})
+                                conn.commit()
+                            st.success(f"OS {os_sel} baixada com sucesso!")
+                            st.rerun()
+                    else:
+                        st.warning("A IA não conseguiu processar o som. Tente falar mais perto do microfone.")
+                        
+                except Exception as e:
+                    # Se o erro 404 persistir, tenta o modelo 'pro' como plano B
+                    if "404" in str(e):
+                        try:
+                            model_pro = genai.GenerativeModel('gemini-1.5-pro')
+                            response = model_pro.generate_content([
+                                "Transcreva o áudio técnico:",
+                                {"mime_type": "audio/wav", "data": audio_data.getvalue()}
+                            ])
+                            st.info(f"📝 Transcrição (Pro): {response.text}")
+                        except:
+                            st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY.")
+                    else:
+                        st.error(f"Erro na IA: {e}")
             else:
                 st.info("Nenhuma OS pendente para retorno no momento.")
 
