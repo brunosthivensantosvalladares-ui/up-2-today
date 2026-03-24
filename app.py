@@ -687,26 +687,26 @@ else:
                 # SEGUNDO: Só agora verificamos se ela existe
                 if audio_data and os_sel != "Nenhuma OS pendente":
                     with st.spinner("🤖 Analisando seu áudio..."):
-                        try:
-                        # 1. Tente usar o flash padrão (é o mais compatível com v1)
-                        model = genai.GenerativeModel('gemini-1.5-flash')
+                try:
+                    # 1. Tente usar o flash padrão
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     
-                        # 2. Vamos converter o áudio para um formato que a IA aceita sem erro de versão
-                        audio_bytes = audio_data.getvalue()
+                    # 2. Vamos converter o áudio para um formato que a IA aceita
+                    audio_bytes = audio_data.getvalue()
                     
-                        # 3. Chamada simplificada
-                        response = model.generate_content([
+                    # 3. Chamada simplificada
+                    response = model.generate_content([
                         "Transcreva este áudio de manutenção mecânica de forma técnica e resumida.",
                         {"mime_type": "audio/wav", "data": audio_bytes}
-                        ])
+                    ])
                     
-                        # Garantir que pegamos o texto com segurança
-                        if response.text:
+                    # Garantir que pegamos o texto com segurança
+                    if response.text:
                         texto_real = response.text
                         st.info(f"📝 Transcrição: {texto_real}")
                         
-                            if st.button("Confirmar Baixa e Salvar"):
-                                with engine.connect() as conn:
+                        if st.button("Confirmar Baixa e Salvar"):
+                            with engine.connect() as conn:
                                 conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
                                              {"ds": texto_real, "os": os_sel, "eid": emp_id})
                                 conn.commit()
@@ -716,7 +716,7 @@ else:
                         st.warning("A IA não conseguiu processar o som. Tente falar mais perto do microfone.")
                         
                 except Exception as e:
-                    # Se o erro 404 persistir, vamos tentar o modelo 'pro' como plano B automático
+                    # Se o erro 404 persistir, tenta o modelo 'pro' como plano B
                     if "404" in str(e):
                         try:
                             model_pro = genai.GenerativeModel('gemini-1.5-pro')
@@ -726,7 +726,7 @@ else:
                             ])
                             st.info(f"📝 Transcrição (Pro): {response.text}")
                         except:
-                            st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY nos Secrets.")
+                            st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY.")
                     else:
                         st.error(f"Erro na IA: {e}")
             else:
