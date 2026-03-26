@@ -668,7 +668,7 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # 1. Carrega os dados primeiro para evitar o NameError no df_a
+        # 1. Carrega os dados
         df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY numero_os DESC"), engine, params={"eid": emp_id})
         
         # 2. Interface de Voz
@@ -676,7 +676,6 @@ else:
             if not df_a.empty:
                 col_os, col_audio = st.columns([1, 2])
                 
-                # Proteção para garantir que a coluna existe antes de filtrar
                 if 'numero_os' in df_a.columns:
                     os_pendentes = df_a[df_a['realizado'] == False]['numero_os'].dropna().unique().tolist()
                 else:
@@ -688,29 +687,23 @@ else:
                 with col_audio:
                     audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
-                # SEGUNDO: Verificamos se o áudio existe (DENTRO do 'if not df_a.empty')
+                # Lógica da IA
                 if audio_data and os_sel != "Nenhuma OS pendente":
                     with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
                         try:
-                            # AJUSTE DE OURO: Configuração e nome do modelo com prefixo 'models/'
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                            model = genai.GenerativeModel('models/gemini-1.5-flash')
                             
-                            # Preparando o áudio como um dicionário para o v1beta
-                            audio_blob = {
-                                "mime_type": "audio/wav",
-                                "data": audio_data.getvalue()
-                            }
+                            # NOME ESTÁVEL DO MODELO PARA V1BETA
+                            model = genai.GenerativeModel('gemini-1.5-flash')
                             
-                            # Envia o áudio para a transcrição real
+                            # Transcrição direta
                             response = model.generate_content([
                                 "Transcreva este áudio de manutenção de forma técnica e direta:",
-                                audio_blob
+                                {"mime_type": "audio/wav", "data": audio_data.getvalue()}
                             ])
                             
-                            texto_final = response.text
-                            
-                            if texto_final:
+                            if response.text:
+                                texto_final = response.text
                                 st.info(f"📝 Transcrição: {texto_final}")
                                 
                                 if st.button("Confirmar Baixa na OS"):
@@ -721,24 +714,13 @@ else:
                                     st.success(f"OS {os_sel} baixada com sucesso!")
                                     st.rerun()
                             else:
-                                st.warning("A IA não conseguiu processar o som. Tente falar mais perto do microfone.")
+                                st.warning("IA não gerou texto. Tente gravar novamente.")
                                 
                         except Exception as e:
-                            # Plano B: Tenta o modelo Pro caso o Flash falte na região
-                            if "404" in str(e):
-                                try:
-                                    model_pro = genai.GenerativeModel('models/gemini-1.5-pro')
-                                    response = model_pro.generate_content([
-                                        "Transcreva o áudio técnico:",
-                                        audio_blob
-                                    ])
-                                    st.info(f"📝 Transcrição (Pro): {response.text}")
-                                except:
-                                    st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY.")
-                            else:
-                                st.error(f"Erro na IA: {e}")
+                            st.error("❌ Erro na Chamada da IA:")
+                            st.code(str(e))
             else:
-                st.info("Nenhuma OS pendente para retorno no momento.")
+                st.info("Nenhuma OS pendente.")
 
         # 3. Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
