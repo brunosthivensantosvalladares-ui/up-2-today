@@ -744,22 +744,33 @@ else:
                             relato_formatado = response.text
                             st.info(f"📋 Resumo extraído:\n{relato_formatado}")
                             
-                            if st.button("Confirmar e Finalizar"):
+                            if st.button("Finalizar OS e Enviar para Histórico"):
                                 with engine.connect() as conn:
-                                    # Concatena a descrição planejada com o retorno detalhado da IA
-                                    conn.execute(text(f"""
-                                        UPDATE tarefas 
-                                        SET realizado = True, 
-                                            descricao = 'OS: ' || :os || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                        WHERE {col_os}::text = :os AND empresa_id = :eid
-                                    """), {"relato": relato_formatado, "os": str(os_sel), "eid": emp_id})
-                                    conn.commit()
-                                st.success(f"OS {os_sel} enviada para o histórico!")
-                                st.rerun()
-            else:
-                st.info("Nenhuma OS pendente.")
-        except Exception as e:
-            st.error("Erro na Agenda."); st.code(str(e))
+                                    try:
+                                        # 1. Montamos a query usando CAST para garantir que o ID/OS seja lido corretamente
+                                        # 2. Garantimos que o empresa_id (emp_id) seja usado no filtro
+                                        query_final = text(f"""
+                                            UPDATE tarefas 
+                                            SET realizado = True, 
+                                                descricao = 'OS: ' || :os || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                            WHERE {col_os}::text = :os 
+                                            AND empresa_id = :eid
+                                        """)
+                                        
+                                        # Executa e força o COMMIT
+                                        conn.execute(query_final, {
+                                            "relato": relato_formatado, 
+                                            "os": str(os_sel), 
+                                            "eid": emp_id
+                                        })
+                                        conn.commit()
+                                        
+                                        st.success(f"✅ OS {os_sel} processada com sucesso!")
+                                        st.balloons() # Feedback visual de que deu certo
+                                        st.rerun()
+                                    except Exception as db_err:
+                                        st.error("Erro ao gravar no banco de dados:")
+                                        st.code(str(db_err))
             
         # 3. Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
