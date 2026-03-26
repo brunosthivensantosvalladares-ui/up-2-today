@@ -691,19 +691,18 @@ else:
                 if audio_data and os_sel != "Nenhuma OS pendente":
                     with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
                         try:
-                    # 1. Configuração FORÇANDO a versão estável v1 (mata o erro do v1beta)
-                    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                            # Linha 695 agora está corretamente recuada (4 espaços)
+                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                     
-                    # 2. Chamada usando o modelo flash na versão estável
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                            # Usando o modelo estável que o novo requirements vai carregar
+                            model = genai.GenerativeModel('gemini-1.5-flash')
                     
-                    audio_bytes = audio_data.getvalue()
+                            audio_bytes = audio_data.getvalue()
                     
-                    # 3. Transcrição com tratamento de erro
-                    response = model.generate_content([
-                        "Transcreva este áudio de manutenção mecânica de forma técnica:",
-                        {"mime_type": "audio/wav", "data": audio_bytes}
-                    ])
+                            response = model.generate_content([
+                            "Transcreva este áudio de manutenção mecânica de forma técnica:",
+                            {"mime_type": "audio/wav", "data": audio_bytes}
+                            ])
                     
                     if response.text:
                         texto_final = response.text
@@ -718,7 +717,7 @@ else:
                             st.rerun()
 
                 except Exception as e:
-                    st.error("❌ Erro de Versão da API Google:")
+                    st.error("❌ Erro na Chamada da IA:")
                     st.code(str(e))
             else:
                 st.info("Nenhuma OS pendente.")
