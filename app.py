@@ -669,57 +669,37 @@ else:
         st.subheader("✅ Histórico de OSs Concluídas")
         
         try:
-            # 1. Query robusta: buscamos o que foi realizado para esta empresa específica
-            # Usamos o CAST (:eid::int) para garantir que o ID da empresa bata com o banco
-            query_c = text("""
-                SELECT * FROM tarefas 
-                WHERE realizado = True 
-                AND empresa_id = :eid 
-                ORDER BY id DESC
-            """)
-            df_c = pd.read_sql(query_c, engine, params={"eid": emp_id})
+            # 1. BUSCA AMPLA: Vamos buscar TUDO que está como True primeiro
+            # para garantir que o dado existe no banco
+            query_c = text("SELECT * FROM tarefas WHERE realizado = True ORDER BY id DESC")
+            df_c = pd.read_sql(query_c, engine)
             
             if not df_c.empty:
-                # 2. Identifica qual coluna de OS usar (numero_os ou id)
-                col_os = 'numero_os' if 'numero_os' in df_c.columns else 'id'
+                # 2. FILTRO MANUAL POR EMPRESA (Mais seguro para diagnóstico)
+                # Convertemos ambos para string para evitar erro de tipo (1 vs "1")
+                df_filtrado = df_c[df_c['empresa_id'].astype(str) == str(emp_id)].copy()
                 
-                # 3. Preparamos as colunas que você quer ver (apenas as que existem)
-                colunas_foco = [col_os, 'prefixo', 'descricao']
-                colunas_existentes = [c for c in colunas_foco if c in df_c.columns]
-                
-                # 4. Criamos a visualização para a Up 2 Today
-                df_view = df_c[colunas_existentes].copy()
-                
-                # Renomeia para o padrão que você pediu
-                nomes = {
-                    col_os: 'Nº OS',
-                    'prefixo': 'Prefixo',
-                    'descricao': 'Prontuário Completo (Concatenado)'
-                }
-                df_view.rename(columns=nomes, inplace=True)
-                
-                st.write(f"### 📋 Foram encontradas {len(df_view)} manutenções finalizadas")
-                st.dataframe(df_view, use_container_width=True)
-                
-                # Botão de exportação
-                csv = df_view.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Baixar Histórico CSV", csv, "historico_concluidas.csv", "text/csv")
-                
+                if not df_filtrado.empty:
+                    col_os = 'numero_os' if 'numero_os' in df_filtrado.columns else 'id'
+                    
+                    # 3. Montagem da visualização profissional da Up 2 Today
+                    cols_view = [col_os, 'prefixo', 'descricao']
+                    cols_existentes = [c for c in cols_view if c in df_filtrado.columns]
+                    
+                    df_final = df_filtrado[cols_existentes].copy()
+                    df_final.columns = ['Nº OS', 'Prefixo', 'Prontuário de Manutenção']
+                    
+                    st.write(f"### 📋 {len(df_final)} Manutenções encontradas")
+                    st.dataframe(df_final, use_container_width=True)
+                else:
+                    st.warning(f"⚠️ Atenção: Existem OSs concluídas no banco, mas NENHUMA pertence ao seu ID de empresa ({emp_id}).")
+                    st.write("Dados das OSs encontradas (Verifique a coluna empresa_id):")
+                    st.dataframe(df_c[['id', 'numero_os', 'empresa_id', 'realizado']])
             else:
-                st.info("O histórico de conclusões está vazio para sua empresa.")
+                st.info("O banco de dados não possui NENHUMA OS marcada como concluída (realizado=True).")
                 
-                # FERRAMENTA DE DIAGNÓSTICO PARA O BRUNO
-                with st.expander("🔍 Verificação Técnica (Caso a OS tenha sumido)"):
-                    st.write("Verificando se existem OSs marcadas como concluídas no banco geral...")
-                    df_check = pd.read_sql(text("SELECT id, numero_os, realizado, empresa_id FROM tarefas WHERE realizado = True LIMIT 5"), engine)
-                    if df_check.empty:
-                        st.warning("Não existem OSs marcadas como 'True' no banco todo. O erro pode estar no botão SALVAR da Agenda.")
-                    else:
-                        st.write("Dados encontrados no banco:", df_check)
-                        st.info(f"O seu ID de empresa atual é: {emp_id}. Verifique se ele bate com a coluna empresa_id acima.")
-                        
         except Exception as e:
-            st.error("Erro crítico ao carregar o histórico.")
+            st.error("Erro ao carregar o histórico.")
             st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
