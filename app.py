@@ -687,19 +687,18 @@ else:
                 with col_audio:
                     audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
-                # Lógica da IA (Versão Corrigida e Alinhada)
+                # Lógica da IA (Versão Atualizada 2026)
                 if audio_data and os_sel != "Nenhuma OS pendente":
-                    with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
+                    with st.spinner("🤖 Up 2 Today: Processando áudio com Gemini 2.5..."):
                         try:
-                            # 1. Configuração simples
+                            # 1. Configura a chave
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                             
-                            # 2. Usando o nome estável 'latest' que resolve o 404 em 99% dos casos
-                            model = genai.GenerativeModel('gemini-1.5-flash-latest')
-                            
-                            audio_bytes = audio_data.getvalue()
+                            # 2. USA O MODELO QUE APARECE NA SUA LISTA (Item 0)
+                            model = genai.GenerativeModel('models/gemini-2.5-flash')
                             
                             # 3. Transcrição direta
+                            audio_bytes = audio_data.getvalue()
                             response = model.generate_content([
                                 "Transcreva este áudio de manutenção mecânica de forma técnica e resumida:",
                                 {"mime_type": "audio/wav", "data": audio_bytes}
@@ -709,7 +708,7 @@ else:
                                 texto_final = response.text
                                 st.info(f"📝 Transcrição: {texto_final}")
                                 
-                                if st.button("Confirmar e Salvar no Up 2 Today"):
+                                if st.button("Confirmar e Salvar"):
                                     with engine.connect() as conn:
                                         conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
                                                      {"ds": texto_final, "os": os_sel, "eid": emp_id})
@@ -718,7 +717,7 @@ else:
                                     st.rerun()
 
                         except Exception as e:
-                            st.error("❌ Erro técnico:")
+                            st.error("❌ Erro de Conexão:")
                             st.code(str(e))
                             
                             # Pequeno botão de diagnóstico para você me mandar o que aparece
