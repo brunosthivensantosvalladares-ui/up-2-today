@@ -694,18 +694,17 @@ else:
         if audio_data and os_sel != "Nenhuma OS pendente":
             with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
                 try:
-                    # 1. Configuração com o nome completo do modelo para v1beta
+                    # 1. Configuração com o nome estável
                     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     
-                    # MUDANÇA AQUI: Adicionamos 'models/' e '-latest'
-                    model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+                    # 2. Captura os dados do áudio de forma direta
+                    audio_content = audio_data.read()
                     
-                    audio_bytes = audio_data.getvalue()
-                    
-                    # 2. Chamada da transcrição
+                    # 3. Chamada da transcrição
                     response = model.generate_content([
                         "Transcreva este áudio de manutenção mecânica de forma técnica e resumida.",
-                        {"mime_type": "audio/wav", "data": audio_bytes}
+                        {"mime_type": "audio/wav", "data": audio_content}
                     ])
                     
                     if response.text:
