@@ -669,30 +669,28 @@ else:
         st.subheader("✅ Histórico de OSs Concluídas")
         
         try:
-            # Busca todas as concluídas
             query_c = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = True ORDER BY id DESC")
             df_c = pd.read_sql(query_c, engine, params={"eid": emp_id})
             
             if not df_c.empty:
                 col_os = 'numero_os' if 'numero_os' in df_c.columns else 'id'
                 
-                # Exibe apenas as colunas de negócio (Sem ID técnico)
-                # O campo 'descricao' aqui já terá tudo concatenado pelo UPDATE acima
-                cols_view = [col_os, 'data_planejada', 'descricao']
-                st.dataframe(df_c[[c for c in cols_view if c in df_c.columns]], use_container_width=True)
+                # Criamos a visualização limpa: Numero da OS | Data | Descrição Completa
+                # A 'descricao' aqui já contém o Prefixo, Funcionário e Horários que a IA inseriu
+                df_view = df_c[[col_os, 'data_planejada', 'descricao']].copy()
+                df_view.columns = ['Nº OS', 'Data Planejada', 'Detalhes do Serviço']
                 
-                # Opção de exportar o relatório
-                st.download_button("Exportar Relatório (CSV)", df_c.to_csv(index=False).encode('utf-8'), "historico_up2today.csv")
+                st.dataframe(df_view, use_container_width=True)
             else:
-                st.info("O histórico está vazio.")
+                st.info("Histórico vazio.")
         except Exception as e:
-            st.error("Erro ao carregar histórico."); st.code(str(e))
+            st.error("Erro no histórico."); st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
-        st.subheader("🎙️ Retorno de Manutenção por Voz")
+        st.subheader("🎙️ Baixa Rápida por Voz")
         
         try:
-            # Busca apenas o necessário para o selectbox
+            # Busca OSs pendentes
             query_p = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
             df_p = pd.read_sql(query_p, engine, params={"eid": emp_id})
             
@@ -700,41 +698,42 @@ else:
                 col_os = 'numero_os' if 'numero_os' in df_p.columns else 'id'
                 os_pendentes = df_p[col_os].dropna().unique().tolist()
                 
-                # Campos extras para o fechamento
-                c1, c2 = st.columns(2)
-                with c1:
-                    prefixo = st.text_input("Prefixo do Veículo")
-                    mecanico = st.text_input("Quem executou o serviço?")
-                with c2:
-                    h_inicio = st.time_input("Hora Início")
-                    h_fim = st.time_input("Hora Fim")
-
-                os_sel = st.selectbox("Selecione a OS para dar baixa", os_pendentes)
-                audio_data = st.audio_input(f"Grave o relato técnico para {os_sel}")
+                os_sel = st.selectbox("Selecione a OS", os_pendentes)
+                audio_data = st.audio_input(f"Grave o relato completo para a OS {os_sel}")
 
                 if audio_data and os_sel:
-                    with st.spinner("🤖 IA do Up 2 Today processando relato..."):
+                    with st.spinner("🤖 Up 2 Today processando relato..."):
                         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         model = genai.GenerativeModel('models/gemini-2.5-flash')
-                        response = model.generate_content(["Transcreva:", {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
+                        
+                        # PROMPT INTELIGENTE: Ele vai extrair os dados que você quer do áudio
+                        prompt_ia = """
+                        Transcreva o áudio de manutenção seguindo este padrão restrito:
+                        1. Transcreva o serviço realizado.
+                        2. Identifique o nome do funcionário mencionado.
+                        3. Identifique o prefixo do veículo se mencionado.
+                        4. Identifique o horário de início e fim se mencionado.
+                        Retorne apenas o texto formatado assim: 
+                        Serviço realizado: [texto]; Funcionário: [nome]; Horário: [início às fim]; Prefixo: [número].
+                        """
+                        
+                        response = model.generate_content([prompt_ia, {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
                         
                         if response.text:
-                            relato_ia = response.text
-                            st.info(f"📝 Transcrição: {relato_ia}")
+                            relato_formatado = response.text
+                            st.info(f"📋 Resumo extraído:\n{relato_formatado}")
                             
-                            if st.button("Finalizar OS e Enviar para Histórico"):
-                                # CONCATENAÇÃO COMPLETA: Prefixo, Mecânico, Horas e Relato
-                                info_fechamento = f"\n[FECHAMENTO] \nVeículo: {prefixo} | Executante: {mecanico} | Período: {h_inicio} às {h_fim} \nRelato: {relato_ia}"
-                                
+                            if st.button("Confirmar e Finalizar"):
                                 with engine.connect() as conn:
+                                    # Concatena a descrição planejada com o retorno detalhado da IA
                                     conn.execute(text(f"""
                                         UPDATE tarefas 
                                         SET realizado = True, 
-                                            descricao = COALESCE(descricao, '') || :info
+                                            descricao = 'OS: ' || :os || '; ' || COALESCE(descricao, '') || '; ' || :relato
                                         WHERE {col_os}::text = :os AND empresa_id = :eid
-                                    """), {"info": info_fechamento, "os": str(os_sel), "eid": emp_id})
+                                    """), {"relato": relato_formatado, "os": str(os_sel), "eid": emp_id})
                                     conn.commit()
-                                st.success(f"OS {os_sel} concluída com sucesso!")
+                                st.success(f"OS {os_sel} enviada para o histórico!")
                                 st.rerun()
             else:
                 st.info("Nenhuma OS pendente.")
