@@ -711,7 +711,7 @@ else:
         st.subheader("🎙️ Baixa Rápida por Voz")
         
         try:
-            # Busca OSs pendentes
+            # 1. Busca as OSs pendentes
             query_p = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
             df_p = pd.read_sql(query_p, engine, params={"eid": emp_id})
             
@@ -720,66 +720,48 @@ else:
                 os_pendentes = df_p[col_os].dropna().unique().tolist()
                 
                 os_sel = st.selectbox("Selecione a OS", os_pendentes)
-                audio_data = st.audio_input(f"Grave o relato completo para a OS {os_sel}")
+                audio_data = st.audio_input(f"Grave o relato para {os_sel}")
 
                 if audio_data and os_sel:
-                    with st.spinner("🤖 Up 2 Today processando relato..."):
+                    with st.spinner("🤖 Processando áudio..."):
                         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         model = genai.GenerativeModel('models/gemini-2.5-flash')
                         
-                        # PROMPT INTELIGENTE: Ele vai extrair os dados que você quer do áudio
-                        prompt_ia = """
-                        Transcreva o áudio de manutenção seguindo este padrão restrito:
-                        1. Transcreva o serviço realizado.
-                        2. Identifique o nome do funcionário mencionado.
-                        3. Identifique o prefixo do veículo se mencionado.
-                        4. Identifique o horário de início e fim se mencionado.
-                        Retorne apenas o texto formatado assim: 
-                        Serviço realizado: [texto]; Funcionário: [nome]; Horário: [início às fim]; Prefixo: [número].
-                        """
+                        # Prompt que extrai os dados conforme sua regra de negócio
+                        prompt_ia = "Transcreva o serviço, funcionário, prefixo e horários. Formate como: Serviço realizado: [texto]; Funcionário: [nome]; Horário: [início às fim]; Prefixo: [número]."
                         
                         response = model.generate_content([prompt_ia, {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
                         
                         if response.text:
-                            relato_formatado = response.text
-                            st.info(f"📋 Resumo extraído:\n{relato_formatado}")
+                            relato_ia = response.text
+                            st.info(f"📝 Resumo: {relato_ia}")
                             
-                            if st.button("Finalizar OS e Enviar para Histórico"):
+                            if st.button("Confirmar e Finalizar"):
                                 with engine.connect() as conn:
-                                    try:
-                                        # 1. Montamos a query usando CAST para garantir que o ID/OS seja lido corretamente
-                                        # 2. Garantimos que o empresa_id (emp_id) seja usado no filtro
-                                        query_final = text(f"""
-                                            UPDATE tarefas 
-                                            SET realizado = True, 
-                                                descricao = 'OS: ' || :os || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                            WHERE {col_os}::text = :os 
-                                            AND empresa_id = :eid
-                                        """)
-                                        
-                                        # Executa e força o COMMIT
-                                        conn.execute(query_final, {
-                                            "relato": relato_formatado, 
-                                            "os": str(os_sel), 
-                                            "eid": emp_id
-                                        })
-                                        conn.commit()
-                                        
-                                        st.success(f"✅ OS {os_sel} processada com sucesso!")
-                                        st.balloons() # Feedback visual de que deu certo
-                                        st.rerun()
-                                    except Exception as db_err:
-                                        st.error("Erro ao gravar no banco de dados:")
-                                        st.code(str(db_err))
-            
-        # 3. Popover fora do expander de voz, mas dentro da aba Agenda
+                                    # Concatena tudo na descrição
+                                    conn.execute(text(f"""
+                                        UPDATE tarefas 
+                                        SET realizado = True, 
+                                            descricao = 'OS: ' || :os || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                        WHERE {col_os}::text = :os AND empresa_id = :eid
+                                    """), {"relato": relato_ia, "os": str(os_sel), "eid": emp_id})
+                                    conn.commit()
+                                st.success("✅ OS enviada para Concluídas!")
+                                st.rerun()
+            else:
+                st.info("Nenhuma OS pendente.")
+
+        except Exception as e:
+            # ESSA É A PARTE QUE ESTAVA FALTANDO E GEROU O ERRO
+            st.error("Erro ao processar a Agenda.")
+            st.code(str(e))
+
+        # Agora o popover está fora do try, no lugar certo
         with st.popover("💡 Como usar a Agenda?"):
             st.markdown("""
-                ### 📅 Guia Rápido - Agenda
-                1. **Filtros:** No topo, escolha o período, setor ou turno para filtrar a visualização.
-                2. **Edição:** Clique diretamente em qualquer célula para alterar. O sistema salva sozinho!
-                3. **Conclusão:** Marque a coluna **OK** para finalizar o serviço.
-                4. **Relatórios:** Use os botões **PDF** ou **Excel**.
+            1. Selecione a OS na lista.
+            2. Grave o áudio citando seu Nome, Prefixo e Horários.
+            3. Confira a transcrição e clique em Confirmar.
             """)
        # --- ASSISTENTE COM ANIMAÇÃO DE ALERTA ---
         if "exibir_bot" not in st.session_state:
