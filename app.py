@@ -692,50 +692,39 @@ else:
                 # SEGUNDO: Verificamos se ela existe (DENTRO do 'if not df_a.empty')
                 # Verifique se esta parte está assim no seu app.py:
         if audio_data and os_sel != "Nenhuma OS pendente":
-            with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
+            with st.spinner("🤖 Up 2 Today: Conectando ao cérebro da IA..."):
                 try:
-                    # Configura o modelo com a chave que você passou
+                    # FORÇANDO A CONFIGURAÇÃO: Pegando direto do Secret na hora do clique
+                    minha_chave = st.secrets["GEMINI_API_KEY"]
+                    genai.configure(api_key=minha_chave)
+                    
+                    # Teste rápido: O modelo consegue iniciar?
                     model = genai.GenerativeModel('gemini-1.5-flash')
                     
-                    # Envia o áudio para a transcrição real
+                    audio_bytes = audio_data.getvalue()
+                    
+                    # Chamada com tratamento de erro bruto
                     response = model.generate_content([
-                        "Transcreva este áudio de manutenção de forma técnica e direta:",
-                        {"mime_type": "audio/wav", "data": audio_data.getvalue()}
+                        "Transcreva este áudio de manutenção:",
+                        {"mime_type": "audio/wav", "data": audio_bytes}
                     ])
                     
-                    texto_final = response.text
-                    
-                    if texto_final:
-                        st.info(f"📝 Transcrição: {texto_final}")
+                    if response:
+                        st.info(f"📝 Transcrição: {response.text}")
                         
-                        if st.button("Confirmar Baixa na OS"):
+                        if st.button("Confirmar e Salvar"):
                             with engine.connect() as conn:
                                 conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
-                                             {"ds": texto_final, "os": os_sel, "eid": emp_id})
+                                             {"ds": response.text, "os": os_sel, "eid": emp_id})
                                 conn.commit()
-                            st.success(f"OS {os_sel} baixada com sucesso!")
+                            st.success(f"OS {os_sel} baixada!")
                             st.rerun()
-                    else:
-                        st.warning("A IA não conseguiu processar o som. Tente falar mais perto do microfone.")
-                        
+
                 except Exception as e:
-                    # Se o erro 404 persistir, tenta o modelo 'pro' como plano B
-                    if "404" in str(e):
-                        try:
-                            model_pro = genai.GenerativeModel('gemini-1.5-pro')
-                            response = model_pro.generate_content([
-                                "Transcreva o áudio técnico:",
-                                {"mime_type": "audio/wav", "data": audio_data.getvalue()}
-                            ])
-                            st.info(f"📝 Transcrição (Pro): {response.text}")
-                        except:
-                            st.error("Erro de conexão com os modelos da Google. Verifique sua GEMINI_API_KEY.")
-                    else:
-                        st.error(f"Erro na IA: {e}")
-        
-        else:
-            # Este else avisa se não há áudio ou OS selecionada
-            st.info("Nenhuma OS pendente para retorno no momento.")
+                    # ESTA LINHA É A MAIS IMPORTANTE AGORA:
+                    st.error("❌ O Google respondeu com o seguinte erro técnico:")
+                    st.code(str(e)) 
+                    st.warning("Se aparecer 'API_KEY_INVALID', verifique se há espaços nas aspas dos Secrets.")
 
         # Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
