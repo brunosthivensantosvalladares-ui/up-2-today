@@ -687,17 +687,17 @@ else:
                 with col_audio:
                     audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
-                # Lógica da IA (Identação Corrigida)
+                # Lógica da IA (Versão de Compatibilidade Total)
                 if audio_data and os_sel != "Nenhuma OS pendente":
                     with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
                         try:
-                            # 1. Configuração da Chave
-                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                            # 1. FORÇAR CONEXÃO VIA REST (Isso evita o erro de v1beta/404)
+                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"], transport='rest')
                             
-                            # 2. O NOME QUE MATA O ERRO 404: Use o caminho completo
-                            model = genai.GenerativeModel('models/gemini-1.5-flash')
+                            # 2. Usar o nome estável
+                            model = genai.GenerativeModel('gemini-1.5-flash')
                             
-                            # 3. Processando o áudio
+                            # 3. Processar áudio
                             audio_bytes = audio_data.getvalue()
                             
                             response = model.generate_content([
@@ -718,8 +718,8 @@ else:
                                     st.rerun()
 
                         except Exception as e:
-                            # Se o 404 persistir, o erro detalhado aparecerá aqui
-                            st.error("❌ Erro de Comunicação com Google:")
+                            # Se o erro persistir, vamos ver o motivo real aqui
+                            st.error("❌ Erro de Versão da API:")
                             st.code(str(e))
             else:
                 st.info("Nenhuma OS pendente.")
