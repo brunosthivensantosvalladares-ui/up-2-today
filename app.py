@@ -711,7 +711,7 @@ else:
         st.subheader("🎙️ Baixa Rápida por Voz")
         
         try:
-            # 1. Busca as OSs pendentes
+            # 1. Ajuste na Query: Agora buscamos explicitamente o prefixo cadastrado
             query_p = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
             df_p = pd.read_sql(query_p, engine, params={"eid": emp_id})
             
@@ -720,40 +720,50 @@ else:
                 os_pendentes = df_p[col_os].dropna().unique().tolist()
                 
                 os_sel = st.selectbox("Selecione a OS", os_pendentes)
-                audio_data = st.audio_input(f"Grave o relato para {os_sel}")
+                
+                # 2. Captura o prefixo original da OS selecionada
+                prefixo_origem = df_p[df_p[col_os].astype(str) == str(os_sel)]['prefixo'].iloc[0] if 'prefixo' in df_p.columns else "Não informado"
+                
+                st.caption(f"📌 Veículo identificado: **{prefixo_origem}**")
+                
+                audio_data = st.audio_input(f"Grave o relato para a OS {os_sel}")
 
                 if audio_data and os_sel:
-                    with st.spinner("🤖 Processando áudio..."):
+                    with st.spinner("🤖 Processando relato..."):
                         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         model = genai.GenerativeModel('models/gemini-2.5-flash')
                         
-                        # Prompt que extrai os dados conforme sua regra de negócio
-                        prompt_ia = "Transcreva o serviço, funcionário, prefixo e horários. Formate como: Serviço realizado: [texto]; Funcionário: [nome]; Horário: [início às fim]; Prefixo: [número]."
+                        # Ajustamos o prompt para focar apenas no serviço, funcionários e horas
+                        prompt_ia = "Transcreva o serviço realizado, o nome do funcionário e o horário (início e fim). Retorne no formato: Serviço realizado: [texto]; Funcionário: [nome]; Horário: [início às fim]."
                         
                         response = model.generate_content([prompt_ia, {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
                         
                         if response.text:
                             relato_ia = response.text
-                            st.info(f"📝 Resumo: {relato_ia}")
+                            st.info(f"📝 Resumo extraído:\n{relato_ia}")
                             
                             if st.button("Confirmar e Finalizar"):
                                 with engine.connect() as conn:
-                                    # Concatena tudo na descrição
+                                    # 3. O segredo: Usamos o :pref_origem que pegamos do banco, não do áudio
                                     conn.execute(text(f"""
                                         UPDATE tarefas 
                                         SET realizado = True, 
-                                            descricao = 'OS: ' || :os || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                            descricao = 'OS: ' || :os || '; Prefixo: ' || :pref_origem || '; ' || COALESCE(descricao, '') || '; ' || :relato
                                         WHERE {col_os}::text = :os AND empresa_id = :eid
-                                    """), {"relato": relato_ia, "os": str(os_sel), "eid": emp_id})
+                                    """), {
+                                        "relato": relato_ia, 
+                                        "os": str(os_sel), 
+                                        "eid": emp_id,
+                                        "pref_origem": str(prefixo_origem)
+                                    })
                                     conn.commit()
-                                st.success("✅ OS enviada para Concluídas!")
+                                st.success(f"OS {os_sel} finalizada com o prefixo {prefixo_origem}!")
                                 st.rerun()
             else:
                 st.info("Nenhuma OS pendente.")
 
         except Exception as e:
-            # ESSA É A PARTE QUE ESTAVA FALTANDO E GEROU O ERRO
-            st.error("Erro ao processar a Agenda.")
+            st.error("Erro ao carregar dados da OS.")
             st.code(str(e))
 
         # Agora o popover está fora do try, no lugar certo
