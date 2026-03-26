@@ -666,20 +666,24 @@ else:
         st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
 
     elif aba_ativa == "✅ OSs Concluídas":
-        st.subheader("✅ Histórico de OSs Concluídas")
+        st.subheader("✅ Histórico de Serviços Concluídos")
         
-        # Carrega apenas as realizadas
-        query_concluidas = text("SELECT numero_os, data_planejada, descricao FROM tarefas WHERE empresa_id = :eid AND realizado = True ORDER BY numero_os DESC")
-        df_c = pd.read_sql(query_concluidas, engine, params={"eid": emp_id})
-        
-        if not df_c.empty:
-            st.dataframe(df_c, use_container_width=True)
+        try:
+            query_c = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = True ORDER BY id DESC")
+            df_c = pd.read_sql(query_c, engine, params={"eid": emp_id})
             
-            # Botão para baixar relatório de concluídas
-            csv = df_c.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Baixar Histórico (CSV)", csv, "historico_concluidas.csv", "text/csv")
-        else:
-            st.info("Nenhuma OS concluída no histórico.")
+            if not df_c.empty:
+                # Detecta a coluna de OS
+                col_os = 'numero_os' if 'numero_os' in df_c.columns else 'id'
+                cols_para_exibir = [col_os, 'data_planejada', 'descricao']
+                
+                # Exibe a tabela limpa
+                st.dataframe(df_c[[c for c in cols_para_exibir if c in df_c.columns]], use_container_width=True)
+            else:
+                st.info("Nenhuma OS concluída encontrada.")
+        except Exception as e:
+            st.error("Erro ao carregar Histórico.")
+            st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal (Pendentes)")
