@@ -691,34 +691,35 @@ else:
                 if audio_data and os_sel != "Nenhuma OS pendente":
                     with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
                         try:
-                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                            
-                            # NOME ESTÁVEL DO MODELO PARA V1BETA
-                            model = genai.GenerativeModel('gemini-1.5-flash')
-                            
-                            # Transcrição direta
-                            response = model.generate_content([
-                                "Transcreva este áudio de manutenção de forma técnica e direta:",
-                                {"mime_type": "audio/wav", "data": audio_data.getvalue()}
-                            ])
-                            
-                            if response.text:
-                                texto_final = response.text
-                                st.info(f"📝 Transcrição: {texto_final}")
-                                
-                                if st.button("Confirmar Baixa na OS"):
-                                    with engine.connect() as conn:
-                                        conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
-                                                     {"ds": texto_final, "os": os_sel, "eid": emp_id})
-                                        conn.commit()
-                                    st.success(f"OS {os_sel} baixada com sucesso!")
-                                    st.rerun()
-                            else:
-                                st.warning("IA não gerou texto. Tente gravar novamente.")
-                                
-                        except Exception as e:
-                            st.error("❌ Erro na Chamada da IA:")
-                            st.code(str(e))
+                    # 1. Configuração FORÇANDO a versão estável v1 (mata o erro do v1beta)
+                    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                    
+                    # 2. Chamada usando o modelo flash na versão estável
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    
+                    audio_bytes = audio_data.getvalue()
+                    
+                    # 3. Transcrição com tratamento de erro
+                    response = model.generate_content([
+                        "Transcreva este áudio de manutenção mecânica de forma técnica:",
+                        {"mime_type": "audio/wav", "data": audio_bytes}
+                    ])
+                    
+                    if response.text:
+                        texto_final = response.text
+                        st.info(f"📝 Transcrição: {texto_final}")
+                        
+                        if st.button("Confirmar e Salvar no Up 2 Today"):
+                            with engine.connect() as conn:
+                                conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
+                                             {"ds": texto_final, "os": os_sel, "eid": emp_id})
+                                conn.commit()
+                            st.success(f"OS {os_sel} baixada com sucesso!")
+                            st.rerun()
+
+                except Exception as e:
+                    st.error("❌ Erro de Versão da API Google:")
+                    st.code(str(e))
             else:
                 st.info("Nenhuma OS pendente.")
 
