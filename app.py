@@ -687,38 +687,37 @@ else:
                 with col_audio:
                     audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
-                # Lógica da IA
+                # Lógica da IA (Alinhada com o bloco acima)
                 if audio_data and os_sel != "Nenhuma OS pendente":
                     with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
                         try:
-                            # Linha 695 agora está corretamente recuada (4 espaços)
+                            # TUDO AQUI DENTRO PRECISA DE +1 RECUO (TAB OU 4 ESPAÇOS)
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                    
-                            # Usando o modelo estável que o novo requirements vai carregar
+                            
                             model = genai.GenerativeModel('gemini-1.5-flash')
-                    
+                            
                             audio_bytes = audio_data.getvalue()
-                    
+                            
                             response = model.generate_content([
-                            "Transcreva este áudio de manutenção mecânica de forma técnica:",
-                            {"mime_type": "audio/wav", "data": audio_bytes}
+                                "Transcreva este áudio de manutenção mecânica de forma técnica:",
+                                {"mime_type": "audio/wav", "data": audio_bytes}
                             ])
-                    
-                    if response.text:
-                        texto_final = response.text
-                        st.info(f"📝 Transcrição: {texto_final}")
-                        
-                        if st.button("Confirmar e Salvar no Up 2 Today"):
-                            with engine.connect() as conn:
-                                conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
-                                             {"ds": texto_final, "os": os_sel, "eid": emp_id})
-                                conn.commit()
-                            st.success(f"OS {os_sel} baixada com sucesso!")
-                            st.rerun()
+                            
+                            if response.text:
+                                texto_final = response.text
+                                st.info(f"📝 Transcrição: {texto_final}")
+                                
+                                if st.button("Confirmar e Salvar no Up 2 Today"):
+                                    with engine.connect() as conn:
+                                        conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
+                                                     {"ds": texto_final, "os": os_sel, "eid": emp_id})
+                                        conn.commit()
+                                    st.success(f"OS {os_sel} baixada com sucesso!")
+                                    st.rerun()
 
-                except Exception as e:
-                    st.error("❌ Erro na Chamada da IA:")
-                    st.code(str(e))
+                        except Exception as e:
+                            st.error("❌ Erro na Chamada da IA:")
+                            st.code(str(e))
             else:
                 st.info("Nenhuma OS pendente.")
 
