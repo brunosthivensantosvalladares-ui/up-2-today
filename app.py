@@ -669,42 +669,57 @@ else:
         st.subheader("✅ Histórico de OSs Concluídas")
         
         try:
-            # Busca todas as colunas para não ter erro de index
-            query_c = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = True ORDER BY id DESC")
+            # 1. Query robusta: buscamos o que foi realizado para esta empresa específica
+            # Usamos o CAST (:eid::int) para garantir que o ID da empresa bata com o banco
+            query_c = text("""
+                SELECT * FROM tarefas 
+                WHERE realizado = True 
+                AND empresa_id = :eid 
+                ORDER BY id DESC
+            """)
             df_c = pd.read_sql(query_c, engine, params={"eid": emp_id})
             
             if not df_c.empty:
-                # 1. Identifica as colunas reais que vieram do banco
+                # 2. Identifica qual coluna de OS usar (numero_os ou id)
                 col_os = 'numero_os' if 'numero_os' in df_c.columns else 'id'
                 
-                # 2. Cria uma visualização limpa para o usuário
-                # Montamos uma lista das colunas que QUEREMOS exibir, mas só se elas EXISTIREM
-                colunas_para_ver = [col_os, 'data_planejada', 'data', 'descricao']
-                colunas_reais = [c for c in colunas_para_ver if c in df_c.columns]
+                # 3. Preparamos as colunas que você quer ver (apenas as que existem)
+                colunas_foco = [col_os, 'prefixo', 'descricao']
+                colunas_existentes = [c for c in colunas_foco if c in df_c.columns]
                 
-                df_view = df_c[colunas_reais].copy()
+                # 4. Criamos a visualização para a Up 2 Today
+                df_view = df_c[colunas_existentes].copy()
                 
-                # 3. Renomeia para ficar profissional na tela
-                nomes_colunas = {
+                # Renomeia para o padrão que você pediu
+                nomes = {
                     col_os: 'Nº OS',
-                    'data_planejada': 'Data Planejada',
-                    'data': 'Data Registro',
-                    'descricao': 'Prontuário da Manutenção (Detalhes Concatenados)'
+                    'prefixo': 'Prefixo',
+                    'descricao': 'Prontuário Completo (Concatenado)'
                 }
-                df_view.rename(columns=nomes_colunas, inplace=True)
+                df_view.rename(columns=nomes, inplace=True)
                 
-                st.write("### 📋 Relatório de Manutenções Finalizadas")
+                st.write(f"### 📋 Foram encontradas {len(df_view)} manutenções finalizadas")
                 st.dataframe(df_view, use_container_width=True)
                 
                 # Botão de exportação
                 csv = df_view.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Baixar Relatório Completo", csv, "historico_up2today.csv", "text/csv")
+                st.download_button("📥 Baixar Histórico CSV", csv, "historico_concluidas.csv", "text/csv")
                 
             else:
-                st.info("O histórico de conclusões está vazio.")
+                st.info("O histórico de conclusões está vazio para sua empresa.")
                 
+                # FERRAMENTA DE DIAGNÓSTICO PARA O BRUNO
+                with st.expander("🔍 Verificação Técnica (Caso a OS tenha sumido)"):
+                    st.write("Verificando se existem OSs marcadas como concluídas no banco geral...")
+                    df_check = pd.read_sql(text("SELECT id, numero_os, realizado, empresa_id FROM tarefas WHERE realizado = True LIMIT 5"), engine)
+                    if df_check.empty:
+                        st.warning("Não existem OSs marcadas como 'True' no banco todo. O erro pode estar no botão SALVAR da Agenda.")
+                    else:
+                        st.write("Dados encontrados no banco:", df_check)
+                        st.info(f"O seu ID de empresa atual é: {emp_id}. Verifique se ele bate com a coluna empresa_id acima.")
+                        
         except Exception as e:
-            st.error("Erro ao carregar o histórico. Verifique os nomes das colunas no banco.")
+            st.error("Erro crítico ao carregar o histórico.")
             st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
