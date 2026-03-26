@@ -666,74 +666,80 @@ else:
         st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
 
     elif aba_ativa == "✅ OSs Concluídas":
-        st.subheader("✅ Histórico de Serviços Concluídos")
+        st.subheader("✅ Histórico de OSs Concluídas")
         
         try:
+            # Busca todas as concluídas
             query_c = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = True ORDER BY id DESC")
             df_c = pd.read_sql(query_c, engine, params={"eid": emp_id})
             
             if not df_c.empty:
-                # Detecta a coluna de OS
                 col_os = 'numero_os' if 'numero_os' in df_c.columns else 'id'
-                cols_para_exibir = [col_os, 'data_planejada', 'descricao']
                 
-                # Exibe a tabela limpa
-                st.dataframe(df_c[[c for c in cols_para_exibir if c in df_c.columns]], use_container_width=True)
+                # Exibe apenas as colunas de negócio (Sem ID técnico)
+                # O campo 'descricao' aqui já terá tudo concatenado pelo UPDATE acima
+                cols_view = [col_os, 'data_planejada', 'descricao']
+                st.dataframe(df_c[[c for c in cols_view if c in df_c.columns]], use_container_width=True)
+                
+                # Opção de exportar o relatório
+                st.download_button("Exportar Relatório (CSV)", df_c.to_csv(index=False).encode('utf-8'), "historico_up2today.csv")
             else:
-                st.info("Nenhuma OS concluída encontrada.")
+                st.info("O histórico está vazio.")
         except Exception as e:
-            st.error("Erro ao carregar Histórico.")
-            st.code(str(e))
+            st.error("Erro ao carregar histórico."); st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
-        st.subheader("📅 Agenda Principal (Pendentes)")
+        st.subheader("🎙️ Retorno de Manutenção por Voz")
         
         try:
-            # 1. Busca os dados de forma genérica para evitar o erro de coluna
+            # Busca apenas o necessário para o selectbox
             query_p = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
             df_p = pd.read_sql(query_p, engine, params={"eid": emp_id})
             
             if not df_p.empty:
-                # AJUSTE DE COLUNA: Se o nome no banco for 'id' em vez de 'numero_os', usamos ele
                 col_os = 'numero_os' if 'numero_os' in df_p.columns else 'id'
+                os_pendentes = df_p[col_os].dropna().unique().tolist()
                 
-                # 2. Interface de Voz
-                with st.expander("🎙️ Retorno Técnico por Voz", expanded=False):
-                    os_pendentes = df_p[col_os].dropna().unique().tolist()
-                    c1, c2 = st.columns([1, 2])
-                    with c1:
-                        os_sel = st.selectbox("Selecione a OS", os_pendentes)
-                    with c2:
-                        audio_data = st.audio_input(f"Grave retorno para {os_sel}")
+                # Campos extras para o fechamento
+                c1, c2 = st.columns(2)
+                with c1:
+                    prefixo = st.text_input("Prefixo do Veículo")
+                    mecanico = st.text_input("Quem executou o serviço?")
+                with c2:
+                    h_inicio = st.time_input("Hora Início")
+                    h_fim = st.time_input("Hora Fim")
 
-                    if audio_data and os_sel:
-                        with st.spinner("🤖 Processando..."):
-                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                            model = genai.GenerativeModel('models/gemini-2.5-flash')
-                            response = model.generate_content(["Transcreva:", {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
+                os_sel = st.selectbox("Selecione a OS para dar baixa", os_pendentes)
+                audio_data = st.audio_input(f"Grave o relato técnico para {os_sel}")
+
+                if audio_data and os_sel:
+                    with st.spinner("🤖 IA do Up 2 Today processando relato..."):
+                        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                        model = genai.GenerativeModel('models/gemini-2.5-flash')
+                        response = model.generate_content(["Transcreva:", {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
+                        
+                        if response.text:
+                            relato_ia = response.text
+                            st.info(f"📝 Transcrição: {relato_ia}")
                             
-                            if response.text:
-                                st.info(f"📝 Relato: {response.text}")
-                                if st.button("Confirmar Baixa"):
-                                    with engine.connect() as conn:
-                                        # Usa COALESCE para não apagar a descrição antiga
-                                        conn.execute(text(f"UPDATE tarefas SET realizado=True, descricao=COALESCE(descricao, '') || ' | IA: ' || :relato WHERE {col_os}=:os AND empresa_id=:eid"), 
-                                                     {"relato": response.text, "os": os_sel, "eid": emp_id})
-                                        conn.commit()
-                                    st.success("OS baixada!")
-                                    st.rerun()
-
-                # 3. Lista de Serviços (SEM ID)
-                st.write("### 📋 Serviços em Aberto")
-                # Exibe apenas as colunas de negócio, sem o ID técnico
-                cols_view = [col_os, 'data_planejada', 'descricao']
-                st.dataframe(df_p[[c for c in cols_view if c in df_p.columns]], use_container_width=True)
+                            if st.button("Finalizar OS e Enviar para Histórico"):
+                                # CONCATENAÇÃO COMPLETA: Prefixo, Mecânico, Horas e Relato
+                                info_fechamento = f"\n[FECHAMENTO] \nVeículo: {prefixo} | Executante: {mecanico} | Período: {h_inicio} às {h_fim} \nRelato: {relato_ia}"
+                                
+                                with engine.connect() as conn:
+                                    conn.execute(text(f"""
+                                        UPDATE tarefas 
+                                        SET realizado = True, 
+                                            descricao = COALESCE(descricao, '') || :info
+                                        WHERE {col_os}::text = :os AND empresa_id = :eid
+                                    """), {"info": info_fechamento, "os": str(os_sel), "eid": emp_id})
+                                    conn.commit()
+                                st.success(f"OS {os_sel} concluída com sucesso!")
+                                st.rerun()
             else:
                 st.info("Nenhuma OS pendente.")
-                
         except Exception as e:
-            st.error("Erro técnico ao ler a tabela 'tarefas'.")
-            st.code(str(e)) # Isso vai nos dizer se a coluna 'numero_os' existe ou não
+            st.error("Erro na Agenda."); st.code(str(e))
             
         # 3. Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
