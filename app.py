@@ -732,13 +732,17 @@ else:
             else:
                 st.info("Nenhuma OS encontrada para esta empresa.")
 
-        # 3. Visualização da Lista de Serviços (Para garantir que a OS apareça)
+        # 3. Visualização da Lista de Serviços (Protegida contra KeyError)
         st.write("### 📋 Lista de Serviços")
         if not df_a.empty:
-            # Exibe o DataFrame com as colunas certas
-            st.dataframe(df_a[['numero_os', 'data_planejada', 'descricao', 'realizado']], use_container_width=True)
+            # Selecionamos apenas as colunas que REALMENTE existem no DataFrame
+            colunas_desejadas = ['numero_os', 'id', 'data_planejada', 'data', 'descricao', 'realizado']
+            colunas_existentes = [c for c in colunas_desejadas if c in df_a.columns]
+            
+            # Exibe a tabela com o que for encontrado
+            st.dataframe(df_a[colunas_existentes], use_container_width=True)
         else:
-            st.warning("Nenhuma OS encontrada no banco de dados.")
+            st.warning("Nenhuma OS encontrada para esta empresa.")
 
         # 3. Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
