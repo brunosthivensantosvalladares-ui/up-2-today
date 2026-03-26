@@ -706,7 +706,7 @@ else:
         st.subheader("🎙️ Baixa Rápida por Voz")
         
         try:
-            # 1. Ajuste na Query: Agora buscamos explicitamente o prefixo cadastrado
+            # 1. Busca as OSs pendentes
             query_p = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
             df_p = pd.read_sql(query_p, engine, params={"eid": emp_id})
             
@@ -716,60 +716,51 @@ else:
                 
                 os_sel = st.selectbox("Selecione a OS", os_pendentes)
                 
-                # 2. Captura o prefixo original da OS selecionada
-                prefixo_origem = df_p[df_p[col_os].astype(str) == str(os_sel)]['prefixo'].iloc[0] if 'prefixo' in df_p.columns else "Não informado"
+                # Captura o prefixo original da OS selecionada
+                prefixo_origem = df_p[df_p[col_os].astype(str) == str(os_sel)]['prefixo'].iloc[0] if 'prefixo' in df_p.columns else "N/A"
+                st.caption(f"📌 Veículo: **{prefixo_origem}**")
                 
-                st.caption(f"📌 Veículo identificado: **{prefixo_origem}**")
-                
-                audio_data = st.audio_input(f"Grave o relato para a OS {os_sel}")
+                audio_data = st.audio_input(f"Grave o relato para {os_sel}")
 
                 if audio_data and os_sel:
-                    with st.spinner("🤖 Processando relato..."):
+                    with st.spinner("🤖 Processando áudio..."):
                         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         model = genai.GenerativeModel('models/gemini-2.5-flash')
                         
-                        # Ajustamos o prompt para focar apenas no serviço, funcionários e horas
-                        prompt_ia = "Transcreva o serviço realizado, o nome do funcionário e o horário (início e fim). Retorne no formato: Serviço realizado: [texto]; Funcionário: [nome]; Horário: [início às fim]."
-                        
+                        prompt_ia = "Transcreva o serviço, funcionário e horários. Formate como: Serviço realizado: [texto]; Funcionário: [nome]; Horário: [início às fim]."
                         response = model.generate_content([prompt_ia, {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
                         
                         if response.text:
                             relato_ia = response.text
-                            st.info(f"📝 Resumo extraído:\n{relato_ia}")
+                            st.info(f"📝 Resumo: {relato_ia}")
                             
                             if st.button("Confirmar e Finalizar"):
-                                try:
-                                    # Usamos engine.begin() para garantir o COMMIT automático
-                                    with engine.begin() as conn:
-                                        # 1. Montamos a query com atenção total aos nomes das colunas
-                                        # Verifique se 'prefixo' e 'descricao' são os nomes exatos no seu banco
-                                        query_update = text(f"""
-                                            UPDATE tarefas 
-                                            SET realizado = True, 
-                                                descricao = 'OS: ' || :os || '; Prefixo: ' || :pref_origem || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                            WHERE {col_os}::text = :os 
-                                            AND empresa_id = :eid
-                                        """)
-                                        
-                                        result = conn.execute(query_update, {
-                                            "relato": relato_ia, 
-                                            "os": str(os_sel), 
-                                            "eid": emp_id,
-                                            "pref_origem": str(prefixo_origem)
-                                        })
-                                        
-                                        # 2. Verificação de segurança: a query realmente afetou alguma linha?
-                                        if result.rowcount > 0:
-                                            st.success(f"✅ OS {os_sel} gravada com sucesso no banco!")
-                                            st.balloons()
-                                            st.rerun()
-                                        else:
-                                            st.error(f"⚠️ Erro: A OS {os_sel} não foi encontrada para o seu ID de empresa ({emp_id}).")
-                                            
-                                except Exception as db_err:
-                                    st.error("Falha técnica na gravação do banco:")
-                                    st.code(str(db_err))
+                                # engine.begin garante o COMMIT automático (Salva de verdade)
+                                with engine.begin() as conn:
+                                    query_up = text(f"""
+                                        UPDATE tarefas 
+                                        SET realizado = True, 
+                                            descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                        WHERE {col_os}::text = :os AND empresa_id = :eid
+                                    """)
+                                    res = conn.execute(query_up, {
+                                        "relato": relato_ia, "os": str(os_sel), 
+                                        "eid": emp_id, "pref": str(prefixo_origem)
+                                    })
+                                    
+                                    if res.rowcount > 0:
+                                        st.success("✅ OS finalizada e enviada ao histórico!")
+                                        st.rerun()
+                                    else:
+                                        st.error("⚠️ Erro: OS não encontrada no banco.")
+            else:
+                st.info("Nenhuma OS pendente.")
 
+        except Exception as e:
+            # Fechamento obrigatório do try: evita o SyntaxError
+            st.error("Erro técnico na Agenda.")
+            st.code(str(e))
+            
         # Agora o popover está fora do try, no lugar certo
         with st.popover("💡 Como usar a Agenda?"):
             st.markdown("""
