@@ -668,16 +668,30 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # 1. Carrega os dados (Garantindo que buscamos a OS e a Descrição)
-        df_a = pd.read_sql(text("SELECT id, numero_os, descricao, realizado, data_planejada FROM tarefas WHERE empresa_id = :eid ORDER BY numero_os DESC"), engine, params={"eid": emp_id})
-        
+        # 1. Carrega os dados (Query simplificada e segura)
+        # Se der erro aqui, é porque a tabela 'tarefas' não tem uma dessas colunas.
+        try:
+            query_agenda = text("""
+                SELECT * FROM tarefas 
+                WHERE empresa_id = :eid 
+                ORDER BY id DESC
+            """)
+            df_a = pd.read_sql(query_agenda, engine, params={"eid": emp_id})
+        except Exception as e:
+            st.error("Erro ao ler tabela de tarefas. Verifique se as colunas existem no banco.")
+            st.code(str(e))
+            df_a = pd.DataFrame() # Cria um dataframe vazio para não quebrar o resto do código
+
         # 2. Interface de Voz
         with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
             if not df_a.empty:
                 col_os, col_audio = st.columns([1, 2])
                 
-                # Filtra apenas OS não realizadas para o selectbox
-                os_pendentes = df_a[df_a['realizado'] == False]['numero_os'].dropna().unique().tolist()
+                # Verifica qual o nome exato da coluna de OS que veio do banco
+                coluna_os = 'numero_os' if 'numero_os' in df_a.columns else 'id'
+                
+                # Filtra OS pendentes
+                os_pendentes = df_a[df_a['realizado'] == False][coluna_os].dropna().unique().tolist()
                 
                 with col_os:
                     os_sel = st.selectbox("Selecione a OS", os_pendentes if os_pendentes else ["Nenhuma OS pendente"])
@@ -693,31 +707,30 @@ else:
                             
                             response = model.generate_content([
                                 "Transcreva este áudio de manutenção de forma técnica:",
-                                {"mime_type": "audio/wav", "data": audio_data.getvalue()}
+                                {"mime_type": "audio/wav", "data": audio_bytes}
                             ])
                             
                             if response.text:
                                 relato_ia = response.text
                                 st.info(f"📝 Relato da IA: {relato_ia}")
                                 
-                                if st.button("Confirmar Baixa e Manter Histórico"):
+                                if st.button("Confirmar Baixa"):
                                     with engine.connect() as conn:
-                                        # AJUSTE 1: CONCATENAR (Mantém a descr. original e pula linha para o relato da IA)
-                                        query = text("""
+                                        # AJUSTE: Coalesce garante que se a descrição for NULL, ele não dê erro ao somar texto
+                                        query_update = text("""
                                             UPDATE tarefas 
                                             SET realizado = True, 
-                                                descricao = descricao || ' | RETORNO TÉCNICO: ' || :relato
-                                            WHERE numero_os = :os AND empresa_id = :eid
+                                                descricao = COALESCE(descricao, '') || ' | IA: ' || :relato
+                                            WHERE (numero_os = :os OR id::text = :os) AND empresa_id = :eid
                                         """)
-                                        conn.execute(query, {"relato": relato_ia, "os": os_sel, "eid": emp_id})
+                                        conn.execute(query_update, {"relato": relato_ia, "os": str(os_sel), "eid": emp_id})
                                         conn.commit()
-                                    st.success(f"OS {os_sel} atualizada com sucesso!")
+                                    st.success(f"OS {os_sel} baixada!")
                                     st.rerun()
-
                         except Exception as e:
-                            st.error(f"Erro: {e}")
+                            st.error(f"Erro na IA: {e}")
             else:
-                st.info("Nenhuma OS pendente.")
+                st.info("Nenhuma OS encontrada para esta empresa.")
 
         # 3. Visualização da Lista de Serviços (Para garantir que a OS apareça)
         st.write("### 📋 Lista de Serviços")
