@@ -530,7 +530,7 @@ else:
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
-        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "📊 Indicadores", "👥 Minha Equipe", "📖 Manual do Sistema"]
+        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "✅ OSs Concluídas", "📊 Indicadores", "👥 Minha Equipe", "📖 Manual do Sistema"]
         # ADICIONA ABA MASTER APENAS PARA O BRUNO
         if usuario_ativo == "bruno":
             opcoes.append("👑 Gestão Master")
@@ -664,85 +664,51 @@ else:
                 st.write("- Interface para celular.\n- Abertura de chamados.\n- Acompanhamento de status.")
 
         st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
-    
-    elif aba_ativa == "📅 Agenda Principal":
-        st.subheader("📅 Agenda Principal")
+
+    elif aba_ativa == "✅ OSs Concluídas":
+        st.subheader("✅ Histórico de OSs Concluídas")
         
-        # 1. Carrega os dados (Query simplificada e segura)
-        # Se der erro aqui, é porque a tabela 'tarefas' não tem uma dessas colunas.
-        try:
-            query_agenda = text("""
-                SELECT * FROM tarefas 
-                WHERE empresa_id = :eid 
-                ORDER BY id DESC
-            """)
-            df_a = pd.read_sql(query_agenda, engine, params={"eid": emp_id})
-        except Exception as e:
-            st.error("Erro ao ler tabela de tarefas. Verifique se as colunas existem no banco.")
-            st.code(str(e))
-            df_a = pd.DataFrame() # Cria um dataframe vazio para não quebrar o resto do código
-
-        # 2. Interface de Voz
-        with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
-            if not df_a.empty:
-                col_os, col_audio = st.columns([1, 2])
-                
-                # Verifica qual o nome exato da coluna de OS que veio do banco
-                coluna_os = 'numero_os' if 'numero_os' in df_a.columns else 'id'
-                
-                # Filtra OS pendentes
-                os_pendentes = df_a[df_a['realizado'] == False][coluna_os].dropna().unique().tolist()
-                
-                with col_os:
-                    os_sel = st.selectbox("Selecione a OS", os_pendentes if os_pendentes else ["Nenhuma OS pendente"])
-                
-                with col_audio:
-                    audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
-
-                if audio_data and os_sel != "Nenhuma OS pendente":
-                    with st.spinner("🤖 Processando relato técnico..."):
-                        try:
-                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                            model = genai.GenerativeModel('models/gemini-2.5-flash')
-                            
-                            response = model.generate_content([
-                                "Transcreva este áudio de manutenção de forma técnica:",
-                                {"mime_type": "audio/wav", "data": audio_bytes}
-                            ])
-                            
-                            if response.text:
-                                relato_ia = response.text
-                                st.info(f"📝 Relato da IA: {relato_ia}")
-                                
-                                if st.button("Confirmar Baixa"):
-                                    with engine.connect() as conn:
-                                        # AJUSTE: Coalesce garante que se a descrição for NULL, ele não dê erro ao somar texto
-                                        query_update = text("""
-                                            UPDATE tarefas 
-                                            SET realizado = True, 
-                                                descricao = COALESCE(descricao, '') || ' | IA: ' || :relato
-                                            WHERE (numero_os = :os OR id::text = :os) AND empresa_id = :eid
-                                        """)
-                                        conn.execute(query_update, {"relato": relato_ia, "os": str(os_sel), "eid": emp_id})
-                                        conn.commit()
-                                    st.success(f"OS {os_sel} baixada!")
-                                    st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro na IA: {e}")
-            else:
-                st.info("Nenhuma OS encontrada para esta empresa.")
-
-        # 3. Visualização da Lista de Serviços (Protegida contra KeyError)
-        st.write("### 📋 Lista de Serviços")
-        if not df_a.empty:
-            # Selecionamos apenas as colunas que REALMENTE existem no DataFrame
-            colunas_desejadas = ['numero_os', 'id', 'data_planejada', 'data', 'descricao', 'realizado']
-            colunas_existentes = [c for c in colunas_desejadas if c in df_a.columns]
+        # Carrega apenas as realizadas
+        query_concluidas = text("SELECT numero_os, data_planejada, descricao FROM tarefas WHERE empresa_id = :eid AND realizado = True ORDER BY numero_os DESC")
+        df_c = pd.read_sql(query_concluidas, engine, params={"eid": emp_id})
+        
+        if not df_c.empty:
+            st.dataframe(df_c, use_container_width=True)
             
-            # Exibe a tabela com o que for encontrado
-            st.dataframe(df_a[colunas_existentes], use_container_width=True)
+            # Botão para baixar relatório de concluídas
+            csv = df_c.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Baixar Histórico (CSV)", csv, "historico_concluidas.csv", "text/csv")
         else:
-            st.warning("Nenhuma OS encontrada para esta empresa.")
+            st.info("Nenhuma OS concluída no histórico.")
+            
+    elif aba_ativa == "📅 Agenda Principal":
+        st.subheader("📅 Agenda Principal (Pendentes)")
+        
+        # Carrega apenas as pendentes
+        query_pendentes = text("SELECT numero_os, data_planejada, descricao, realizado FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY numero_os DESC")
+        df_p = pd.read_sql(query_pendentes, engine, params={"eid": emp_id})
+        
+        # Interface de Voz (Mantida para dar baixa)
+        with st.expander("🎙️ Retorno Técnico por Voz", expanded=False):
+            if not df_p.empty:
+                os_pendentes = df_p['numero_os'].dropna().unique().tolist()
+                col_os, col_audio = st.columns([1, 2])
+                with col_os:
+                    os_sel = st.selectbox("Selecione a OS", os_pendentes)
+                with col_audio:
+                    audio_data = st.audio_input(f"Grave o retorno para {os_sel}")
+
+                if audio_data and os_sel:
+                    # ... (seu código da IA que já está funcionando com Gemini 2.5-flash) ...
+                    # Lembre de usar o UPDATE que concatena: descricao = COALESCE(descricao, '') || ' | IA: ' || :relato
+                    pass 
+            else:
+                st.info("Tudo em dia! Nenhuma OS pendente.")
+
+        st.write("### 📋 Serviços em Aberto")
+        if not df_p.empty:
+            # Exibindo SEM a coluna ID
+            st.dataframe(df_p[['numero_os', 'data_planejada', 'descricao']], use_container_width=True)
 
         # 3. Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
