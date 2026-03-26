@@ -687,23 +687,19 @@ else:
                 with col_audio:
                     audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
-                # Lógica da IA (Versão PRO para Produção)
+                # Lógica da IA (Versão Corrigida e Alinhada)
                 if audio_data and os_sel != "Nenhuma OS pendente":
                     with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
                         try:
-                            # 1. Configura a chave de forma direta
+                            # 1. Configuração simples
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                             
-                            # 2. O PULO DO GATO: Usamos o GenerativeModel apontando para a versão v1
-                            # Isso evita que o Streamlit use o v1beta que está dando erro 404
-                            model = genai.GenerativeModel(
-                                model_name='gemini-1.5-flash',
-                                generation_config={"tag": "v1"} # Força a rota estável
-                            )
+                            # 2. Usando o nome estável 'latest' que resolve o 404 em 99% dos casos
+                            model = genai.GenerativeModel('gemini-1.5-flash-latest')
                             
                             audio_bytes = audio_data.getvalue()
                             
-                            # 3. Transcrição usando o formato binário direto
+                            # 3. Transcrição direta
                             response = model.generate_content([
                                 "Transcreva este áudio de manutenção mecânica de forma técnica e resumida:",
                                 {"mime_type": "audio/wav", "data": audio_bytes}
@@ -722,8 +718,7 @@ else:
                                     st.rerun()
 
                         except Exception as e:
-                            # Se ainda der 404, vamos usar o plano B (Listar Modelos)
-                            st.error("❌ Erro de Rota da API:")
+                            st.error("❌ Erro técnico:")
                             st.code(str(e))
                             
                             # Pequeno botão de diagnóstico para você me mandar o que aparece
