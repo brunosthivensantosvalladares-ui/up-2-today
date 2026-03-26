@@ -692,24 +692,23 @@ else:
                 # SEGUNDO: Verificamos se ela existe (DENTRO do 'if not df_a.empty')
                 # Verifique se esta parte está assim no seu app.py:
         if audio_data and os_sel != "Nenhuma OS pendente":
-            with st.spinner("🤖 Up 2 Today: Conectando ao cérebro da IA..."):
+            with st.spinner("🤖 IA do Up 2 Today processando seu relato..."):
                 try:
-                    # FORÇANDO A CONFIGURAÇÃO: Pegando direto do Secret na hora do clique
-                    minha_chave = st.secrets["GEMINI_API_KEY"]
-                    genai.configure(api_key=minha_chave)
+                    # 1. Configuração com o nome completo do modelo para v1beta
+                    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                     
-                    # Teste rápido: O modelo consegue iniciar?
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    # MUDANÇA AQUI: Adicionamos 'models/' e '-latest'
+                    model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
                     
                     audio_bytes = audio_data.getvalue()
                     
-                    # Chamada com tratamento de erro bruto
+                    # 2. Chamada da transcrição
                     response = model.generate_content([
-                        "Transcreva este áudio de manutenção:",
+                        "Transcreva este áudio de manutenção mecânica de forma técnica e resumida.",
                         {"mime_type": "audio/wav", "data": audio_bytes}
                     ])
                     
-                    if response:
+                    if response.text:
                         st.info(f"📝 Transcrição: {response.text}")
                         
                         if st.button("Confirmar e Salvar"):
@@ -717,14 +716,16 @@ else:
                                 conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
                                              {"ds": response.text, "os": os_sel, "eid": emp_id})
                                 conn.commit()
-                            st.success(f"OS {os_sel} baixada!")
+                            st.success(f"OS {os_sel} baixada com sucesso!")
                             st.rerun()
 
                 except Exception as e:
-                    # ESTA LINHA É A MAIS IMPORTANTE AGORA:
-                    st.error("❌ O Google respondeu com o seguinte erro técnico:")
-                    st.code(str(e)) 
-                    st.warning("Se aparecer 'API_KEY_INVALID', verifique se há espaços nas aspas dos Secrets.")
+                    st.error("❌ Erro na Chamada da IA:")
+                    st.code(str(e))
+        
+        else:
+            # Este else avisa se não há áudio ou OS selecionada
+            st.info("Nenhuma OS pendente para retorno no momento.")
 
         # Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
