@@ -669,22 +669,43 @@ else:
         st.subheader("✅ Histórico de OSs Concluídas")
         
         try:
+            # Busca todas as colunas para não ter erro de index
             query_c = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = True ORDER BY id DESC")
             df_c = pd.read_sql(query_c, engine, params={"eid": emp_id})
             
             if not df_c.empty:
+                # 1. Identifica as colunas reais que vieram do banco
                 col_os = 'numero_os' if 'numero_os' in df_c.columns else 'id'
                 
-                # Criamos a visualização limpa: Numero da OS | Data | Descrição Completa
-                # A 'descricao' aqui já contém o Prefixo, Funcionário e Horários que a IA inseriu
-                df_view = df_c[[col_os, 'data_planejada', 'descricao']].copy()
-                df_view.columns = ['Nº OS', 'Data Planejada', 'Detalhes do Serviço']
+                # 2. Cria uma visualização limpa para o usuário
+                # Montamos uma lista das colunas que QUEREMOS exibir, mas só se elas EXISTIREM
+                colunas_para_ver = [col_os, 'data_planejada', 'data', 'descricao']
+                colunas_reais = [c for c in colunas_para_ver if c in df_c.columns]
                 
+                df_view = df_c[colunas_reais].copy()
+                
+                # 3. Renomeia para ficar profissional na tela
+                nomes_colunas = {
+                    col_os: 'Nº OS',
+                    'data_planejada': 'Data Planejada',
+                    'data': 'Data Registro',
+                    'descricao': 'Prontuário da Manutenção (Detalhes Concatenados)'
+                }
+                df_view.rename(columns=nomes_colunas, inplace=True)
+                
+                st.write("### 📋 Relatório de Manutenções Finalizadas")
                 st.dataframe(df_view, use_container_width=True)
+                
+                # Botão de exportação
+                csv = df_view.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Baixar Relatório Completo", csv, "historico_up2today.csv", "text/csv")
+                
             else:
-                st.info("Histórico vazio.")
+                st.info("O histórico de conclusões está vazio.")
+                
         except Exception as e:
-            st.error("Erro no histórico."); st.code(str(e))
+            st.error("Erro ao carregar o histórico. Verifique os nomes das colunas no banco.")
+            st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("🎙️ Baixa Rápida por Voz")
