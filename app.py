@@ -738,28 +738,37 @@ else:
                             st.info(f"📝 Resumo extraído:\n{relato_ia}")
                             
                             if st.button("Confirmar e Finalizar"):
-                                with engine.connect() as conn:
-                                    # 3. O segredo: Usamos o :pref_origem que pegamos do banco, não do áudio
-                                    conn.execute(text(f"""
-                                        UPDATE tarefas 
-                                        SET realizado = True, 
-                                            descricao = 'OS: ' || :os || '; Prefixo: ' || :pref_origem || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                        WHERE {col_os}::text = :os AND empresa_id = :eid
-                                    """), {
-                                        "relato": relato_ia, 
-                                        "os": str(os_sel), 
-                                        "eid": emp_id,
-                                        "pref_origem": str(prefixo_origem)
-                                    })
-                                    conn.commit()
-                                st.success(f"OS {os_sel} finalizada com o prefixo {prefixo_origem}!")
-                                st.rerun()
-            else:
-                st.info("Nenhuma OS pendente.")
-
-        except Exception as e:
-            st.error("Erro ao carregar dados da OS.")
-            st.code(str(e))
+                                try:
+                                    # Usamos engine.begin() para garantir o COMMIT automático
+                                    with engine.begin() as conn:
+                                        # 1. Montamos a query com atenção total aos nomes das colunas
+                                        # Verifique se 'prefixo' e 'descricao' são os nomes exatos no seu banco
+                                        query_update = text(f"""
+                                            UPDATE tarefas 
+                                            SET realizado = True, 
+                                                descricao = 'OS: ' || :os || '; Prefixo: ' || :pref_origem || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                            WHERE {col_os}::text = :os 
+                                            AND empresa_id = :eid
+                                        """)
+                                        
+                                        result = conn.execute(query_update, {
+                                            "relato": relato_ia, 
+                                            "os": str(os_sel), 
+                                            "eid": emp_id,
+                                            "pref_origem": str(prefixo_origem)
+                                        })
+                                        
+                                        # 2. Verificação de segurança: a query realmente afetou alguma linha?
+                                        if result.rowcount > 0:
+                                            st.success(f"✅ OS {os_sel} gravada com sucesso no banco!")
+                                            st.balloons()
+                                            st.rerun()
+                                        else:
+                                            st.error(f"⚠️ Erro: A OS {os_sel} não foi encontrada para o seu ID de empresa ({emp_id}).")
+                                            
+                                except Exception as db_err:
+                                    st.error("Falha técnica na gravação do banco:")
+                                    st.code(str(db_err))
 
         # Agora o popover está fora do try, no lugar certo
         with st.popover("💡 Como usar a Agenda?"):
