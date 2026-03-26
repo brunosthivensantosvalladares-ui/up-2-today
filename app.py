@@ -668,18 +668,16 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal")
         
-        # 1. Carrega os dados
-        df_a = pd.read_sql(text("SELECT * FROM tarefas WHERE empresa_id = :eid ORDER BY numero_os DESC"), engine, params={"eid": emp_id})
+        # 1. Carrega os dados (Garantindo que buscamos a OS e a Descrição)
+        df_a = pd.read_sql(text("SELECT id, numero_os, descricao, realizado, data_planejada FROM tarefas WHERE empresa_id = :eid ORDER BY numero_os DESC"), engine, params={"eid": emp_id})
         
         # 2. Interface de Voz
         with st.expander("🎙️ Retorno Técnico por Voz (Baixa Rápida)", expanded=False):
             if not df_a.empty:
                 col_os, col_audio = st.columns([1, 2])
                 
-                if 'numero_os' in df_a.columns:
-                    os_pendentes = df_a[df_a['realizado'] == False]['numero_os'].dropna().unique().tolist()
-                else:
-                    os_pendentes = []
+                # Filtra apenas OS não realizadas para o selectbox
+                os_pendentes = df_a[df_a['realizado'] == False]['numero_os'].dropna().unique().tolist()
                 
                 with col_os:
                     os_sel = st.selectbox("Selecione a OS", os_pendentes if os_pendentes else ["Nenhuma OS pendente"])
@@ -687,45 +685,47 @@ else:
                 with col_audio:
                     audio_data = st.audio_input(f"Grave o retorno para a OS {os_sel}")
 
-                # Lógica da IA (Versão Atualizada 2026)
                 if audio_data and os_sel != "Nenhuma OS pendente":
-                    with st.spinner("🤖 Up 2 Today: Processando áudio com Gemini 2.5..."):
+                    with st.spinner("🤖 Processando relato técnico..."):
                         try:
-                            # 1. Configura a chave
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                            
-                            # 2. USA O MODELO QUE APARECE NA SUA LISTA (Item 0)
                             model = genai.GenerativeModel('models/gemini-2.5-flash')
                             
-                            # 3. Transcrição direta
-                            audio_bytes = audio_data.getvalue()
                             response = model.generate_content([
-                                "Transcreva este áudio de manutenção mecânica de forma técnica e resumida:",
-                                {"mime_type": "audio/wav", "data": audio_bytes}
+                                "Transcreva este áudio de manutenção de forma técnica:",
+                                {"mime_type": "audio/wav", "data": audio_data.getvalue()}
                             ])
                             
                             if response.text:
-                                texto_final = response.text
-                                st.info(f"📝 Transcrição: {texto_final}")
+                                relato_ia = response.text
+                                st.info(f"📝 Relato da IA: {relato_ia}")
                                 
-                                if st.button("Confirmar e Salvar"):
+                                if st.button("Confirmar Baixa e Manter Histórico"):
                                     with engine.connect() as conn:
-                                        conn.execute(text("UPDATE tarefas SET realizado=True, descricao=:ds WHERE numero_os=:os AND empresa_id=:eid"), 
-                                                     {"ds": texto_final, "os": os_sel, "eid": emp_id})
+                                        # AJUSTE 1: CONCATENAR (Mantém a descr. original e pula linha para o relato da IA)
+                                        query = text("""
+                                            UPDATE tarefas 
+                                            SET realizado = True, 
+                                                descricao = descricao || ' | RETORNO TÉCNICO: ' || :relato
+                                            WHERE numero_os = :os AND empresa_id = :eid
+                                        """)
+                                        conn.execute(query, {"relato": relato_ia, "os": os_sel, "eid": emp_id})
                                         conn.commit()
-                                    st.success(f"OS {os_sel} baixada com sucesso!")
+                                    st.success(f"OS {os_sel} atualizada com sucesso!")
                                     st.rerun()
 
                         except Exception as e:
-                            st.error("❌ Erro de Conexão:")
-                            st.code(str(e))
-                            
-                            # Pequeno botão de diagnóstico para você me mandar o que aparece
-                            if st.button("Listar Modelos Disponíveis"):
-                                m_list = [m.name for m in genai.list_models()]
-                                st.write(m_list)
+                            st.error(f"Erro: {e}")
             else:
                 st.info("Nenhuma OS pendente.")
+
+        # 3. Visualização da Lista de Serviços (Para garantir que a OS apareça)
+        st.write("### 📋 Lista de Serviços")
+        if not df_a.empty:
+            # Exibe o DataFrame com as colunas certas
+            st.dataframe(df_a[['numero_os', 'data_planejada', 'descricao', 'realizado']], use_container_width=True)
+        else:
+            st.warning("Nenhuma OS encontrada no banco de dados.")
 
         # 3. Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
