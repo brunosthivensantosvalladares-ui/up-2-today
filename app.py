@@ -684,32 +684,53 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda Principal (Pendentes)")
         
-        # Carrega apenas as pendentes
-        query_pendentes = text("SELECT numero_os, data_planejada, descricao, realizado FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY numero_os DESC")
-        df_p = pd.read_sql(query_pendentes, engine, params={"eid": emp_id})
-        
-        # Interface de Voz (Mantida para dar baixa)
-        with st.expander("🎙️ Retorno Técnico por Voz", expanded=False):
+        try:
+            # 1. Busca os dados de forma genérica para evitar o erro de coluna
+            query_p = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
+            df_p = pd.read_sql(query_p, engine, params={"eid": emp_id})
+            
             if not df_p.empty:
-                os_pendentes = df_p['numero_os'].dropna().unique().tolist()
-                col_os, col_audio = st.columns([1, 2])
-                with col_os:
-                    os_sel = st.selectbox("Selecione a OS", os_pendentes)
-                with col_audio:
-                    audio_data = st.audio_input(f"Grave o retorno para {os_sel}")
+                # AJUSTE DE COLUNA: Se o nome no banco for 'id' em vez de 'numero_os', usamos ele
+                col_os = 'numero_os' if 'numero_os' in df_p.columns else 'id'
+                
+                # 2. Interface de Voz
+                with st.expander("🎙️ Retorno Técnico por Voz", expanded=False):
+                    os_pendentes = df_p[col_os].dropna().unique().tolist()
+                    c1, c2 = st.columns([1, 2])
+                    with c1:
+                        os_sel = st.selectbox("Selecione a OS", os_pendentes)
+                    with c2:
+                        audio_data = st.audio_input(f"Grave retorno para {os_sel}")
 
-                if audio_data and os_sel:
-                    # ... (seu código da IA que já está funcionando com Gemini 2.5-flash) ...
-                    # Lembre de usar o UPDATE que concatena: descricao = COALESCE(descricao, '') || ' | IA: ' || :relato
-                    pass 
+                    if audio_data and os_sel:
+                        with st.spinner("🤖 Processando..."):
+                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                            model = genai.GenerativeModel('models/gemini-2.5-flash')
+                            response = model.generate_content(["Transcreva:", {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
+                            
+                            if response.text:
+                                st.info(f"📝 Relato: {response.text}")
+                                if st.button("Confirmar Baixa"):
+                                    with engine.connect() as conn:
+                                        # Usa COALESCE para não apagar a descrição antiga
+                                        conn.execute(text(f"UPDATE tarefas SET realizado=True, descricao=COALESCE(descricao, '') || ' | IA: ' || :relato WHERE {col_os}=:os AND empresa_id=:eid"), 
+                                                     {"relato": response.text, "os": os_sel, "eid": emp_id})
+                                        conn.commit()
+                                    st.success("OS baixada!")
+                                    st.rerun()
+
+                # 3. Lista de Serviços (SEM ID)
+                st.write("### 📋 Serviços em Aberto")
+                # Exibe apenas as colunas de negócio, sem o ID técnico
+                cols_view = [col_os, 'data_planejada', 'descricao']
+                st.dataframe(df_p[[c for c in cols_view if c in df_p.columns]], use_container_width=True)
             else:
-                st.info("Tudo em dia! Nenhuma OS pendente.")
-
-        st.write("### 📋 Serviços em Aberto")
-        if not df_p.empty:
-            # Exibindo SEM a coluna ID
-            st.dataframe(df_p[['numero_os', 'data_planejada', 'descricao']], use_container_width=True)
-
+                st.info("Nenhuma OS pendente.")
+                
+        except Exception as e:
+            st.error("Erro técnico ao ler a tabela 'tarefas'.")
+            st.code(str(e)) # Isso vai nos dizer se a coluna 'numero_os' existe ou não
+            
         # 3. Popover fora do expander de voz, mas dentro da aba Agenda
         with st.popover("💡 Como usar a Agenda?"):
             st.markdown("""
