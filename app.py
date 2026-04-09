@@ -808,21 +808,6 @@ else:
                 df_agenda['Nº OS'] = df_agenda['numero_os'].astype(str).replace(['None', 'nan', 'None.0'], '')
                 df_agenda['Nº OS'] = df_agenda['Nº OS'].str.replace('.0', '', regex=False)
                 
-                # EXIBIÇÃO PURAMENTE ESTÁTICA
-                st.dataframe(
-                    df_agenda[['Nº OS', 'data', 'prefixo', 'descricao', 'realizado']],
-                    column_config={
-                        "realizado": st.column_config.CheckboxColumn("Concluída?"),
-                        "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
-                        "data": "Data Programada",
-                        "prefixo": "Veículo",
-                        "descricao": "Serviço"
-                    },
-                    hide_index=True, 
-                    use_container_width=True
-                )
-                
-                st.caption("ℹ️ Esta aba é apenas para consulta. Para dar baixa, utilize a aba 'OSs Pendentes'.")
             else:
                 st.info("Agenda vazia.")
         except Exception as e:
