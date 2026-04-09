@@ -734,34 +734,36 @@ else:
                             relato_ia = response.text
                             st.info(f"📝 Resumo: {relato_ia}")
                             
-                            if st.button("Confirmar e Finalizar"):
-                                # engine.begin garante o COMMIT automático
-                                with engine.begin() as conn:
-                                    # Usamos TRIM e CAST para garantir que o texto bata exatamente
-                                    query_up = text(f"""
-                                        UPDATE tarefas 
-                                        SET realizado = True, 
-                                            descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                        WHERE TRIM(CAST({col_os} AS TEXT)) = TRIM(CAST(:os AS TEXT)) 
-                                        AND CAST(empresa_id AS TEXT) = CAST(:eid AS TEXT)
-                                    """)
-                                    
-                                    res = conn.execute(query_up, {
-                                        "relato": relato_ia, 
-                                        "os": str(os_sel), 
-                                        "eid": str(emp_id), 
-                                        "pref": str(prefixo_origem)
-                                    })
-                                    
-                                    if res.rowcount > 0:
-                                        st.success("✅ OS finalizada com sucesso!")
-                                        st.rerun()
-                                    else:
-                                        # Se cair aqui, vamos debugar o que está no banco
-                                        st.error(f"⚠️ OS {os_sel} não vinculada ao seu ID {emp_id}.")
-                                        st.info("Verificando banco...")
-                                        check = conn.execute(text(f"SELECT {col_os}, empresa_id FROM tarefas WHERE {col_os}::text = :os"), {"os": str(os_sel)}).fetchone()
-                                        st.write("Dados Reais no Banco:", check)
+                            # 1. Limpamos o os_sel para garantir que seja um texto inteiro (sem .0)
+                os_limpa = str(os_sel).split('.')[0] # Transforma 1003.0 em 1003
+                
+                os_sel = st.selectbox("Selecione a OS", os_pendentes, format_func=lambda x: str(x).split('.')[0])
+                
+                # ... (resto do seu código de áudio e IA) ...
+
+                if st.button("Confirmar e Finalizar"):
+                    with engine.begin() as conn:
+                        # 2. Query ultra-limpa usando REPLACE e CAST
+                        query_up = text(f"""
+                            UPDATE tarefas 
+                            SET realizado = True, 
+                                descricao = 'OS: ' || :os_id || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                            WHERE (TRIM(CAST({col_os} AS TEXT)) = :os_id OR TRIM(REPLACE(CAST({col_os} AS TEXT), '.0', '')) = :os_id)
+                            AND TRIM(CAST(empresa_id AS TEXT)) = TRIM(:eid)
+                        """)
+                        
+                        res = conn.execute(query_up, {
+                            "relato": relato_ia, 
+                            "os_id": os_limpa, # Usamos o número limpo sem o .0
+                            "eid": str(emp_id), 
+                            "pref": str(prefixo_origem)
+                        })
+                        
+                        if res.rowcount > 0:
+                            st.success(f"✅ OS {os_limpa} finalizada com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error(f"⚠️ Erro persistente: OS {os_limpa} não encontrada no banco.")
             else:
                 st.info("Nenhuma OS pendente.")
 
