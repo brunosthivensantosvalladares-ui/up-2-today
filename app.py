@@ -713,76 +713,66 @@ else:
             st.error("Erro ao carregar histórico."); st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
-        st.subheader("🎙️ Baixa Rápida por Voz")
+        st.subheader("📋 Baixa Rápida de Ordem de Serviço")
         
         try:
-            # 1. Busca as OSs pendentes
+            # 1. Busca as OSs pendentes (Garantindo que o .0 não atrapalhe)
             query_p = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
-            df_p = pd.read_sql(query_p, engine, params={"eid": emp_id})
+            df_p = pd.read_sql(query_p, engine, params={"eid": str(emp_id)})
             
             if not df_p.empty:
+                # Tratamento do número da OS para exibição limpa
                 col_os = 'numero_os' if 'numero_os' in df_p.columns else 'id'
-                os_pendentes = df_p[col_os].dropna().unique().tolist()
+                df_p['os_display'] = df_p[col_os].astype(str).str.replace('.0', '', regex=False)
                 
-                os_sel = st.selectbox("Selecione a OS", os_pendentes)
+                os_selecionada = st.selectbox("Selecione a OS para finalizar:", df_p['os_display'].unique())
                 
-                # Captura o prefixo original da OS selecionada
-                prefixo_origem = df_p[df_p[col_os].astype(str) == str(os_sel)]['prefixo'].iloc[0] if 'prefixo' in df_p.columns else "N/A"
-                st.caption(f"📌 Veículo: **{prefixo_origem}**")
+                # Puxa os dados da OS selecionada para conferência
+                dados_os = df_p[df_p['os_display'] == os_selecionada].iloc[0]
+                prefixo = dados_os['prefixo'] if 'prefixo' in df_p.columns else "N/A"
                 
-                audio_data = st.audio_input(f"Grave o relato para {os_sel}")
-
-                if audio_data and os_sel:
-                    with st.spinner("🤖 Processando áudio..."):
-                        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                        model = genai.GenerativeModel('models/gemini-flash-latest')
-                        
-                        prompt_ia = "Transcreva o serviço, funcionário e horários. Formate como: Serviço realizado: [texto]; Funcionário: [nome]; Horário: [início às fim]."
-                        response = model.generate_content([prompt_ia, {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
-                        
-                        if response.text:
-                            relato_ia = response.text
-                            st.info(f"📝 Resumo: {relato_ia}")
-                            
-                            # 1. Limpamos o os_sel para garantir que seja um texto inteiro (sem .0)
-                os_limpa = str(os_sel).split('.')[0] # Transforma 1003.0 em 1003
+                st.info(f"🚜 **Veículo:** {prefixo}")
                 
-                os_sel = st.selectbox("Selecione a OS", os_pendentes, format_func=lambda x: str(x).split('.')[0])
-                
-                # ... (resto do seu código de áudio e IA) ...
-
-                if st.button("Confirmar e Finalizar"):
-                    with engine.begin() as conn:
-                        # 2. Query ultra-limpa usando REPLACE e CAST
-                        query_up = text(f"""
-                            UPDATE tarefas 
-                            SET realizado = True, 
-                                descricao = 'OS: ' || :os_id || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                            WHERE (TRIM(CAST({col_os} AS TEXT)) = :os_id OR TRIM(REPLACE(CAST({col_os} AS TEXT), '.0', '')) = :os_id)
-                            AND TRIM(CAST(empresa_id AS TEXT)) = TRIM(:eid)
-                        """)
-                        
-                        res = conn.execute(query_up, {
-                            "relato": relato_ia, 
-                            "os_id": os_limpa, # Usamos o número limpo sem o .0
-                            "eid": str(emp_id), 
-                            "pref": str(prefixo_origem)
-                        })
-                        
-                        if res.rowcount > 0:
-                                        st.success(f"✅ OS {os_limpa} finalizada!")
-                                        # LIMPA O CACHE PARA A OS SUMIR DA LISTA
-                                        st.cache_data.clear() 
-                                        st.rerun()
+                # 2. Entrada Manual de Dados (Rápida e Direta)
+                with st.form("form_baixa"):
+                    servico = st.text_area("O que foi feito? (Ex: Troca de óleo e filtros)")
+                    func = st.text_input("Funcionário Responsável")
+                    
+                    col1, col2 = st.columns(2)
+                    h_ini = col1.text_input("Início (HH:MM)", "08:00")
+                    h_fim = col2.text_input("Fim (HH:MM)", "09:00")
+                    
+                    if st.form_submit_button("✅ Finalizar OS e Enviar para Histórico"):
+                        if not servico or not func:
+                            st.warning("Por favor, preencha o serviço e o funcionário.")
                         else:
-                            st.error(f"⚠️ Erro persistente: OS {os_limpa} não encontrada no banco.")
+                            relato_final = f"Serviço: {servico}; Func: {func}; Horário: {h_ini} às {h_fim}"
+                            
+                            with engine.begin() as conn:
+                                # Update robusto para não perder o dado
+                                query_up = text(f"""
+                                    UPDATE tarefas 
+                                    SET realizado = True, 
+                                        descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                    WHERE (TRIM(CAST({col_os} AS TEXT)) = :os OR TRIM(REPLACE(CAST({col_os} AS TEXT), '.0', '')) = :os)
+                                    AND empresa_id = :eid
+                                """)
+                                conn.execute(query_up, {
+                                    "relato": relato_final,
+                                    "os": os_selecionada,
+                                    "eid": str(emp_id),
+                                    "pref": str(prefixo)
+                                })
+                            
+                            st.cache_data.clear()
+                            st.success(f"OS {os_selecionada} finalizada com sucesso!")
+                            st.balloons()
+                            st.rerun()
             else:
-                st.info("Nenhuma OS pendente.")
+                st.info("Nenhuma OS pendente na agenda.")
 
         except Exception as e:
-            # Fechamento obrigatório do try: evita o SyntaxError
-            st.error("Erro técnico na Agenda.")
-            st.code(str(e))
+            st.error("Erro na Agenda."); st.code(str(e))
             
         # Agora o popover está fora do try, no lugar certo
         with st.popover("💡 Como usar a Agenda?"):
