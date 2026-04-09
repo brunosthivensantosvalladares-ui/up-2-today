@@ -666,22 +666,29 @@ else:
         st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
 
     elif aba_ativa == "⏳ OSs Pendentes":
-        st.subheader("⏳ Ordens de Serviço em Aberto")
-        st.caption("Selecione a OS na lista para realizar a baixa técnica.")
-
+        st.subheader("⏳ Controle de Ordens em Aberto")
+        
         try:
-            # Busca apenas o que NÃO foi realizado
+            # Busca apenas pendentes
             query = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
             df_p = pd.read_sql(query, engine, params={"eid": str(emp_id)})
 
             if not df_p.empty:
                 df_p['Nº OS'] = df_p['numero_os'].astype(str).str.replace('.0', '', regex=False)
                 
-                # Exibição da Lista para Seleção
+                # --- PARTE A: O EVENTO DE SELEÇÃO ---
+                # Definimos a tabela primeiro, mas guardamos a seleção em uma variável
+                # Para que o formulário apareça ACIMA, precisamos processar a seleção antes da exibição visual.
+                # No Streamlit, a ordem do código dita a ordem da tela.
+                
+                # Criamos um container para o formulário no TOPO
+                container_baixa = st.container()
+
+                # --- PARTE B: A TABELA DE SELEÇÃO ---
                 event = st.dataframe(
                     df_p[['Nº OS', 'prefixo', 'descricao', 'id']], 
                     column_config={
-                        "id": None, # ID oculto
+                        "id": None, 
                         "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
                         "prefixo": "Veículo",
                         "descricao": "Serviço Planejado"
@@ -692,40 +699,48 @@ else:
                     selection_mode="single-row"
                 )
 
-                # Formulário de Baixa (Aparece ao selecionar)
+                # --- PARTE C: PREENCHER O CONTAINER DO TOPO ---
                 selecionado = event.selection.rows
                 if selecionado:
-                    os_data = df_p.iloc[selecionado[0]]
-                    os_num = str(os_data['Nº OS'])
-                    
-                    st.markdown(f"### ⚡ Baixa Técnica: OS {os_num}")
-                    with st.container(border=True):
-                        with st.form("form_baixa_pendente"):
-                            servico_realizado = st.text_area("Relatório de Execução", placeholder="O que foi feito?")
-                            executor = st.text_input("Mecânico Responsável", value=os_data.get('executor', ''))
-                            
-                            c1, c2 = st.columns(2)
-                            h_ini = c1.text_input("Início", "08:00")
-                            h_fim = c2.text_input("Fim", "09:00")
+                    with container_baixa:
+                        os_data = df_p.iloc[selecionado[0]]
+                        os_num = str(os_data['Nº OS'])
+                        
+                        st.markdown(f"### ⚡ Baixa Técnica: OS {os_num}")
+                        with st.container(border=True):
+                            with st.form("form_baixa_topo"):
+                                st.write(f"🚜 Veículo: **{os_data['prefixo']}**")
+                                servico_realizado = st.text_area("Relatório de Execução", placeholder="O que foi feito?")
+                                executor = st.text_input("Mecânico Responsável", value=os_data.get('executor', ''))
+                                
+                                c1, c2 = st.columns(2)
+                                h_ini = c1.text_input("Início", "08:00")
+                                h_fim = c2.text_input("Fim", "09:00")
 
-                            if st.form_submit_button("💾 Finalizar e Enviar ao Histórico"):
-                                if not servico_realizado:
-                                    st.warning("Preencha o relatório de execução.")
-                                else:
-                                    relato = f"Serviço: {servico_realizado}; Executor: {executor}; Horário: {h_ini}-{h_fim}"
-                                    with engine.begin() as conn:
-                                        conn.execute(text("""
-                                            UPDATE tarefas SET realizado = True, 
-                                            descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                            WHERE id = :id_banco AND empresa_id = :eid
-                                        """), {"relato": relato, "os": os_num, "pref": str(os_data['prefixo']), 
-                                               "id_banco": os_data['id'], "eid": str(emp_id)})
-                                    
-                                    st.cache_data.clear()
-                                    st.success(f"OS {os_num} concluída!")
+                                col_btn1, col_btn2 = st.columns([1, 4])
+                                if col_btn1.form_submit_button("💾 Salvar"):
+                                    if not servico_realizado:
+                                        st.warning("Preencha o relatório.")
+                                    else:
+                                        relato = f"Serviço: {servico_realizado}; Executor: {executor}; Horário: {h_ini}-{h_fim}"
+                                        with engine.begin() as conn:
+                                            conn.execute(text("""
+                                                UPDATE tarefas SET realizado = True, 
+                                                descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                                WHERE id = :id_banco AND empresa_id = :eid
+                                            """), {"relato": relato, "os": os_num, "pref": str(os_data['prefixo']), 
+                                                   "id_banco": os_data['id'], "eid": str(emp_id)})
+                                        
+                                        st.cache_data.clear()
+                                        st.success(f"OS {os_num} concluída!")
+                                        st.rerun()
+                                
+                                if col_btn2.form_submit_button("❌ Cancelar"):
                                     st.rerun()
+                        st.divider() # Linha para separar o formulário da lista
+
             else:
-                st.info("Nenhuma OS pendente. Bom trabalho!")
+                st.info("Nenhuma OS pendente.")
         except Exception as e:
             st.error("Erro ao carregar pendências."); st.code(str(e))
     
@@ -777,14 +792,15 @@ else:
             st.error("Erro ao carregar histórico."); st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
-        st.subheader("📅 Cronograma de Manutenções")
+        st.subheader("📅 Cronograma Geral de Manutenções")
         try:
-            # Busca tudo o que está planejado (realizado ou não) para dar visão geral
+            # Busca tudo (pendente e concluído) para dar visão do todo
             query = text("SELECT numero_os, data, prefixo, descricao, realizado FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC")
             df_agenda = pd.read_sql(query, engine, params={"eid": str(emp_id)})
 
             if not df_agenda.empty:
                 df_agenda['Nº OS'] = df_agenda['numero_os'].astype(str).str.replace('.0', '', regex=False)
+                # Exibição simples, sem 'on_select' ou interação de clique
                 st.dataframe(
                     df_agenda[['Nº OS', 'data', 'prefixo', 'descricao', 'realizado']],
                     column_config={
