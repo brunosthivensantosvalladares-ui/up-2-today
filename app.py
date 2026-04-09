@@ -714,89 +714,79 @@ else:
             
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Agenda de Manutenções")
+        st.caption("Clique em uma linha para abrir o formulário de baixa rápida.")
 
-        # 1. Busca os dados pendentes
         try:
+            # 1. Busca os dados pendentes
             query = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
             df_p = pd.read_sql(query, engine, params={"eid": str(emp_id)})
 
             if not df_p.empty:
-                # Criamos uma coluna de visualização para o botão
-                df_p["Finalizar"] = "✅ Baixar"
-                
-                # Exibição da Tabela com Botão na coluna ID
-                # O segredo está no on_change ou no processamento do evento de clique
+                # 2. Exibição da Tabela com Seleção Nativa
+                # Usamos column_config apenas para esconder o que não precisa aparecer
                 event = st.dataframe(
                     df_p,
                     column_config={
-                        "Finalizar": st.column_config.ButtonColumn(
-                            "Ação",
-                            help="Clique para finalizar esta OS",
-                            width="small",
-                        ),
-                        "id": None, # Esconde o ID original se quiser
+                        "id": st.column_config.TextColumn("ID"),
                         "realizado": None,
                         "empresa_id": None
                     },
                     hide_index=True,
                     use_container_width=True,
-                    on_select="rerun", # Faz o app reagir à seleção
-                    selection_mode="single-row"
+                    on_select="rerun", # Faz a tela atualizar ao clicar
+                    selection_mode="single-row" # Seleciona uma linha por vez
                 )
 
-                # 2. Lógica para abrir o formulário de baixa
+                # 3. Lógica do Formulário (Aparece apenas quando uma linha é clicada)
                 selecionado = event.selection.rows
                 if selecionado:
-                    # Puxa os dados da linha clicada
                     idx = selecionado[0]
                     os_data = df_p.iloc[idx]
-                    os_id_real = os_data['numero_os'] if 'numero_os' in os_data else os_data['id']
+                    
+                    # Tratamento do ID/OS
+                    os_id_real = os_data['numero_os'] if 'numero_os' in os_data and os_data['numero_os'] else os_data['id']
                     os_limpa = str(os_id_real).split('.')[0]
                     prefixo = os_data['prefixo']
 
-                    st.divider()
-                    st.markdown(f"### 🛠️ Finalizando OS: **{os_limpa}** | Veículo: **{prefixo}**")
+                    st.markdown("---")
+                    st.success(f"🛠️ **Finalizando OS {os_limpa} | Veículo {prefixo}**")
                     
-                    # Formulário de Baixa Rápida (sem áudio, foco em agilidade)
                     with st.form("baixa_direta"):
-                        servico_realizado = st.text_area("O que foi feito?", placeholder="Descreva o serviço...")
+                        servico_realizado = st.text_area("O que foi feito?", placeholder="Ex: Revisão completa, troca de filtros...")
                         executor = st.text_input("Mecânico Responsável", value=os_data.get('executor', ''))
                         
-                        col1, col2 = st.columns(2)
-                        h_inicio = col1.text_input("Início", "08:00")
-                        h_fim = col2.text_input("Fim", "09:00")
+                        c1, c2 = st.columns(2)
+                        h_ini = c1.text_input("Início", "08:00")
+                        h_fim = c2.text_input("Fim", "09:00")
 
-                        if st.form_submit_button("Confirmar Baixa"):
+                        if st.form_submit_button("Confirmar Baixa e Enviar para Histórico"):
                             if not servico_realizado:
-                                st.error("Por favor, descreva o serviço.")
+                                st.warning("Descreva o serviço antes de salvar.")
                             else:
-                                relato = f"Serviço: {servico_realizado}; Executor: {executor}; Horário: {h_inicio}-{h_fim}"
+                                relato = f"Serviço: {servico_realizado}; Executor: {executor}; Horário: {h_ini}-{h_fim}"
                                 
                                 with engine.begin() as conn:
-                                    # Update usando a lógica de limpeza que já validamos
                                     query_up = text("""
                                         UPDATE tarefas 
                                         SET realizado = True, 
                                             descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                        WHERE (CAST(id AS TEXT) = :id_banco OR CAST(numero_os AS TEXT) = :os_text)
+                                        WHERE id = :id_banco
                                         AND empresa_id = :eid
                                     """)
                                     conn.execute(query_up, {
                                         "relato": relato,
                                         "os": os_limpa,
-                                        "os_text": str(os_id_real),
                                         "pref": str(prefixo),
-                                        "id_banco": str(os_data['id']),
+                                        "id_banco": os_data['id'],
                                         "eid": str(emp_id)
                                     })
                                 
                                 st.cache_data.clear()
-                                st.success(f"OS {os_limpa} baixada com sucesso!")
-                                st.balloons()
+                                st.success("✅ OS baixada!")
                                 st.rerun()
 
             else:
-                st.info("Tudo em dia! Nenhuma manutenção pendente.")
+                st.info("Nenhuma manutenção pendente.")
 
         except Exception as e:
             st.error("Erro ao carregar a agenda."); st.code(str(e))
