@@ -914,21 +914,17 @@ else:
                                 key="tabela_atrasos_popover"
                             )
 
-                            # 3. Lógica para abrir a Baixa Rápida
+                           # 3. Lógica para abrir a Baixa Rápida
                             if event_atraso.selection.rows:
                                 idx_atraso = event_atraso.selection.rows[0]
                                 os_data_atraso = df_atrasadas.iloc[idx_atraso]
                                 
+                                # O IF do botão
                                 if st.button(f"🚀 Abrir Baixa Técnica da OS {os_data_atraso['Nº OS']}", type="primary", use_container_width=True):
-    # 1. Salva a OS na memória para o formulário aparecer
-    st.session_state.os_em_baixa = os_data_atraso
-    
-    # 2. MUDA O NOME DA ABA NO ESTADO (Precisa ser idêntico ao texto do menu)
-    st.session_state.aba_atual = "⏳ OSs Pendentes"
-    
-    # 3. Reinicia o app para ele ler a nova aba e o novo estado
-    st.rerun()
-
+                                    # ESTAS LINHAS ABAIXO PRECISAM DE MAIS RECUO (AQUI ESTAVA O ERRO)
+                                    st.session_state.os_em_baixa = os_data_atraso
+                                    st.session_state.aba_atual = "⏳ OSs Pendentes"
+                                    st.rerun()
                     with c_close:
                         if st.button("❌", key="close_assist"):
                             st.session_state.exibir_bot = False
