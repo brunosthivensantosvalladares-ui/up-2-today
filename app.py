@@ -666,83 +666,75 @@ else:
         st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
 
     elif aba_ativa == "⏳ OSs Pendentes":
-        st.subheader("⏳ Controle de Ordens em Aberto")
-        
-        try:
-            # Busca apenas pendentes
-            query = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
-            df_p = pd.read_sql(query, engine, params={"eid": str(emp_id)})
+        # 1. Inicializa o estado de controle se não existir
+        if 'os_em_baixa' not in st.session_state:
+            st.session_state.os_em_baixa = None
 
-            if not df_p.empty:
-                df_p['Nº OS'] = df_p['numero_os'].astype(str).str.replace('.0', '', regex=False)
+        # --- MODO 1: TELA DE BAIXA (Aparece apenas quando uma OS é selecionada) ---
+        if st.session_state.os_em_baixa is not None:
+            os_data = st.session_state.os_em_baixa
+            os_num = str(os_data['numero_os']).split('.')[0]
+            
+            st.button("⬅️ Voltar para a Lista", on_click=lambda: setattr(st.session_state, 'os_em_baixa', None))
+            
+            st.subheader(f"⚡ Baixa Técnica: OS {os_num}")
+            with st.container(border=True):
+                st.write(f"🚜 **Veículo:** {os_data['prefixo']}")
+                st.write(f"📝 **Serviço Planejado:** {os_data['descricao']}")
                 
-                # --- PARTE A: O EVENTO DE SELEÇÃO ---
-                # Definimos a tabela primeiro, mas guardamos a seleção em uma variável
-                # Para que o formulário apareça ACIMA, precisamos processar a seleção antes da exibição visual.
-                # No Streamlit, a ordem do código dita a ordem da tela.
-                
-                # Criamos um container para o formulário no TOPO
-                container_baixa = st.container()
+                with st.form("form_baixa_exclusiva"):
+                    servico_realizado = st.text_area("O que foi feito de fato?", placeholder="Descreva a execução...")
+                    executor = st.text_input("Mecânico Responsável")
+                    
+                    c1, c2 = st.columns(2)
+                    h_ini = c1.text_input("Início", "08:00")
+                    h_fim = c2.text_input("Fim", "10:00")
 
-                # --- PARTE B: A TABELA DE SELEÇÃO ---
-                event = st.dataframe(
-                    df_p[['Nº OS', 'prefixo', 'descricao', 'id']], 
-                    column_config={
-                        "id": None, 
-                        "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
-                        "prefixo": "Veículo",
-                        "descricao": "Serviço Planejado"
-                    },
-                    hide_index=True,
-                    use_container_width=True,
-                    on_select="rerun",
-                    selection_mode="single-row"
-                )
+                    if st.form_submit_button("💾 Finalizar e Salvar"):
+                        if not servico_realizado:
+                            st.error("A descrição do serviço é obrigatória.")
+                        else:
+                            relato = f"Execução: {servico_realizado}; Mecânico: {executor}; Horário: {h_ini}-{h_fim}"
+                            with engine.begin() as conn:
+                                conn.execute(text("""
+                                    UPDATE tarefas SET realizado = True, 
+                                    descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                    WHERE id = :id_banco AND empresa_id = :eid
+                                """), {"relato": relato, "os": os_num, "pref": str(os_data['prefixo']), 
+                                       "id_banco": os_data['id'], "eid": str(emp_id)})
+                            
+                            st.cache_data.clear()
+                            st.session_state.os_em_baixa = None # Limpa para voltar à lista
+                            st.success("OS Concluída!")
+                            st.rerun()
 
-                # --- PARTE C: PREENCHER O CONTAINER DO TOPO ---
-                selecionado = event.selection.rows
-                if selecionado:
-                    with container_baixa:
-                        os_data = df_p.iloc[selecionado[0]]
-                        os_num = str(os_data['Nº OS'])
-                        
-                        st.markdown(f"### ⚡ Baixa Técnica: OS {os_num}")
-                        with st.container(border=True):
-                            with st.form("form_baixa_topo"):
-                                st.write(f"🚜 Veículo: **{os_data['prefixo']}**")
-                                servico_realizado = st.text_area("Relatório de Execução", placeholder="O que foi feito?")
-                                executor = st.text_input("Mecânico Responsável", value=os_data.get('executor', ''))
-                                
-                                c1, c2 = st.columns(2)
-                                h_ini = c1.text_input("Início", "08:00")
-                                h_fim = c2.text_input("Fim", "09:00")
+        # --- MODO 2: TELA DE LISTA (Só aparece se nenhuma OS estiver em baixa) ---
+        else:
+            st.subheader("⏳ Ordens de Serviço em Aberto")
+            try:
+                query = text("SELECT * FROM tarefas WHERE realizado = False AND empresa_id = :eid ORDER BY id DESC")
+                df_p = pd.read_sql(query, engine, params={"eid": str(emp_id)})
 
-                                col_btn1, col_btn2 = st.columns([1, 4])
-                                if col_btn1.form_submit_button("💾 Salvar"):
-                                    if not servico_realizado:
-                                        st.warning("Preencha o relatório.")
-                                    else:
-                                        relato = f"Serviço: {servico_realizado}; Executor: {executor}; Horário: {h_ini}-{h_fim}"
-                                        with engine.begin() as conn:
-                                            conn.execute(text("""
-                                                UPDATE tarefas SET realizado = True, 
-                                                descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                                WHERE id = :id_banco AND empresa_id = :eid
-                                            """), {"relato": relato, "os": os_num, "pref": str(os_data['prefixo']), 
-                                                   "id_banco": os_data['id'], "eid": str(emp_id)})
-                                        
-                                        st.cache_data.clear()
-                                        st.success(f"OS {os_num} concluída!")
-                                        st.rerun()
-                                
-                                if col_btn2.form_submit_button("❌ Cancelar"):
-                                    st.rerun()
-                        st.divider() # Linha para separar o formulário da lista
+                if not df_p.empty:
+                    df_p['Nº OS'] = df_p['numero_os'].astype(str).str.replace('.0', '', regex=False)
+                    
+                    st.info("Clique em uma linha para abrir a tela de baixa.")
+                    
+                    event = st.dataframe(
+                        df_p[['Nº OS', 'prefixo', 'descricao', 'id']], 
+                        column_config={"id": None, "Nº OS": st.column_config.TextColumn("Nº OS", width="small")},
+                        hide_index=True, use_container_width=True,
+                        on_select="rerun", selection_mode="single-row"
+                    )
 
-            else:
-                st.info("Nenhuma OS pendente.")
-        except Exception as e:
-            st.error("Erro ao carregar pendências."); st.code(str(e))
+                    if event.selection.rows:
+                        # Em vez de abrir o form aqui, salvamos no estado e reiniciamos
+                        st.session_state.os_em_baixa = df_p.iloc[event.selection.rows[0]]
+                        st.rerun()
+                else:
+                    st.info("Nenhuma OS pendente.")
+            except Exception as e:
+                st.error("Erro ao carregar lista."); st.code(str(e))
     
     elif aba_ativa == "✅ OSs Concluídas":
         st.subheader("✅ Histórico de OSs Concluídas")
