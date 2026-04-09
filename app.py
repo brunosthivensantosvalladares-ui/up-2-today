@@ -669,38 +669,31 @@ else:
         st.subheader("✅ Histórico de OSs Concluídas")
         
         try:
-            # 1. BUSCA AMPLA: Vamos buscar TUDO que está como True primeiro
-            # para garantir que o dado existe no banco
-            query_c = text("SELECT * FROM tarefas WHERE realizado = True ORDER BY id DESC")
-            df_c = pd.read_sql(query_c, engine)
+            # Buscamos os dados limpando o numero_os de qualquer .0 ou espaço
+            query_c = text("""
+                SELECT 
+                    REPLACE(CAST(numero_os AS TEXT), '.0', '') as numero_os,
+                    data_planejada,
+                    prefixo,
+                    descricao 
+                FROM tarefas 
+                WHERE realizado = True 
+                AND TRIM(CAST(empresa_id AS TEXT)) = TRIM(:eid)
+                ORDER BY id DESC
+            """)
+            df_c = pd.read_sql(query_c, engine, params={"eid": str(emp_id)})
             
             if not df_c.empty:
-                # 2. FILTRO MANUAL POR EMPRESA (Mais seguro para diagnóstico)
-                # Convertemos ambos para string para evitar erro de tipo (1 vs "1")
-                df_filtrado = df_c[df_c['empresa_id'].astype(str) == str(emp_id)].copy()
+                # Renomeia para ficar bonito para o usuário
+                df_c.columns = ['Nº OS', 'Data', 'Veículo', 'Prontuário Completo']
+                st.dataframe(df_c, use_container_width=True)
                 
-                if not df_filtrado.empty:
-                    col_os = 'numero_os' if 'numero_os' in df_filtrado.columns else 'id'
-                    
-                    # 3. Montagem da visualização profissional da Up 2 Today
-                    cols_view = [col_os, 'prefixo', 'descricao']
-                    cols_existentes = [c for c in cols_view if c in df_filtrado.columns]
-                    
-                    df_final = df_filtrado[cols_existentes].copy()
-                    df_final.columns = ['Nº OS', 'Prefixo', 'Prontuário de Manutenção']
-                    
-                    st.write(f"### 📋 {len(df_final)} Manutenções encontradas")
-                    st.dataframe(df_final, use_container_width=True)
-                else:
-                    st.warning(f"⚠️ Atenção: Existem OSs concluídas no banco, mas NENHUMA pertence ao seu ID de empresa ({emp_id}).")
-                    st.write("Dados das OSs encontradas (Verifique a coluna empresa_id):")
-                    st.dataframe(df_c[['id', 'numero_os', 'empresa_id', 'realizado']])
+                csv = df_c.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Baixar Relatório", csv, "historico.csv", "text/csv")
             else:
-                st.info("O banco de dados não possui NENHUMA OS marcada como concluída (realizado=True).")
-                
+                st.info("Nenhuma OS concluída encontrada no histórico.")
         except Exception as e:
-            st.error("Erro ao carregar o histórico.")
-            st.code(str(e))
+            st.error("Erro ao carregar histórico."); st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("🎙️ Baixa Rápida por Voz")
@@ -760,8 +753,10 @@ else:
                         })
                         
                         if res.rowcount > 0:
-                            st.success(f"✅ OS {os_limpa} finalizada com sucesso!")
-                            st.rerun()
+                                        st.success(f"✅ OS {os_limpa} finalizada!")
+                                        # LIMPA O CACHE PARA A OS SUMIR DA LISTA
+                                        st.cache_data.clear() 
+                                        st.rerun()
                         else:
                             st.error(f"⚠️ Erro persistente: OS {os_limpa} não encontrada no banco.")
             else:
