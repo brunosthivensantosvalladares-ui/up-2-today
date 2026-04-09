@@ -863,7 +863,7 @@ else:
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
-        if not df_atrasadas.empty:
+if not df_atrasadas.empty:
             if st.session_state.exibir_bot:
                 with st.container(border=True):
                     c_txt, c_solve, c_close = st.columns([0.65, 0.25, 0.1])
@@ -876,66 +876,64 @@ else:
                         """, unsafe_allow_html=True)
                     
                     with c_solve:
-    with st.popover("⚙️ Resolver", use_container_width=True):
-        st.markdown("### 🛠️ Gestão de Atrasos")
-        c1, c2 = st.columns(2)
-        
-        # Opções de Ação em Massa
-        if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
-            with engine.connect() as conn:
-                conn.execute(text("UPDATE tarefas SET realizado=True WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
-                conn.commit()
-            st.cache_data.clear()
-            st.rerun()
+                        with st.popover("⚙️ Resolver", use_container_width=True):
+                            st.markdown("### 🛠️ Gestão de Atrasos")
+                            c1, c2 = st.columns(2)
+                            
+                            # Opções de Ação em Massa
+                            if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
+                                with engine.connect() as conn:
+                                    conn.execute(text("UPDATE tarefas SET realizado=True WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
+                                    conn.commit()
+                                st.cache_data.clear()
+                                st.rerun()
 
-        if c2.button("📅 Trazer p/ Hoje", use_container_width=True, key="mini_today"):
-            with engine.connect() as conn:
-                conn.execute(text("UPDATE tarefas SET data=:hoje WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
-                conn.commit()
-            st.cache_data.clear()
-            st.rerun()
-        
-        st.divider()
-        st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
-        st.caption("Selecione uma linha abaixo para abrir a Baixa Técnica da OS.")
+                            if c2.button("📅 Trazer p/ Hoje", use_container_width=True, key="mini_today"):
+                                with engine.connect() as conn:
+                                    conn.execute(text("UPDATE tarefas SET data=:hoje WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
+                                    conn.commit()
+                                st.cache_data.clear()
+                                st.rerun()
+                            
+                            st.divider()
+                            st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
+                            st.caption("Selecione uma linha abaixo para abrir a Baixa Técnica da OS.")
 
-        # 1. Preparação dos dados para a tabela de seleção
-        df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
-        
-        # 2. Tabela Interativa de Atrasos
-        event_atraso = st.dataframe(
-            df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
-            column_config={
-                "id": None, # Escondemos o ID
-                "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
-                "data": st.column_config.DateColumn("Data Original"),
-                "prefixo": "Veículo",
-                "descricao": "Serviço"
-            },
-            hide_index=True,
-            use_container_width=True,
-            on_select="rerun",
-            selection_mode="single-row",
-            key="tabela_atrasos_popover"
-        )
+                            # 1. Preparação dos dados
+                            df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
+                            
+                            # 2. Tabela Interativa
+                            event_atraso = st.dataframe(
+                                df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
+                                column_config={
+                                    "id": None,
+                                    "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
+                                    "data": st.column_config.DateColumn("Data Original"),
+                                    "prefixo": "Veículo",
+                                    "descricao": "Serviço"
+                                },
+                                hide_index=True,
+                                use_container_width=True,
+                                on_select="rerun",
+                                selection_mode="single-row",
+                                key="tabela_atrasos_popover"
+                            )
 
-        # 3. Lógica para abrir a Baixa Rápida (Se clicar na linha, abre o form)
-        if event_atraso.selection.rows:
-            idx_atraso = event_atraso.selection.rows[0]
-            os_data_atraso = df_atrasadas.iloc[idx_atraso]
-            
-            # Aqui usamos a mesma lógica de estado que criamos para a aba de Pendentes
-            # Isso fará com que, ao clicar, o sistema abra a tela de baixa técnica
-            if st.button(f"🚀 Abrir Baixa Técnica da OS {os_data_atraso['Nº OS']}", type="primary", use_container_width=True):
-                st.session_state.os_em_baixa = os_data_atraso
-                st.rerun()
+                            # 3. Lógica para abrir a Baixa Rápida
+                            if event_atraso.selection.rows:
+                                idx_atraso = event_atraso.selection.rows[0]
+                                os_data_atraso = df_atrasadas.iloc[idx_atraso]
+                                
+                                if st.button(f"🚀 Abrir Baixa Técnica da OS {os_data_atraso['Nº OS']}", type="primary", use_container_width=True):
+                                    st.session_state.os_em_baixa = os_data_atraso
+                                    st.rerun()
 
-with c_close:
-    if st.button("❌", key="close_assist"):
-        st.session_state.exibir_bot = False
-        st.rerun()
+                    with c_close:
+                        if st.button("❌", key="close_assist"):
+                            st.session_state.exibir_bot = False
+                            st.rerun()
             else:
-                # Botão de reabrir também ganha um ícone para não ser esquecido
+                # Botão de reabrir
                 if st.button("🔔 Ver Pendências", help="Existem tarefas atrasadas!"):
                     st.session_state.exibir_bot = True
                     st.rerun()
