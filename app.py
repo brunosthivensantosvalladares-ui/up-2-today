@@ -920,14 +920,14 @@ else:
                                 os_data_atraso = df_atrasadas.iloc[idx_atraso]
                                 
                                 if st.button(f"🚀 Abrir Baixa Técnica da OS {os_data_atraso['Nº OS']}", type="primary", use_container_width=True):
-                                    # 1. Guarda a OS na memória
-                                    st.session_state.os_em_baixa = os_data_atraso
-                                    
-                                    # 2. FORÇA A TROCA DE ABA (Ajuste o nome se for diferente no seu menu)
-                                    # Isso faz o Streamlit entender que agora a aba ativa é a de Pendentes
-                                    st.session_state.aba_atual = "⏳ OSs Pendentes" 
-                                    
-                                    st.rerun()
+    # 1. Salva a OS na memória para o formulário aparecer
+    st.session_state.os_em_baixa = os_data_atraso
+    
+    # 2. MUDA O NOME DA ABA NO ESTADO (Precisa ser idêntico ao texto do menu)
+    st.session_state.aba_atual = "⏳ OSs Pendentes"
+    
+    # 3. Reinicia o app para ele ler a nova aba e o novo estado
+    st.rerun()
 
                     with c_close:
                         if st.button("❌", key="close_assist"):
