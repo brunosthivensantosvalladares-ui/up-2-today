@@ -696,16 +696,32 @@ else:
                         else:
                             relato = f"Execução: {servico_realizado}; Mecânico: {executor}; Horário: {h_ini}-{h_fim}"
                             with engine.begin() as conn:
-                                conn.execute(text("""
-                                    UPDATE tarefas SET realizado = True, 
-                                    descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                    WHERE id = :id_banco AND empresa_id = :eid
-                                """), {"relato": relato, "os": os_num, "pref": str(os_data['prefixo']), 
-                                       "id_banco": os_data['id'], "eid": str(emp_id)})
+                                # Garantimos que tudo seja string/int puro do Python antes da query
+                                os_final = str(os_num)
+                                pref_final = str(os_data['prefixo'])
+                                id_banco_final = int(os_data['id'])
+                                eid_final = str(emp_id)
+                                
+                                query_update = text("""
+                                    UPDATE tarefas 
+                                    SET realizado = True, 
+                                        descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                    WHERE id = :id_banco 
+                                    AND empresa_id = :eid
+                                """)
+                                
+                                conn.execute(query_update, {
+                                    "relato": str(relato),
+                                    "os": os_final,
+                                    "pref": pref_final,
+                                    "id_banco": id_banco_final,
+                                    "eid": eid_final
+                                })
                             
+                            # Limpa o estado e o cache para voltar à lista limpa
                             st.cache_data.clear()
-                            st.session_state.os_em_baixa = None # Limpa para voltar à lista
-                            st.success("OS Concluída!")
+                            st.session_state.os_em_baixa = None
+                            st.success(f"✅ OS {os_final} finalizada com sucesso!")
                             st.rerun()
 
         # --- MODO 2: TELA DE LISTA (Só aparece se nenhuma OS estiver em baixa) ---
