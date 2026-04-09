@@ -713,66 +713,93 @@ else:
             st.error("Erro ao carregar histórico."); st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
-        st.subheader("📋 Baixa Rápida de Ordem de Serviço")
-        
+        st.subheader("📅 Agenda de Manutenções")
+
+        # 1. Busca os dados pendentes
         try:
-            # 1. Busca as OSs pendentes (Garantindo que o .0 não atrapalhe)
-            query_p = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
-            df_p = pd.read_sql(query_p, engine, params={"eid": str(emp_id)})
-            
+            query = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
+            df_p = pd.read_sql(query, engine, params={"eid": str(emp_id)})
+
             if not df_p.empty:
-                # Tratamento do número da OS para exibição limpa
-                col_os = 'numero_os' if 'numero_os' in df_p.columns else 'id'
-                df_p['os_display'] = df_p[col_os].astype(str).str.replace('.0', '', regex=False)
+                # Criamos uma coluna de visualização para o botão
+                df_p["Finalizar"] = "✅ Baixar"
                 
-                os_selecionada = st.selectbox("Selecione a OS para finalizar:", df_p['os_display'].unique())
-                
-                # Puxa os dados da OS selecionada para conferência
-                dados_os = df_p[df_p['os_display'] == os_selecionada].iloc[0]
-                prefixo = dados_os['prefixo'] if 'prefixo' in df_p.columns else "N/A"
-                
-                st.info(f"🚜 **Veículo:** {prefixo}")
-                
-                # 2. Entrada Manual de Dados (Rápida e Direta)
-                with st.form("form_baixa"):
-                    servico = st.text_area("O que foi feito? (Ex: Troca de óleo e filtros)")
-                    func = st.text_input("Funcionário Responsável")
+                # Exibição da Tabela com Botão na coluna ID
+                # O segredo está no on_change ou no processamento do evento de clique
+                event = st.dataframe(
+                    df_p,
+                    column_config={
+                        "Finalizar": st.column_config.ButtonColumn(
+                            "Ação",
+                            help="Clique para finalizar esta OS",
+                            width="small",
+                        ),
+                        "id": None, # Esconde o ID original se quiser
+                        "realizado": None,
+                        "empresa_id": None
+                    },
+                    hide_index=True,
+                    use_container_width=True,
+                    on_select="rerun", # Faz o app reagir à seleção
+                    selection_mode="single-row"
+                )
+
+                # 2. Lógica para abrir o formulário de baixa
+                selecionado = event.selection.rows
+                if selecionado:
+                    # Puxa os dados da linha clicada
+                    idx = selecionado[0]
+                    os_data = df_p.iloc[idx]
+                    os_id_real = os_data['numero_os'] if 'numero_os' in os_data else os_data['id']
+                    os_limpa = str(os_id_real).split('.')[0]
+                    prefixo = os_data['prefixo']
+
+                    st.divider()
+                    st.markdown(f"### 🛠️ Finalizando OS: **{os_limpa}** | Veículo: **{prefixo}**")
                     
-                    col1, col2 = st.columns(2)
-                    h_ini = col1.text_input("Início (HH:MM)", "08:00")
-                    h_fim = col2.text_input("Fim (HH:MM)", "09:00")
-                    
-                    if st.form_submit_button("✅ Finalizar OS e Enviar para Histórico"):
-                        if not servico or not func:
-                            st.warning("Por favor, preencha o serviço e o funcionário.")
-                        else:
-                            relato_final = f"Serviço: {servico}; Func: {func}; Horário: {h_ini} às {h_fim}"
-                            
-                            with engine.begin() as conn:
-                                # Update robusto para não perder o dado
-                                query_up = text(f"""
-                                    UPDATE tarefas 
-                                    SET realizado = True, 
-                                        descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                    WHERE (TRIM(CAST({col_os} AS TEXT)) = :os OR TRIM(REPLACE(CAST({col_os} AS TEXT), '.0', '')) = :os)
-                                    AND empresa_id = :eid
-                                """)
-                                conn.execute(query_up, {
-                                    "relato": relato_final,
-                                    "os": os_selecionada,
-                                    "eid": str(emp_id),
-                                    "pref": str(prefixo)
-                                })
-                            
-                            st.cache_data.clear()
-                            st.success(f"OS {os_selecionada} finalizada com sucesso!")
-                            st.balloons()
-                            st.rerun()
+                    # Formulário de Baixa Rápida (sem áudio, foco em agilidade)
+                    with st.form("baixa_direta"):
+                        servico_realizado = st.text_area("O que foi feito?", placeholder="Descreva o serviço...")
+                        executor = st.text_input("Mecânico Responsável", value=os_data.get('executor', ''))
+                        
+                        col1, col2 = st.columns(2)
+                        h_inicio = col1.text_input("Início", "08:00")
+                        h_fim = col2.text_input("Fim", "09:00")
+
+                        if st.form_submit_button("Confirmar Baixa"):
+                            if not servico_realizado:
+                                st.error("Por favor, descreva o serviço.")
+                            else:
+                                relato = f"Serviço: {servico_realizado}; Executor: {executor}; Horário: {h_inicio}-{h_fim}"
+                                
+                                with engine.begin() as conn:
+                                    # Update usando a lógica de limpeza que já validamos
+                                    query_up = text("""
+                                        UPDATE tarefas 
+                                        SET realizado = True, 
+                                            descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                        WHERE (CAST(id AS TEXT) = :id_banco OR CAST(numero_os AS TEXT) = :os_text)
+                                        AND empresa_id = :eid
+                                    """)
+                                    conn.execute(query_up, {
+                                        "relato": relato,
+                                        "os": os_limpa,
+                                        "os_text": str(os_id_real),
+                                        "pref": str(prefixo),
+                                        "id_banco": str(os_data['id']),
+                                        "eid": str(emp_id)
+                                    })
+                                
+                                st.cache_data.clear()
+                                st.success(f"OS {os_limpa} baixada com sucesso!")
+                                st.balloons()
+                                st.rerun()
+
             else:
-                st.info("Nenhuma OS pendente na agenda.")
+                st.info("Tudo em dia! Nenhuma manutenção pendente.")
 
         except Exception as e:
-            st.error("Erro na Agenda."); st.code(str(e))
+            st.error("Erro ao carregar a agenda."); st.code(str(e))
             
         # Agora o popover está fora do try, no lugar certo
         with st.popover("💡 Como usar a Agenda?"):
