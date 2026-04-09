@@ -530,7 +530,7 @@ else:
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
-        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "✅ OSs Concluídas", "📊 Indicadores", "👥 Minha Equipe", "📖 Manual do Sistema"]
+        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "OSs Pendentes", "✅ OSs Concluídas", "📊 Indicadores", "👥 Minha Equipe", "📖 Manual do Sistema"]
         # ADICIONA ABA MASTER APENAS PARA O BRUNO
         if usuario_ativo == "bruno":
             opcoes.append("👑 Gestão Master")
@@ -665,6 +665,70 @@ else:
 
         st.info("💡 Este manual explica a diferença entre os níveis de acesso e como maximizar os lucros da oficina.")
 
+    elif aba_ativa == "⏳ OSs Pendentes":
+        st.subheader("⏳ Ordens de Serviço em Aberto")
+        st.caption("Selecione a OS na lista para realizar a baixa técnica.")
+
+        try:
+            # Busca apenas o que NÃO foi realizado
+            query = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
+            df_p = pd.read_sql(query, engine, params={"eid": str(emp_id)})
+
+            if not df_p.empty:
+                df_p['Nº OS'] = df_p['numero_os'].astype(str).str.replace('.0', '', regex=False)
+                
+                # Exibição da Lista para Seleção
+                event = st.dataframe(
+                    df_p[['Nº OS', 'prefixo', 'descricao', 'id']], 
+                    column_config={
+                        "id": None, # ID oculto
+                        "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
+                        "prefixo": "Veículo",
+                        "descricao": "Serviço Planejado"
+                    },
+                    hide_index=True,
+                    use_container_width=True,
+                    on_select="rerun",
+                    selection_mode="single-row"
+                )
+
+                # Formulário de Baixa (Aparece ao selecionar)
+                selecionado = event.selection.rows
+                if selecionado:
+                    os_data = df_p.iloc[selecionado[0]]
+                    os_num = str(os_data['Nº OS'])
+                    
+                    st.markdown(f"### ⚡ Baixa Técnica: OS {os_num}")
+                    with st.container(border=True):
+                        with st.form("form_baixa_pendente"):
+                            servico_realizado = st.text_area("Relatório de Execução", placeholder="O que foi feito?")
+                            executor = st.text_input("Mecânico Responsável", value=os_data.get('executor', ''))
+                            
+                            c1, c2 = st.columns(2)
+                            h_ini = c1.text_input("Início", "08:00")
+                            h_fim = c2.text_input("Fim", "09:00")
+
+                            if st.form_submit_button("💾 Finalizar e Enviar ao Histórico"):
+                                if not servico_realizado:
+                                    st.warning("Preencha o relatório de execução.")
+                                else:
+                                    relato = f"Serviço: {servico_realizado}; Executor: {executor}; Horário: {h_ini}-{h_fim}"
+                                    with engine.begin() as conn:
+                                        conn.execute(text("""
+                                            UPDATE tarefas SET realizado = True, 
+                                            descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
+                                            WHERE id = :id_banco AND empresa_id = :eid
+                                        """), {"relato": relato, "os": os_num, "pref": str(os_data['prefixo']), 
+                                               "id_banco": os_data['id'], "eid": str(emp_id)})
+                                    
+                                    st.cache_data.clear()
+                                    st.success(f"OS {os_num} concluída!")
+                                    st.rerun()
+            else:
+                st.info("Nenhuma OS pendente. Bom trabalho!")
+        except Exception as e:
+            st.error("Erro ao carregar pendências."); st.code(str(e))
+    
     elif aba_ativa == "✅ OSs Concluídas":
         st.subheader("✅ Histórico de OSs Concluídas")
         
@@ -713,92 +777,26 @@ else:
             st.error("Erro ao carregar histórico."); st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
-        st.subheader("📅 Agenda de Manutenções")
-        st.caption("Selecione uma linha para realizar a baixa da OS.")
-
+        st.subheader("📅 Cronograma de Manutenções")
         try:
-            query = text("SELECT * FROM tarefas WHERE empresa_id = :eid AND realizado = False ORDER BY id DESC")
-            df_p = pd.read_sql(query, engine, params={"eid": str(emp_id)})
+            # Busca tudo o que está planejado (realizado ou não) para dar visão geral
+            query = text("SELECT numero_os, data, prefixo, descricao, realizado FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC")
+            df_agenda = pd.read_sql(query, engine, params={"eid": str(emp_id)})
 
-            if not df_p.empty:
-                # 1. Tratamento Visual: Criamos a coluna 'Nº OS' formatada e removemos o ID da vista
-                df_p['Nº OS'] = df_p['numero_os'].astype(str).str.replace('.0', '', regex=False)
-                
-                # Reorganizamos as colunas para o Nº OS vir primeiro
-                cols_ordem = ['Nº OS', 'data', 'prefixo', 'descricao']
-                cols_finais = [c for c in cols_ordem if c in df_p.columns]
-                
-                # 2. Exibição da Tabela
-                event = st.dataframe(
-                    df_p[cols_finais + ['id']], # Mantemos o id escondido para lógica
+            if not df_agenda.empty:
+                df_agenda['Nº OS'] = df_agenda['numero_os'].astype(str).str.replace('.0', '', regex=False)
+                st.dataframe(
+                    df_agenda[['Nº OS', 'data', 'prefixo', 'descricao', 'realizado']],
                     column_config={
-                        "id": None, # AQUI: Oculta o ID técnico
+                        "realizado": st.column_config.CheckboxColumn("Concluída?"),
                         "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
-                        "data": "Data",
-                        "prefixo": "Veículo",
-                        "descricao": "Serviço Planejado"
                     },
-                    hide_index=True,
-                    use_container_width=True,
-                    on_select="rerun",
-                    selection_mode="single-row"
+                    hide_index=True, use_container_width=True
                 )
-
-                # 3. Baixa em "Aba Individual" (Usando Popover para flutuar na tela)
-                selecionado = event.selection.rows
-                if selecionado:
-                    idx = selecionado[0]
-                    os_data = df_p.iloc[idx]
-                    os_num = str(os_data['Nº OS'])
-                    
-                    st.markdown(f"### ⚡ Baixa Rápida: OS {os_num}")
-                    
-                    # Usamos um container com borda para destacar como se fosse uma nova aba/janela
-                    with st.container(border=True):
-                        st.info(f"Finalizando manutenção do veículo: **{os_data['prefixo']}**")
-                        
-                        with st.form("form_baixa_individual"):
-                            servico_realizado = st.text_area("Relatório de Execução", placeholder="O que foi feito?")
-                            executor = st.text_input("Mecânico", value=os_data.get('executor', ''))
-                            
-                            c1, c2 = st.columns(2)
-                            h_ini = c1.text_input("Início", "08:00")
-                            h_fim = c2.text_input("Fim", "09:00")
-
-                            if st.form_submit_button("💾 Confirmar e Enviar para Histórico"):
-                                if not servico_realizado:
-                                    st.warning("A descrição do serviço é obrigatória.")
-                                else:
-                                    relato = f"Serviço: {servico_realizado}; Executor: {executor}; Horário: {h_ini}-{h_fim}"
-                                    
-                                    with engine.begin() as conn:
-                                        query_up = text("""
-                                            UPDATE tarefas 
-                                            SET realizado = True, 
-                                                descricao = 'OS: ' || :os || '; Prefixo: ' || :pref || '; ' || COALESCE(descricao, '') || '; ' || :relato
-                                            WHERE id = :id_banco
-                                            AND empresa_id = :eid
-                                        """)
-                                        conn.execute(query_up, {
-                                            "relato": relato,
-                                            "os": os_num,
-                                            "pref": str(os_data['prefixo']),
-                                            "id_banco": os_data['id'],
-                                            "eid": str(emp_id)
-                                        })
-                                    
-                                    st.cache_data.clear()
-                                    st.success(f"OS {os_num} finalizada!")
-                                    st.rerun()
-                                    
-                    if st.button("❌ Cancelar"):
-                        st.rerun()
-
             else:
-                st.info("Nenhuma manutenção pendente.")
-
+                st.info("Agenda vazia.")
         except Exception as e:
-            st.error("Erro na Agenda."); st.code(str(e))
+            st.error("Erro ao carregar agenda."); st.code(str(e))
             
         # Agora o popover está fora do try, no lugar certo
         with st.popover("💡 Como usar a Agenda?"):
