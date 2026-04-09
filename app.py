@@ -794,23 +794,30 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Cronograma Geral de Manutenções")
         try:
-            # Busca tudo (pendente e concluído) para dar visão do todo
+            # Busca todas as OSs (pendentes e concluídas) para visão do gestor
             query = text("SELECT numero_os, data, prefixo, descricao, realizado FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC")
             df_agenda = pd.read_sql(query, engine, params={"eid": str(emp_id)})
 
             if not df_agenda.empty:
-                df_agenda['Nº OS'] = df_agenda['numero_os'].astype(str).str.replace('.0', '', regex=False)
-                # Exibição simples, sem 'on_select' ou interação de clique
+                # Limpeza visual: transforma None em vazio e remove o .0
+                df_agenda['Nº OS'] = df_agenda['numero_os'].astype(str).replace(['None', 'nan', 'None.0'], '')
+                df_agenda['Nº OS'] = df_agenda['Nº OS'].str.replace('.0', '', regex=False)
+                
+                # Exibição estática (sem on_select)
                 st.dataframe(
                     df_agenda[['Nº OS', 'data', 'prefixo', 'descricao', 'realizado']],
                     column_config={
                         "realizado": st.column_config.CheckboxColumn("Concluída?"),
                         "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
+                        "data": "Data",
+                        "prefixo": "Veículo",
+                        "descricao": "Serviço Planejado"
                     },
-                    hide_index=True, use_container_width=True
+                    hide_index=True, 
+                    use_container_width=True
                 )
             else:
-                st.info("Agenda vazia.")
+                st.info("Nenhuma manutenção registrada na agenda.")
         except Exception as e:
             st.error("Erro ao carregar agenda."); st.code(str(e))
             
