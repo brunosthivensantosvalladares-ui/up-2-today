@@ -863,13 +863,12 @@ else:
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
-if not df_atrasadas.empty:
+        if not df_atrasadas.empty:
             if st.session_state.exibir_bot:
                 with st.container(border=True):
                     c_txt, c_solve, c_close = st.columns([0.65, 0.25, 0.1])
                     
                     with c_txt:
-                        # O ponto pulsante e o ícone de atenção
                         st.markdown(f"""
                             <span class="pulsing-dot"></span> 
                             <b style='color: #ff4b4b;'>🔔 ATENÇÃO:</b> Você possui <b>{len(df_atrasadas)}</b> pendências atrasadas.
@@ -880,7 +879,6 @@ if not df_atrasadas.empty:
                             st.markdown("### 🛠️ Gestão de Atrasos")
                             c1, c2 = st.columns(2)
                             
-                            # Opções de Ação em Massa
                             if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
                                 with engine.connect() as conn:
                                     conn.execute(text("UPDATE tarefas SET realizado=True WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
@@ -897,12 +895,9 @@ if not df_atrasadas.empty:
                             
                             st.divider()
                             st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
-                            st.caption("Selecione uma linha abaixo para abrir a Baixa Técnica da OS.")
-
-                            # 1. Preparação dos dados
+                            
                             df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
                             
-                            # 2. Tabela Interativa
                             event_atraso = st.dataframe(
                                 df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
                                 column_config={
@@ -919,11 +914,9 @@ if not df_atrasadas.empty:
                                 key="tabela_atrasos_popover"
                             )
 
-                            # 3. Lógica para abrir a Baixa Rápida
                             if event_atraso.selection.rows:
                                 idx_atraso = event_atraso.selection.rows[0]
                                 os_data_atraso = df_atrasadas.iloc[idx_atraso]
-                                
                                 if st.button(f"🚀 Abrir Baixa Técnica da OS {os_data_atraso['Nº OS']}", type="primary", use_container_width=True):
                                     st.session_state.os_em_baixa = os_data_atraso
                                     st.rerun()
@@ -933,11 +926,11 @@ if not df_atrasadas.empty:
                             st.session_state.exibir_bot = False
                             st.rerun()
             else:
-                # Botão de reabrir
-                if st.button("🔔 Ver Pendências", help="Existem tarefas atrasadas!"):
+                if st.button("🔔 Ver Pendências"):
                     st.session_state.exibir_bot = True
                     st.rerun()
         
+        # Este divider deve estar com APENAS 8 espaços (2 TABs) de recuo
         st.divider()
         
         # --- PAINEL DE RESUMO RÁPIDO NO TOPO ---
