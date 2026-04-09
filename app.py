@@ -914,11 +914,19 @@ else:
                                 key="tabela_atrasos_popover"
                             )
 
+                            # 3. Lógica para abrir a Baixa Rápida
                             if event_atraso.selection.rows:
                                 idx_atraso = event_atraso.selection.rows[0]
                                 os_data_atraso = df_atrasadas.iloc[idx_atraso]
+                                
                                 if st.button(f"🚀 Abrir Baixa Técnica da OS {os_data_atraso['Nº OS']}", type="primary", use_container_width=True):
+                                    # 1. Guarda a OS na memória
                                     st.session_state.os_em_baixa = os_data_atraso
+                                    
+                                    # 2. FORÇA A TROCA DE ABA (Ajuste o nome se for diferente no seu menu)
+                                    # Isso faz o Streamlit entender que agora a aba ativa é a de Pendentes
+                                    st.session_state.aba_atual = "⏳ OSs Pendentes" 
+                                    
                                     st.rerun()
 
                     with c_close:
