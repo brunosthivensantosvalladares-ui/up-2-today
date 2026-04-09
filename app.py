@@ -725,7 +725,7 @@ else:
                 if audio_data and os_sel:
                     with st.spinner("🤖 Processando áudio..."):
                         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                        model = genai.GenerativeModel('models/gemini-2.0-flash-lite')
+                        model = genai.GenerativeModel('gemini-1.5-flash')
                         
                         prompt_ia = "Transcreva o serviço, funcionário e horários. Formate como: Serviço realizado: [texto]; Funcionário: [nome]; Horário: [início às fim]."
                         response = model.generate_content([prompt_ia, {"mime_type": "audio/wav", "data": audio_data.getvalue()}])
