@@ -668,31 +668,37 @@ else:
     elif aba_ativa == "✅ OSs Concluídas":
         st.subheader("✅ Histórico de OSs Concluídas")
         
+        # FORÇAR ATUALIZAÇÃO: Isso garante que a 1004 apareça assim que for salva
+        if st.button("🔄 Atualizar Relatório"):
+            st.cache_data.clear()
+            st.rerun()
+
         try:
-            # 1. Busca ampla para garantir que pegamos tudo
-            query_c = text("SELECT * FROM tarefas WHERE realizado = True AND empresa_id = :eid ORDER BY id DESC")
-            df_c = pd.read_sql(query_c, engine, params={"eid": str(emp_id)})
+            # Buscamos os dados com uma query que limpa os tipos de dados no SQL
+            query_c = text("""
+                SELECT 
+                    id,
+                    REPLACE(CAST(numero_os AS TEXT), '.0', '') as os_formatada,
+                    data,
+                    prefixo,
+                    descricao 
+                FROM tarefas 
+                WHERE realizado = True 
+                AND (TRIM(CAST(empresa_id AS TEXT)) = TRIM(:eid) OR empresa_id IS NULL)
+                ORDER BY id DESC
+            """)
+            
+            # Usamos o engine diretamente para evitar cache de conexão
+            with engine.connect() as conn:
+                df_c = pd.read_sql(query_c, conn, params={"eid": str(emp_id)})
             
             if not df_c.empty:
-                # 2. Identifica as colunas (resiliência total)
-                col_os = 'numero_os' if 'numero_os' in df_c.columns else 'id'
-                col_data = 'data_planejada' if 'data_planejada' in df_c.columns else ('data' if 'data' in df_c.columns else None)
+                # Tratamento para exibir 'S/N' em vez de 'None' ou vazio
+                df_c['os_formatada'] = df_c['os_formatada'].replace(['None', '', 'nan'], 'S/N')
                 
-                # 3. Limpeza pesada: Remove .0, preenche Nones e garante texto
-                df_c[col_os] = df_c[col_os].fillna('S/N') # Se for None, vira 'Sem Número'
-                df_c[col_os] = df_c[col_os].astype(str).str.replace('.0', '', regex=False)
-                
-                # 4. Filtramos apenas as colunas que interessam ao Bruno
-                cols_view = [col_os, col_data, 'prefixo', 'descricao']
-                cols_ok = [c for c in cols_view if c is not None and c in df_c.columns]
-                
-                df_view = df_c[cols_ok].copy()
-                
-                # 5. Renomeia para o padrão profissional
+                # Seleção e renomeação
+                df_view = df_c[['os_formatada', 'data', 'prefixo', 'descricao']].copy()
                 df_view.columns = ['Nº OS', 'Data', 'Veículo', 'Prontuário de Manutenção']
-                
-                # 6. EXIBIÇÃO: Remove linhas onde a OS é 'None' ou vazia se você preferir
-                df_view = df_view[df_view['Nº OS'] != 'None']
                 
                 st.write(f"### 📋 {len(df_view)} Manutenções Registradas")
                 st.dataframe(df_view, use_container_width=True)
@@ -704,7 +710,7 @@ else:
                 st.info("Nenhuma OS concluída encontrada.")
                 
         except Exception as e:
-            st.error("Erro ao processar histórico."); st.code(str(e))
+            st.error("Erro ao carregar histórico."); st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("🎙️ Baixa Rápida por Voz")
