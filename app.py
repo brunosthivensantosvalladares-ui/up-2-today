@@ -669,51 +669,42 @@ else:
         st.subheader("✅ Histórico de OSs Concluídas")
         
         try:
-            # 1. Buscamos TUDO para evitar erro de coluna inexistente no SELECT
-            query_c = text("""
-                SELECT * FROM tarefas 
-                WHERE realizado = True 
-                AND TRIM(CAST(empresa_id AS TEXT)) = TRIM(:eid)
-                ORDER BY id DESC
-            """)
+            # 1. Busca ampla para garantir que pegamos tudo
+            query_c = text("SELECT * FROM tarefas WHERE realizado = True AND empresa_id = :eid ORDER BY id DESC")
             df_c = pd.read_sql(query_c, engine, params={"eid": str(emp_id)})
             
             if not df_c.empty:
-                # 2. Tratamento do Número da OS (Removendo o .0)
+                # 2. Identifica as colunas (resiliência total)
                 col_os = 'numero_os' if 'numero_os' in df_c.columns else 'id'
-                df_c[col_os] = df_c[col_os].astype(str).str.replace('.0', '', regex=False)
-                
-                # 3. Identifica a coluna de data correta
                 col_data = 'data_planejada' if 'data_planejada' in df_c.columns else ('data' if 'data' in df_c.columns else None)
                 
-                # 4. Seleciona as colunas para exibição (apenas as que existem)
-                cols_para_exibir = [col_os, col_data, 'prefixo', 'descricao']
-                cols_existentes = [c for c in cols_para_exibir if c is not None and c in df_c.columns]
+                # 3. Limpeza pesada: Remove .0, preenche Nones e garante texto
+                df_c[col_os] = df_c[col_os].fillna('S/N') # Se for None, vira 'Sem Número'
+                df_c[col_os] = df_c[col_os].astype(str).str.replace('.0', '', regex=False)
                 
-                df_view = df_c[cols_existentes].copy()
+                # 4. Filtramos apenas as colunas que interessam ao Bruno
+                cols_view = [col_os, col_data, 'prefixo', 'descricao']
+                cols_ok = [c for c in cols_view if c is not None and c in df_c.columns]
                 
-                # 5. Renomeia para ficar profissional
-                nomes_colunas = {
-                    col_os: 'Nº OS',
-                    col_data: 'Data',
-                    'prefixo': 'Veículo',
-                    'descricao': 'Prontuário Completo'
-                }
-                df_view.rename(columns=nomes_colunas, inplace=True)
+                df_view = df_c[cols_ok].copy()
                 
-                st.write(f"### 📋 {len(df_view)} Manutenções Finalizadas")
+                # 5. Renomeia para o padrão profissional
+                df_view.columns = ['Nº OS', 'Data', 'Veículo', 'Prontuário de Manutenção']
+                
+                # 6. EXIBIÇÃO: Remove linhas onde a OS é 'None' ou vazia se você preferir
+                df_view = df_view[df_view['Nº OS'] != 'None']
+                
+                st.write(f"### 📋 {len(df_view)} Manutenções Registradas")
                 st.dataframe(df_view, use_container_width=True)
                 
-                # Botão de download
+                # Botão de exportação
                 csv = df_view.to_csv(index=False).encode('utf-8')
                 st.download_button("📥 Baixar Relatório", csv, "historico_up2today.csv", "text/csv")
-                
             else:
-                st.info("Nenhuma OS concluída encontrada no histórico.")
+                st.info("Nenhuma OS concluída encontrada.")
                 
         except Exception as e:
-            st.error("Erro ao carregar histórico.")
-            st.code(str(e))
+            st.error("Erro ao processar histórico."); st.code(str(e))
             
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("🎙️ Baixa Rápida por Voz")
