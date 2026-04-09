@@ -919,11 +919,17 @@ else:
                                 idx_atraso = event_atraso.selection.rows[0]
                                 os_data_atraso = df_atrasadas.iloc[idx_atraso]
                                 
-                                # O IF do botão
+                                # O IF do botão corrigido para a sua estrutura
                                 if st.button(f"🚀 Abrir Baixa Técnica da OS {os_data_atraso['Nº OS']}", type="primary", use_container_width=True):
-                                    # ESTAS LINHAS ABAIXO PRECISAM DE MAIS RECUO (AQUI ESTAVA O ERRO)
+                                    # 1. Salva a OS na memória para o formulário aparecer
                                     st.session_state.os_em_baixa = os_data_atraso
-                                    st.session_state.aba_atual = "⏳ OSs Pendentes"
+                                    
+                                    # 2. Muda a aba usando a variável que o seu rádio reconhece
+                                    st.session_state.opcao_selecionada = "⏳ OSs Pendentes"
+                                    
+                                    # 3. Força a atualização da chave do rádio (se você usa o radio_key para resetar o menu)
+                                    # st.session_state.radio_key += 1 # Opcional: use apenas se o seu código exigir reset
+                                    
                                     st.rerun()
                     with c_close:
                         if st.button("❌", key="close_assist"):
