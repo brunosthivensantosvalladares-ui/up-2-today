@@ -794,30 +794,37 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Cronograma Geral de Manutenções")
         try:
-            # Busca os dados para exibição simples
-            query = text("SELECT numero_os, data, prefixo, descricao, realizado FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC")
+            # BUSCA APENAS O CALENDÁRIO (O QUE FOI PLANEJADO)
+            query = text("""
+                SELECT numero_os, data, prefixo, descricao, realizado 
+                FROM tarefas 
+                WHERE empresa_id = :eid 
+                ORDER BY data DESC
+            """)
             df_agenda = pd.read_sql(query, engine, params={"eid": str(emp_id)})
 
             if not df_agenda.empty:
-                # Limpa os "Nones" e o ".0" para o visual ficar top
+                # Limpeza estética
                 df_agenda['Nº OS'] = df_agenda['numero_os'].astype(str).replace(['None', 'nan', 'None.0'], '')
                 df_agenda['Nº OS'] = df_agenda['Nº OS'].str.replace('.0', '', regex=False)
                 
-                # Exibição puramente informativa
+                # EXIBIÇÃO PURAMENTE ESTÁTICA
                 st.dataframe(
                     df_agenda[['Nº OS', 'data', 'prefixo', 'descricao', 'realizado']],
                     column_config={
                         "realizado": st.column_config.CheckboxColumn("Concluída?"),
                         "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
-                        "data": "Data",
+                        "data": "Data Programada",
                         "prefixo": "Veículo",
-                        "descricao": "Serviço Planejado"
+                        "descricao": "Serviço"
                     },
                     hide_index=True, 
                     use_container_width=True
                 )
+                
+                st.caption("ℹ️ Esta aba é apenas para consulta. Para dar baixa, utilize a aba 'OSs Pendentes'.")
             else:
-                st.info("Nenhuma manutenção registrada na agenda.")
+                st.info("Agenda vazia.")
         except Exception as e:
             st.error("Erro ao carregar agenda."); st.code(str(e))
             
