@@ -794,16 +794,16 @@ else:
     elif aba_ativa == "📅 Agenda Principal":
         st.subheader("📅 Cronograma Geral de Manutenções")
         try:
-            # Busca todas as OSs (pendentes e concluídas) para visão do gestor
+            # Busca os dados para exibição simples
             query = text("SELECT numero_os, data, prefixo, descricao, realizado FROM tarefas WHERE empresa_id = :eid ORDER BY data DESC")
             df_agenda = pd.read_sql(query, engine, params={"eid": str(emp_id)})
 
             if not df_agenda.empty:
-                # Limpeza visual: transforma None em vazio e remove o .0
+                # Limpa os "Nones" e o ".0" para o visual ficar top
                 df_agenda['Nº OS'] = df_agenda['numero_os'].astype(str).replace(['None', 'nan', 'None.0'], '')
                 df_agenda['Nº OS'] = df_agenda['Nº OS'].str.replace('.0', '', regex=False)
                 
-                # Exibição estática (sem on_select)
+                # Exibição puramente informativa
                 st.dataframe(
                     df_agenda[['Nº OS', 'data', 'prefixo', 'descricao', 'realizado']],
                     column_config={
