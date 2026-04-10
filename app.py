@@ -876,61 +876,60 @@ else:
                     
                     with c_solve:
                         with st.popover("⚙️ Resolver", use_container_width=True):
-                            st.markdown("### 🛠️ Gestão de Atrasos")
-                            c1, c2 = st.columns(2)
-                            
-                            if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
-                                with engine.connect() as conn:
-                                    conn.execute(text("UPDATE tarefas SET realizado=True WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
-                                    conn.commit()
-                                st.cache_data.clear()
-                                st.rerun()
+    st.markdown("### 🛠️ Gestão de Atrasos")
+    
+    # 1. Espaço reservado para o botão aparecer no TOPO
+    container_botao_topo = st.container()
 
-                            if c2.button("📅 Trazer p/ Hoje", use_container_width=True, key="mini_today"):
-                                with engine.connect() as conn:
-                                    conn.execute(text("UPDATE tarefas SET data=:hoje WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
-                                    conn.commit()
-                                st.cache_data.clear()
-                                st.rerun()
-                            
-                            st.divider()
-                            st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
-                            
-                            df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
-                            
-                            event_atraso = st.dataframe(
-                                df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
-                                column_config={
-                                    "id": None,
-                                    "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
-                                    "data": st.column_config.DateColumn("Data Original"),
-                                    "prefixo": "Veículo",
-                                    "descricao": "Serviço"
-                                },
-                                hide_index=True,
-                                use_container_width=True,
-                                on_select="rerun",
-                                selection_mode="single-row",
-                                key="tabela_atrasos_popover"
-                            )
+    c1, c2 = st.columns(2)
+    if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE tarefas SET realizado=True WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
+            conn.commit()
+        st.cache_data.clear()
+        st.rerun()
 
-                           # 3. Lógica para abrir a Baixa Rápida
-                            if event_atraso.selection.rows:
-                                idx_atraso = event_atraso.selection.rows[0]
-                                os_data_atraso = df_atrasadas.iloc[idx_atraso]
-                                
-                                # O IF do botão corrigido para a sua estrutura
-                                if st.button(f"🚀 Abrir Baixa Técnica da OS {os_data_atraso['Nº OS']}", type="primary", use_container_width=True):
-                                    # 1. Salva a OS na memória para o formulário aparecer
-                                    st.session_state.os_em_baixa = os_data_atraso
-                                    
-                                    # 2. Muda a aba usando a variável que o seu rádio reconhece
-                                    st.session_state.opcao_selecionada = "⏳ OSs Pendentes"
-                                    
-                                    # 3. Força a atualização da chave do rádio (se você usa o radio_key para resetar o menu)
-                                    # st.session_state.radio_key += 1 # Opcional: use apenas se o seu código exigir reset
-                                    
-                                    st.rerun()
+    if c2.button("📅 Trazer p/ Hoje", use_container_width=True, key="mini_today"):
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE tarefas SET data=:hoje WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
+            conn.commit()
+        st.cache_data.clear()
+        st.rerun()
+    
+    st.divider()
+    
+    # 2. Tabela de seleção (embaixo dos botões de massa)
+    df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
+    
+    event_atraso = st.dataframe(
+        df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
+        column_config={
+            "id": None,
+            "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
+            "data": st.column_config.DateColumn("Data Original"),
+            "prefixo": "Veículo",
+            "descricao": "Serviço"
+        },
+        hide_index=True,
+        use_container_width=True,
+        on_select="rerun",
+        selection_mode="single-row",
+        key="tabela_atrasos_popover"
+    )
+
+    # 3. Lógica para "Injetar" o botão no container do topo
+    if event_atraso.selection.rows:
+        idx_atraso = event_atraso.selection.rows[0]
+        os_data_atraso = df_atrasadas.iloc[idx_atraso]
+        os_label = str(os_data_atraso['Nº OS']) if str(os_data_atraso['Nº OS']) != 'nan' else "Sem Nº"
+        
+        with container_botao_topo:
+            st.warning(f"OS Selecionada: **{os_label}**")
+            if st.button(f"🚀 Abrir Baixa Técnica da OS {os_label}", type="primary", use_container_width=True, key="btn_baixa_topo"):
+                st.session_state.os_em_baixa = os_data_atraso
+                st.session_state.opcao_selecionada = "⏳ OSs Pendentes"
+                st.rerun()
+            st.divider()
                     with c_close:
                         if st.button("❌", key="close_assist"):
                             st.session_state.exibir_bot = False
