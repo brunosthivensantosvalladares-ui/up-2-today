@@ -898,7 +898,7 @@ if not df_atrasadas.empty:
                             st.divider()
                             st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
-                            # Alinhamento rigoroso com o markdown acima
+                            # Alinhamento fixo: 28 espaços (ou 7 tabs de 4 espaços)
                             df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
                             
                             event_atraso = st.dataframe(
@@ -939,7 +939,7 @@ if not df_atrasadas.empty:
                     st.session_state.exibir_bot = True
                     st.rerun()
         
-st.divider()
+        st.divider()
                             st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
                             # ESTA LINHA ABAIXO PRECISA ESTAR ALINHADA COM O ST.MARKDOWN ACIMA
