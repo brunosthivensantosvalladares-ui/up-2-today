@@ -940,7 +940,7 @@ if not df_atrasadas.empty:
                     st.session_state.exibir_bot = True
                     st.rerun()
         
-        st.divider()
+st.divider()
     
     # 2. Tabela de seleção (embaixo dos botões de massa)
     df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
