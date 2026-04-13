@@ -883,7 +883,7 @@ else:
                             st.divider()
                             st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
-                            # AQUI ESTAVA O ERRO (Linha 930/931): Alinhado com o markdown acima
+                            # Alinhamento manual: Todas as linhas abaixo devem estar na mesma coluna
                             df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
                             
                             event_atraso = st.dataframe(
