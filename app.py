@@ -878,7 +878,6 @@ if not df_atrasadas.empty:
                         with st.popover("⚙️ Resolver", use_container_width=True):
                             st.markdown("### 🛠️ Gestão de Atrasos")
                             
-                            # 1. Espaço reservado para o botão aparecer no TOPO
                             container_botao_topo = st.container()
 
                             c1, c2 = st.columns(2)
@@ -897,8 +896,9 @@ if not df_atrasadas.empty:
                                 st.rerun()
                             
                             st.divider()
+                            st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
-                            # 2. Tabela de seleção (embaixo dos botões de massa)
+                            # Alinhado com o markdown acima
                             df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
                             
                             event_atraso = st.dataframe(
@@ -917,7 +917,6 @@ if not df_atrasadas.empty:
                                 key="tabela_atrasos_popover"
                             )
 
-                            # 3. Lógica para "Injetar" o botão no container do topo
                             if event_atraso.selection.rows:
                                 idx_atraso = event_atraso.selection.rows[0]
                                 os_data_atraso = df_atrasadas.iloc[idx_atraso]
