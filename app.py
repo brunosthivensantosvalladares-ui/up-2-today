@@ -863,7 +863,7 @@ else:
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
-if not df_atrasadas.empty:
+        if not df_atrasadas.empty:
             if st.session_state.exibir_bot:
                 with st.container(border=True):
                     c_txt, c_solve, c_close = st.columns([0.65, 0.25, 0.1])
@@ -898,7 +898,6 @@ if not df_atrasadas.empty:
                             st.divider()
                             st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
-                            # Alinhamento fixo: 28 espaços (ou 7 tabs de 4 espaços)
                             df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
                             
                             event_atraso = st.dataframe(
@@ -939,6 +938,7 @@ if not df_atrasadas.empty:
                     st.session_state.exibir_bot = True
                     st.rerun()
         
+        # O DIVIDER QUE ESTAVA DANDO ERRO (Agora alinhado com o IF principal)
         st.divider()
                             st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
