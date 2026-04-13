@@ -828,29 +828,18 @@ else:
             2. Grave o áudio citando seu Nome, Prefixo e Horários.
             3. Confira a transcrição e clique em Confirmar.
             """)
-       # --- ASSISTENTE COM ANIMAÇÃO DE ALERTA ---
+# --- ASSISTENTE COM ANIMAÇÃO DE ALERTA ---
         if "exibir_bot" not in st.session_state:
             st.session_state.exibir_bot = True
 
-        # Injetando CSS para o Popover Largo e a Animação do Ponto Pulsante
+        # CSS do Assistente
         st.markdown("""
             <style>
-                /* Largura do Popover */
-                div[data-testid="stPopoverBody"] {
-                    width: 850px !important;
-                    max-width: 90vw !important;
-                }
-                
-                /* Animação do Ponto Pulsante */
+                div[data-testid="stPopoverBody"] { width: 850px !important; max-width: 90vw !important; }
                 .pulsing-dot {
-                    height: 10px;
-                    width: 10px;
-                    background-color: #ff4b4b;
-                    border-radius: 50%;
-                    display: inline-block;
-                    margin-right: 5px;
-                    box-shadow: 0 0 0 0 rgba(255, 75, 75, 1);
-                    animation: pulse 1.5s infinite;
+                    height: 10px; width: 10px; background-color: #ff4b4b;
+                    border-radius: 50%; display: inline-block; margin-right: 5px;
+                    box-shadow: 0 0 0 0 rgba(255, 75, 75, 1); animation: pulse 1.5s infinite;
                 }
                 @keyframes pulse {
                     0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.7); }
@@ -869,10 +858,7 @@ else:
                     c_txt, c_solve, c_close = st.columns([0.65, 0.25, 0.1])
                     
                     with c_txt:
-                        st.markdown(f"""
-                            <span class="pulsing-dot"></span> 
-                            <b style='color: #ff4b4b;'>🔔 ATENÇÃO:</b> Você possui <b>{len(df_atrasadas)}</b> pendências atrasadas.
-                        """, unsafe_allow_html=True)
+                        st.markdown(f"""<span class="pulsing-dot"></span> <b style='color: #ff4b4b;'>🔔 ATENÇÃO:</b> Você possui <b>{len(df_atrasadas)}</b> pendências atrasadas.""", unsafe_allow_html=True)
                     
                     with c_solve:
                         with st.popover("⚙️ Resolver", use_container_width=True):
@@ -903,16 +889,12 @@ else:
                             event_atraso = st.dataframe(
                                 df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
                                 column_config={
-                                    "id": None,
-                                    "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
+                                    "id": None, "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
                                     "data": st.column_config.DateColumn("Data Original"),
-                                    "prefixo": "Veículo",
-                                    "descricao": "Serviço"
+                                    "prefixo": "Veículo", "descricao": "Serviço"
                                 },
-                                hide_index=True,
-                                use_container_width=True,
-                                on_select="rerun",
-                                selection_mode="single-row",
+                                hide_index=True, use_container_width=True,
+                                on_select="rerun", selection_mode="single-row",
                                 key="tabela_atrasos_popover"
                             )
 
@@ -937,6 +919,8 @@ else:
                 if st.button("🔔 Ver Pendências"):
                     st.session_state.exibir_bot = True
                     st.rerun()
+        
+        st.divider()
         
         # O DIVIDER QUE ESTAVA DANDO ERRO (Agora alinhado com o IF principal)
         st.divider()
