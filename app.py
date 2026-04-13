@@ -832,7 +832,6 @@ else:
         if "exibir_bot" not in st.session_state:
             st.session_state.exibir_bot = True
 
-        # CSS do Assistente
         st.markdown("""
             <style>
                 div[data-testid="stPopoverBody"] { width: 850px !important; max-width: 90vw !important; }
@@ -864,6 +863,7 @@ else:
                         with st.popover("⚙️ Resolver", use_container_width=True):
                             st.markdown("### 🛠️ Gestão de Atrasos")
                             
+                            # Container para o botão no topo
                             container_botao_topo = st.container()
 
                             c1, c2 = st.columns(2)
@@ -884,6 +884,7 @@ else:
                             st.divider()
                             st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
+                            # Processamento e Tabela
                             df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
                             
                             event_atraso = st.dataframe(
