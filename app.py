@@ -939,7 +939,7 @@ if not df_atrasadas.empty:
                     st.session_state.exibir_bot = True
                     st.rerun()
         
-        st.divider()
+st.divider()
                             st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
                             # ESTA LINHA ABAIXO PRECISA ESTAR ALINHADA COM O ST.MARKDOWN ACIMA
