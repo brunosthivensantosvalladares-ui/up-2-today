@@ -927,7 +927,7 @@ else:
         st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
                             # ESTA LINHA ABAIXO PRECISA ESTAR ALINHADA COM O ST.MARKDOWN ACIMA
-                            df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
+                    df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
                             
                             event_atraso = st.dataframe(
                                 df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
