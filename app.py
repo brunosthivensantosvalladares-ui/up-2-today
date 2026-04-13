@@ -863,7 +863,7 @@ else:
         df_atrasadas = pd.read_sql(text("SELECT * FROM tarefas WHERE data < :hoje AND realizado = False AND empresa_id = :eid"), 
                                    engine, params={"hoje": str(datetime.now().date()), "eid": emp_id})
 
-        if not df_atrasadas.empty:
+if not df_atrasadas.empty:
             if st.session_state.exibir_bot:
                 with st.container(border=True):
                     c_txt, c_solve, c_close = st.columns([0.65, 0.25, 0.1])
@@ -876,27 +876,71 @@ else:
                     
                     with c_solve:
                         with st.popover("⚙️ Resolver", use_container_width=True):
-    st.markdown("### 🛠️ Gestão de Atrasos")
-    
-    # 1. Espaço reservado para o botão aparecer no TOPO
-    container_botao_topo = st.container()
+                            st.markdown("### 🛠️ Gestão de Atrasos")
+                            
+                            # 1. Espaço reservado para o botão aparecer no TOPO
+                            container_botao_topo = st.container()
 
-    c1, c2 = st.columns(2)
-    if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
-        with engine.connect() as conn:
-            conn.execute(text("UPDATE tarefas SET realizado=True WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
-            conn.commit()
-        st.cache_data.clear()
-        st.rerun()
+                            c1, c2 = st.columns(2)
+                            if c1.button("✅ Concluir Tudo", use_container_width=True, key="mini_all"):
+                                with engine.connect() as conn:
+                                    conn.execute(text("UPDATE tarefas SET realizado=True WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
+                                    conn.commit()
+                                st.cache_data.clear()
+                                st.rerun()
 
-    if c2.button("📅 Trazer p/ Hoje", use_container_width=True, key="mini_today"):
-        with engine.connect() as conn:
-            conn.execute(text("UPDATE tarefas SET data=:hoje WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
-            conn.commit()
-        st.cache_data.clear()
-        st.rerun()
-    
-    st.divider()
+                            if c2.button("📅 Trazer p/ Hoje", use_container_width=True, key="mini_today"):
+                                with engine.connect() as conn:
+                                    conn.execute(text("UPDATE tarefas SET data=:hoje WHERE data < :hoje AND realizado=False AND empresa_id=:eid"), {"hoje":str(datetime.now().date()), "eid":emp_id})
+                                    conn.commit()
+                                st.cache_data.clear()
+                                st.rerun()
+                            
+                            st.divider()
+                            
+                            # 2. Tabela de seleção (embaixo dos botões de massa)
+                            df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
+                            
+                            event_atraso = st.dataframe(
+                                df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
+                                column_config={
+                                    "id": None,
+                                    "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
+                                    "data": st.column_config.DateColumn("Data Original"),
+                                    "prefixo": "Veículo",
+                                    "descricao": "Serviço"
+                                },
+                                hide_index=True,
+                                use_container_width=True,
+                                on_select="rerun",
+                                selection_mode="single-row",
+                                key="tabela_atrasos_popover"
+                            )
+
+                            # 3. Lógica para "Injetar" o botão no container do topo
+                            if event_atraso.selection.rows:
+                                idx_atraso = event_atraso.selection.rows[0]
+                                os_data_atraso = df_atrasadas.iloc[idx_atraso]
+                                os_label = str(os_data_atraso['Nº OS'])
+                                
+                                with container_botao_topo:
+                                    st.info(f"OS Selecionada: **{os_label}**")
+                                    if st.button(f"🚀 Abrir Baixa Técnica da OS {os_label}", type="primary", use_container_width=True, key="btn_baixa_topo"):
+                                        st.session_state.os_em_baixa = os_data_atraso
+                                        st.session_state.opcao_selecionada = "⏳ OSs Pendentes"
+                                        st.rerun()
+                                    st.divider()
+
+                    with c_close:
+                        if st.button("❌", key="close_assist"):
+                            st.session_state.exibir_bot = False
+                            st.rerun()
+            else:
+                if st.button("🔔 Ver Pendências"):
+                    st.session_state.exibir_bot = True
+                    st.rerun()
+        
+        st.divider()
     
     # 2. Tabela de seleção (embaixo dos botões de massa)
     df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
