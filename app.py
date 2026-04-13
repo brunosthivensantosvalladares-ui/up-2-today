@@ -924,7 +924,7 @@ else:
         
         # O DIVIDER QUE ESTAVA DANDO ERRO (Agora alinhado com o IF principal)
         st.divider()
-                        st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
+                    st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
                             
                             # ESTA LINHA ABAIXO PRECISA ESTAR ALINHADA COM O ST.MARKDOWN ACIMA
                             df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
