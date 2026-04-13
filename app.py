@@ -941,26 +941,26 @@ if not df_atrasadas.empty:
                     st.rerun()
         
 st.divider()
-    
-    # 2. Tabela de seleção (embaixo dos botões de massa)
-    df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
-    
-    event_atraso = st.dataframe(
-        df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
-        column_config={
-            "id": None,
-            "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
-            "data": st.column_config.DateColumn("Data Original"),
-            "prefixo": "Veículo",
-            "descricao": "Serviço"
-        },
-        hide_index=True,
-        use_container_width=True,
-        on_select="rerun",
-        selection_mode="single-row",
-        key="tabela_atrasos_popover"
-    )
-
+                            st.markdown("🔍 **Ajuste Pontual ou Baixa Rápida:**")
+                            
+                            # ESTA LINHA ABAIXO PRECISA ESTAR ALINHADA COM O ST.MARKDOWN ACIMA
+                            df_atrasadas['Nº OS'] = df_atrasadas['numero_os'].astype(str).str.replace('.0', '', regex=False)
+                            
+                            event_atraso = st.dataframe(
+                                df_atrasadas[['Nº OS', 'data', 'prefixo', 'descricao', 'id']],
+                                column_config={
+                                    "id": None,
+                                    "Nº OS": st.column_config.TextColumn("Nº OS", width="small"),
+                                    "data": st.column_config.DateColumn("Data Original"),
+                                    "prefixo": "Veículo",
+                                    "descricao": "Serviço"
+                                },
+                                hide_index=True,
+                                use_container_width=True,
+                                on_select="rerun",
+                                selection_mode="single-row",
+                                key="tabela_atrasos_popover"
+                            )
     # 3. Lógica para "Injetar" o botão no container do topo
     if event_atraso.selection.rows:
         idx_atraso = event_atraso.selection.rows[0]
