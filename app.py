@@ -180,7 +180,7 @@ def gerar_pdf_manual_oficial_pro():
 # --- CONFIGURAÇÕES DE MARCA ---
 NOME_SISTEMA = "Updated Yesterday"
 SLOGAN = "Seu Controle. Nossa Prioridade."
-LOGO_URL = "https://ibb.co/HLGqpJQs"
+LOGO_URL = "https://postimg.cc/hJBJYZKM"
 ORDEM_AREAS = ["Motorista", "Borracharia", "Mecânica", "Elétrica", "Chapeamento", "Limpeza"]
 LISTA_TURNOS = ["Não definido", "Dia", "Noite"]
 
