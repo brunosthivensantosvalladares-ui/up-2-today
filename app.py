@@ -205,7 +205,7 @@ COR_TEXTO = "#231F20"   # Grafite escuro fosco dos rebites e pneus
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Painel de Controle", layout="wide", page_icon="⚙️")
 
-# --- CSS REVISADO: CORREÇÃO DE CONTRASTE DOS BOTÕES ---
+# --- CSS REVISADO: CORREÇÃO DEFINITIVA DE CONTRASTE DOS BOTÕES ---
 st.markdown(f"""
     <style>
     /* 1. FUNDOS: App na cor Chapa Clara e Sidebar em Branco Puro */
@@ -239,36 +239,38 @@ st.markdown(f"""
         border: 2px solid {COR_BRONZE};
     }}
 
-    /* 4. BOTÕES GERAIS (E ABAS EM REPOUSO): Fundo Bronze com Borda Ouro e TEXTO BRANCO PURO */
-    button[kind="primary"], button[kind="secondary"], button {{
+    /* 4. CONFIGURAÇÃO GLOBAL DE BOTÕES: Força fundo Bronze, borda Ouro e TEXTO BRANCO PURO */
+    button, 
+    button[kind="primary"], 
+    button[kind="secondary"], 
+    [data-testid="stBaseButton-primary"], 
+    [data-testid="stBaseButton-secondary"] {{
         background-color: {COR_BRONZE} !important;
         border: 2px solid {COR_OURO} !important;
         border-radius: 4px !important;
         color: #FFFFFF !important;
     }}
 
-    /* 5. DESTAQUE DA ABA ATUAL: Fundo Ouro Envelhecido com Borda Bronze e TEXTO ESCURO */
+    /* Garante texto branco em qualquer tag interna de parágrafo ou div dos botões em repouso */
+    button p, button span, button div,
+    [data-testid="stBaseButton-primary"] p, [data-testid="stBaseButton-primary"] span,
+    [data-testid="stBaseButton-secondary"] p, [data-testid="stBaseButton-secondary"] span {{
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }}
+
+    /* 5. DESTAQUE DA ABA ATUAL (TOPO): Muda o fundo para Ouro Envelhecido e TEXTO ESCURO */
     div.stHorizontalBlock button[kind="primary"] {{
         background-color: {COR_OURO} !important;
         border: 2px solid {COR_BRONZE} !important;
     }}
 
-    /* AJUSTE CORRETO DO TEXTO DOS BOTÕES DO TOPO */
-    /* Botão Ativo (Ouro) -> Texto Escuro para contraste */
+    /* Força o texto a ficar escuro APENAS na aba selecionada no topo */
     div.stHorizontalBlock button[kind="primary"] p, 
     div.stHorizontalBlock button[kind="primary"] span, 
     div.stHorizontalBlock button[kind="primary"] div {{
         color: {COR_TEXTO} !important;
         -webkit-text-fill-color: {COR_TEXTO} !important;
-    }}
-    
-    /* Botões Inativos (Bronze) -> Força Texto Branco Puro para leitura perfeita */
-    div.stHorizontalBlock button[kind="secondary"] p, 
-    div.stHorizontalBlock button[kind="secondary"] span, 
-    div.stHorizontalBlock button[kind="secondary"] div,
-    form button p, form button span, form button div {{
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
     }}
 
     /* Elementos iconográficos e calendário */
@@ -289,7 +291,6 @@ st.markdown(f"""
     .logo-2t {{ color: {COR_OURO} !important; font-weight: bold; }}
     </style>
 """, unsafe_allow_html=True)
-
 # --- FUNÇÃO DO PAINEL DE PAGAMENTO PROFISSIONAL ---
 def exibir_painel_pagamento_pro(origem):
     with st.container(border=True):
