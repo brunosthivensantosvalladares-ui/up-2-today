@@ -205,7 +205,7 @@ COR_TEXTO = "#231F20"   # Grafite escuro fosco dos rebites e pneus
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Painel de Controle", layout="wide", page_icon="⚙️")
 
-# --- CSS REVISADO: SIDEBAR BRANCA PARA INTEGRAR O LOGO ---
+# --- CSS REVISADO: CORREÇÃO DE CONTRASTE DOS BOTÕES ---
 st.markdown(f"""
     <style>
     /* 1. FUNDOS: App na cor Chapa Clara e Sidebar em Branco Puro */
@@ -239,7 +239,7 @@ st.markdown(f"""
         border: 2px solid {COR_BRONZE};
     }}
 
-    /* 4. BOTÕES GERAIS: Fundo Bronze com Borda Ouro Envelhecido */
+    /* 4. BOTÕES GERAIS (E ABAS EM REPOUSO): Fundo Bronze com Borda Ouro e TEXTO BRANCO PURO */
     button[kind="primary"], button[kind="secondary"], button {{
         background-color: {COR_BRONZE} !important;
         border: 2px solid {COR_OURO} !important;
@@ -247,18 +247,26 @@ st.markdown(f"""
         color: #FFFFFF !important;
     }}
 
-    /* 5. DESTAQUE DA ABA ATUAL: Ouro Envelhecido com Borda Bronze */
+    /* 5. DESTAQUE DA ABA ATUAL: Fundo Ouro Envelhecido com Borda Bronze e TEXTO ESCURO */
     div.stHorizontalBlock button[kind="primary"] {{
         background-color: {COR_OURO} !important;
         border: 2px solid {COR_BRONZE} !important;
     }}
 
-    /* Contraste dos textos dos botões */
-    button[kind="primary"] p, button[kind="primary"] span, button[kind="primary"] div {{
+    /* AJUSTE CORRETO DO TEXTO DOS BOTÕES DO TOPO */
+    /* Botão Ativo (Ouro) -> Texto Escuro para contraste */
+    div.stHorizontalBlock button[kind="primary"] p, 
+    div.stHorizontalBlock button[kind="primary"] span, 
+    div.stHorizontalBlock button[kind="primary"] div {{
         color: {COR_TEXTO} !important;
         -webkit-text-fill-color: {COR_TEXTO} !important;
     }}
-    button[kind="secondary"] p, button[kind="secondary"] span, button[kind="secondary"] div {{
+    
+    /* Botões Inativos (Bronze) -> Força Texto Branco Puro para leitura perfeita */
+    div.stHorizontalBlock button[kind="secondary"] p, 
+    div.stHorizontalBlock button[kind="secondary"] span, 
+    div.stHorizontalBlock button[kind="secondary"] div,
+    form button p, form button span, form button div {{
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
     }}
