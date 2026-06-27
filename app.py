@@ -205,7 +205,7 @@ COR_TEXTO = "#231F20"   # Grafite escuro fosco dos rebites e pneus
 # --- 1. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title=f"{NOME_SISTEMA} - Painel de Controle", layout="wide", page_icon="⚙️")
 
-# --- CSS REVISADO: CORREÇÃO DEFINITIVA DE CONTRASTE DOS BOTÕES ---
+# --- CSS REVISADO COM A SIGLA UY ---
 st.markdown(f"""
     <style>
     /* 1. FUNDOS: App na cor Chapa Clara e Sidebar em Branco Puro */
@@ -251,7 +251,7 @@ st.markdown(f"""
         color: #FFFFFF !important;
     }}
 
-    /* Garante texto branco em qualquer tag interna de parágrafo ou div dos botões em repouso */
+    /* Garante texto branco em qualquer tag interna de botões em repouso */
     button p, button span, button div,
     [data-testid="stBaseButton-primary"] p, [data-testid="stBaseButton-primary"] span,
     [data-testid="stBaseButton-secondary"] p, [data-testid="stBaseButton-secondary"] span {{
@@ -287,8 +287,9 @@ st.markdown(f"""
         background: {COR_BRONZE} !important;
     }}
 
+    /* ESTILIZAÇÃO DA NOVA SIGLA UY */
     .logo-u {{ color: {COR_BRONZE} !important; font-weight: bold; }}
-    .logo-2t {{ color: {COR_OURO} !important; font-weight: bold; }}
+    .logo-y {{ color: {COR_OURO} !important; font-weight: bold; }}
     </style>
 """, unsafe_allow_html=True)
 # --- FUNÇÃO DO PAINEL DE PAGAMENTO PROFISSIONAL ---
