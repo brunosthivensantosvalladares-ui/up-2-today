@@ -527,12 +527,13 @@ else:
         st.session_state.opcao_selecionada = target
         st.session_state.radio_key += 1 
 
-    # 1. BARRA LATERAL
+# 1. BARRA LATERAL
     with st.sidebar:
-        _, col_img, _ = st.columns([0.15, 0.7, 0.15])
+        # LOGOTIPO COM TAMANHO AMPLIADO PARA PREENCHER A SIDEBAR BRANCA
+        _, col_img, _ = st.columns([0.05, 0.9, 0.05]) # Ajustado o espaçamento das colunas laterais
         with col_img:
-            st.image(LOGO_URL, width=150)
-        st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: #666; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
+            st.image(LOGO_URL, use_container_width=True) # Usa a largura máxima da coluna otimizada (220px+)
+        st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: {COR_BRONZE}; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         st.divider()
         
         try:
@@ -554,7 +555,6 @@ else:
         if st.button("Sair da Conta", type="primary"): 
             st.session_state["logado"] = False
             st.rerun()
-
     # 2. BOTÕES DE ABA NO TOPO
     cols = st.columns(len(opcoes))
     for i, nome in enumerate(opcoes):
