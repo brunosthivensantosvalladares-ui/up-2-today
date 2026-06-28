@@ -430,13 +430,13 @@ if not st.session_state["logado"]:
         placeholder_topo = st.empty()
         
         # =====================================================================
-        # CABEÇALHO DO LOGIN (É ESTE BLOCO EXATO QUE VOCÊ VAI SUBSTITUIR)
+        # CABEÇALHO DO LOGIN - AGORA COM UY 100% DOURADO
         # =====================================================================
         st.markdown(
             f"""
             <div style='text-align: center; margin-bottom: 20px;'>
                 <h1 style='margin-bottom: 0px; font-size: 3rem; line-height: 1.2;'>
-                    <span style='color: {COR_BRONZE} !important; font-weight: bold; display: inline-block;'>U</span><span style='color: {COR_OURO} !important; font-weight: bold; display: inline-block;'>Y</span>
+                    <span style='color: {COR_OURO} !important; font-weight: bold; display: inline-block;'>U</span><span style='color: {COR_OURO} !important; font-weight: bold; display: inline-block;'>Y</span>
                 </h1>
                 <p style='font-size: 1rem; color: #FFFFFF !important; margin-top: 5px; font-weight: 500;'>{SLOGAN}</p>
             </div>
