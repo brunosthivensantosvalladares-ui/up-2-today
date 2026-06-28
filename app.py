@@ -501,9 +501,10 @@ if not st.session_state["logado"]:
                     if st.session_state.get("show_pay_login"):
                         exibir_painel_pagamento_pro("login")
 
-        else: 
+        else: # Aba Criar Conta
             with st.container(border=True):
-                st.markdown(f"<h4 style='color:{COR_AZUL}'>🚀 7 Dias Grátis</h4>", unsafe_allow_html=True)
+                # CORRIGIDO: Agora usando COR_BRONZE em vez de COR_AZUL
+                st.markdown(f"<h4 style='color:{COR_BRONZE}'>🚀 7 Dias Grátis</h4>", unsafe_allow_html=True)
                 n_emp = st.text_input("Nome da Empresa")
                 n_ema = st.text_input("E-mail Corporativo")
                 n_sen = st.text_input("Senha", type="password")
@@ -520,7 +521,6 @@ if not st.session_state["logado"]:
                         except Exception as e:
                             st.error("Este e-mail já está cadastrado.")
                     else: st.warning("Preencha todos os campos.")
-
 else:
     engine = get_engine(); inicializar_banco()
     emp_id = st.session_state["empresa"] 
