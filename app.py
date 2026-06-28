@@ -1081,7 +1081,9 @@ else:
             if not df_ind.empty:
                 df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
                 st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_OURO) 
-        st.divider(); st.markdown("**Evolução do Lead Time (Média em Dias por Mês)**")
+        st.divider(); 
+            # === GRÁFICO DE EVOLUÇÃO DO LEAD TIME ===
+        st.markdown("**Evolução do Lead Time (Média em Dias por Mês)**")
         
         try:
             # 1. Garante conversão da data
