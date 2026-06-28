@@ -291,6 +291,17 @@ st.markdown(f"""
     .logo-u {{ color: {COR_BRONZE} !important; font-weight: bold; }}
     .logo-y {{ color: {COR_OURO} !important; font-weight: bold; }}
     </style>
+    /* Adicione isto no final do seu bloco principal de CSS global */
+    .stMarkdown h2 {
+        text-align: center !important;
+        font-size: 4rem !important;
+        font-weight: bold !important;
+        margin-bottom: 0px !important;
+    }
+    
+    .stMarkdown span[data-textcolor="gold"] {
+        color: #C5A059 !important; /* A cor ouro envelhecido exata do seu logotipo */
+    }
 """, unsafe_allow_html=True)
 # --- FUNÇÃO DO PAINEL DE PAGAMENTO PROFISSIONAL ---
 def exibir_painel_pagamento_pro(origem):
