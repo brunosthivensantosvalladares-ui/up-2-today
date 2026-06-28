@@ -999,7 +999,12 @@ else:
 # Usar 'if' isolados em vez de uma cadeia de 'elif' impede que erros de blocos 
 # anteriores ecoem e quebrem o restante do arquivo.
 
-if aba_ativa == "📥 Chamados Oficina":
+# No início do arquivo, onde gerencia o session_state:
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "📥 Chamados Oficina"
+
+# E garanta que a variável que o interpretador busca receba esse valor:
+aba_ativa = st.session_state["aba_ativa"]
     c_tit, c_refresh = st.columns([0.8, 0.2])
     with c_tit: 
         st.subheader("📥 Aprovação de Chamados")
