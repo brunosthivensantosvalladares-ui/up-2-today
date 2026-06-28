@@ -1097,23 +1097,33 @@ if aba_ativa == "👥 Minha Equipe":
     st.subheader("👥 Gestão de Equipe e Acessos")
     st.info("💡 **Dica profissional:** Para editar senhas ou cargos, altere diretamente na tabela. Para excluir, marque 'Exc' e clique no botão abaixo.")
     
-    # ... O restante do código da sua tabela de equipe continua aqui embaixo ...
-    # Lembre-se de alinhar as próximas linhas deste bloco com os mesmos 4 espaços de recuo na esquerda!
-        with st.expander("➕ Novo Integrante", expanded=True):
-            with st.form("f_u", clear_on_submit=True):
-                u, s, p = st.text_input("Login"), st.text_input("Senha"), st.selectbox("Cargo", ["motorista", "admin"])
-                if st.form_submit_button("Criar Acesso"):
-                    with engine.connect() as conn:
-                        conn.execute(text("INSERT INTO usuarios (login, senha, perfil, empresa_id) VALUES (:u, :s, :p, :eid)"), {"u": u.lower(), "s": s, "p": p, "eid": emp_id})
-                        conn.commit(); st.success("Acesso criado!"); st.rerun()
-        st.divider(); st.subheader("Integrantes Cadastrados")
-        df_users = pd.read_sql(text("SELECT id, login, senha, perfil as cargo FROM usuarios WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
-        if not df_users.empty:
-            df_users['Exc'] = False
-            ed_users = st.data_editor(df_users[['Exc', 'login', 'senha', 'cargo', 'id']], hide_index=True, use_container_width=True, column_config={"id": None, "Exc": st.column_config.CheckboxColumn("Excluir", width="small"), "cargo": st.column_config.SelectboxColumn("Cargo", options=["motorista", "admin"])}, key="editor_equipe")
-            if st.button("🗑️ Excluir Selecionados da Equipe"):
-                usuarios_para_deletar = ed_users[ed_users['Exc'] == True]['id'].tolist()
-                if usuarios_para_deletar:
-                    with engine.connect() as conn:
-                        for u_id in usuarios_para_deletar: conn.execute(text("DELETE FROM usuarios WHERE id = :id"), {"id": int(u_id)})
-                        conn.commit(); st.warning("Integrantes removidos."); time_module.sleep(1); st.rerun()
+    # CORRIGIDO: Alinhado com 4 espaços de recuo base para o expander
+    with st.expander("➕ Novo Integrante", expanded=True):
+        with st.form("f_u", clear_on_submit=True):
+            u, s, p = st.text_input("Login"), st.text_input("Senha"), st.selectbox("Cargo", ["motorista", "admin"])
+            if st.form_submit_button("Criar Acesso"):
+                with engine.connect() as conn:
+                    conn.execute(text("INSERT INTO usuarios (login, senha, perfil, empresa_id) VALUES (:u, :s, :p, :eid)"), {"u": u.lower(), "s": s, "p": p, "eid": emp_id})
+                    conn.commit()
+                st.success("Acesso criado!")
+                st.rerun()
+                
+    st.divider()
+    st.subheader("Integrantes Cadastrados")
+    
+    df_users = pd.read_sql(text("SELECT id, login, senha, perfil as cargo FROM usuarios WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
+    
+    if not df_users.empty:
+        df_users['Exc'] = False
+        ed_users = st.data_editor(df_users[['Exc', 'login', 'senha', 'cargo', 'id']], hide_index=True, use_container_width=True, column_config={"id": None, "Exc": st.column_config.CheckboxColumn("Excluir", width="small"), "cargo": st.column_config.SelectboxColumn("Cargo", options=["motorista", "admin"])}, key="editor_equipe")
+        
+        if st.button("🗑️ Excluir Selecionados da Equipe"):
+            usuarios_para_deletar = ed_users[ed_users['Exc'] == True]['id'].tolist()
+            if usuarios_para_deletar:
+                with engine.connect() as conn:
+                    for u_id in usuarios_para_deletar: 
+                        conn.execute(text("DELETE FROM usuarios WHERE id = :id"), {"id": int(u_id)})
+                    conn.commit()
+                st.warning("Integrantes removidos.")
+                time_module.sleep(1)
+                st.rerun()
