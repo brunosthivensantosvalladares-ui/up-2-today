@@ -430,9 +430,9 @@ if not st.session_state["logado"]:
         placeholder_topo = st.empty()
         
         # =====================================================================
-        # CÓDIGO DO CABEÇALHO PURIFICADO - VOLTANDO O SLOGAN ORIGINAL
+        # CABEÇALHO DO LOGIN DEFINITIVO - SLOGAN ORIGINAL RESTAURADO
         # =====================================================================
-        placeholder_topo.markdown("<h1 class='titulo-dourado'>UY</h1>", unsafe_allow_html=True)
+        placeholder_topo.markdown("<p class='texto-u-y-dourado'>UY</p>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
         # =====================================================================
         
