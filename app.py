@@ -1082,26 +1082,26 @@ else:
                 df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
                 st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_OURO) 
         st.divider(); st.markdown("**Evolução do Lead Time (Média em Dias por Mês)**")
+        
+        try:
+            # 1. Garante conversão da data
+            df_ind['data_dt'] = pd.to_datetime(df_ind['data'])
+            # 2. Cria agrupamento por Ano-Mês
+            df_ind['Mês'] = df_ind['data_dt'].dt.to_period('M').astype(str)
+            
+            if 'lead_time' in df_ind.columns:
+                df_lead_time = df_ind.groupby('Mês')['lead_time'].mean().reset_index()
+                df_lead_time = df_lead_time.set_index('Mês')
+                st.line_chart(df_lead_time, color="#C5A059")
+            else:
+                st.warning("Coluna de cálculo de 'lead_time' não encontrada.")
+        except Exception as e:
+            st.error(f"Erro ao processar gráfico de evolução: {e}")
+            
+        # =====================================================================
 
-# 1. Garante que a coluna de data esteja no formato correto de datetime
-df_ind['data_dt'] = pd.to_datetime(df_ind['data'])
-
-# 2. Cria uma coluna representando o Ano-Mês (Ex: 2026-06) para agrupamento
-df_ind['Mês'] = df_ind['data_dt'].dt.to_period('M').astype(str)
-
-# 3. Agrupa por mês e calcula a média do Lead Time (substitua 'lead_time' pelo nome exato da sua coluna se for diferente)
-if 'lead_time' in df_ind.columns:
-    df_lead_time = df_ind.groupby('Mês')['lead_time'].mean().reset_index()
-    
-    # Define o Mês como índice para o Streamlit plotar o eixo X corretamente
-    df_lead_time = df_lead_time.set_index('Mês')
-    
-    # 4. Renderiza o gráfico de linha para mostrar a evolução temporal com a cor dourada da marca
-    st.line_chart(df_lead_time, color="#C5A059")
-else:
-    st.warning("Coluna de cálculo de 'lead_time' não encontrada no conjunto de dados.")
-
-    elif aba_ativa == "👥 Minha Equipe":
+# Certifique-se de que o elif abaixo está no mesmo nível de alinhamento (identação) do bloco de indicadores principal
+elif aba_ativa == "👥 Minha Equipe":
         st.subheader("👥 Gestão de Equipe e Acessos")
         st.info("💡 **Dica profissional:** Para editar senhas ou cargos, altere diretamente na tabela. Para excluir, marque 'Exc' e clique no botão abaixo.")
         with st.expander("➕ Novo Integrante", expanded=True):
