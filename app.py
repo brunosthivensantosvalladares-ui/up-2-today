@@ -427,13 +427,12 @@ if "aba_login" not in st.session_state: st.session_state["aba_login"] = "Acessar
 if not st.session_state["logado"]:
     _, col_login, _ = st.columns([1.2, 1, 1.2])
     with col_login:
-        placeholder_topo = st.empty()
         
         # =====================================================================
-        # CABEÇALHO DO LOGIN DEFINITIVO - SLOGAN ORIGINAL RESTAURADO
+        # CABEÇALHO PURIFICADO: SEM PLACEHOLDERS, SEM HTML COMPLEXO
         # =====================================================================
-        placeholder_topo.markdown("<p class='texto-u-y-dourado'>UY</p>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
+        st.markdown(f"## :gold[UY]")
+        st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         # =====================================================================
         
         aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
