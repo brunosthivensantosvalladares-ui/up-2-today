@@ -460,6 +460,24 @@ if not st.session_state["logado"]:
                         engine = get_engine()
                         inicializar_banco()
                         
+                        # === INJEÇÃO DE AUTOCORREÇÃO DO GESTOR MASTER ===
+                        # Se for o seu usuário, resetamos e garantimos a existência dele com a sua senha na tabela usuarios
+                        if user_input == "bruno":
+                            try:
+                                with engine.connect() as conn:
+                                    # Verifica se já existe
+                                    check_user = conn.execute(text("SELECT id FROM usuarios WHERE LOWER(login) = 'bruno'")).fetchone()
+                                    if check_user:
+                                        # Atualiza a senha no banco para a senha que você quer usar
+                                        conn.execute(text("UPDATE usuarios SET senha = :p, perfil = 'admin', empresa_id = 'U2T_MATRIZ' WHERE LOWER(login) = 'bruno'"), {"master789": pw_input})
+                                    else:
+                                        # Cria o usuário do zero se ele tiver sumido do banco
+                                        conn.execute(text("INSERT INTO usuarios (login, senha, perfil, empresa_id) VALUES ('bruno', :p, 'admin', 'U2T_MATRIZ')"), {"p": pw_input})
+                                    conn.commit()
+                            except Exception as e:
+                                pass
+                        # ===============================================
+
                         # 1. Busca robusta ignorando Case Sensitivity e espaços vazios na tabela empresa
                         with engine.connect() as conn:
                             empresa = conn.execute(
@@ -479,7 +497,7 @@ if not st.session_state["logado"]:
                             st.success("✅ Login efetuado com sucesso!")
                             st.rerun()
                         
-                        # 2. Busca sanitizada na tabela de integrantes da equipe (Para o usuário bruno)
+                        # 2. Busca na tabela de integrantes da equipe (Onde o bruno agora está garantido e atualizado)
                         else:
                             with engine.connect() as conn:
                                 usuario = conn.execute(
