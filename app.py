@@ -1071,40 +1071,63 @@ else:
         else: st.info("Nenhum chamado pendente no momento.")
 
     elif aba_ativa == "📊 Indicadores":
-        st.subheader("📊 Painel de Performance Operacional")
-        st.info("💡 **Dica:** Utilize esses dados para identificar gargalos e planejar a capacidade da oficina.")
-        c1, c2 = st.columns(2)
-        df_ind = pd.read_sql(text("SELECT area, realizado FROM tarefas WHERE empresa_id = :eid"), engine, params={"eid": emp_id})
-        with c1:
-            st.markdown("**Serviços por Área**"); st.bar_chart(df_ind['area'].value_counts(), color=COR_OURO) 
-        with c2: 
-            if not df_ind.empty:
-                df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
-                st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_OURO) 
-        st.divider(); 
-            # === GRÁFICO DE EVOLUÇÃO DO LEAD TIME ===
-        st.markdown("**Evolução do Lead Time (Média em Dias por Mês)**")
-        
+    st.subheader("📊 Painel de Performance Operacional")
+    st.info("💡 **Dica:** Utilize esses dados para identificar gargalos e planejar a capacidade da oficina.")
+    
+    # CORREÇÃO 1: SELECT alterado para trazer as colunas de data e horários necessários para o Lead Time
+    query_ind = text("SELECT area, realizado, data, inicio_disp, fim_disp FROM tarefas WHERE empresa_id = :eid")
+    df_ind = pd.read_sql(query_ind, engine, params={"eid": emp_id})
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**Serviços por Área**")
+        if not df_ind.empty:
+            st.bar_chart(df_ind['area'].value_counts(), color=COR_OURO) 
+        else:
+            st.caption("Nenhum dado encontrado.")
+            
+    with c2: 
+        if not df_ind.empty:
+            df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
+            st.markdown("**Status de Conclusão**")
+            st.bar_chart(df_st, color=COR_OURO) 
+            
+    st.divider() 
+    
+    # === GRÁFICO DE EVOLUÇÃO DO LEAD TIME ===
+    st.markdown("**Evolução do Lead Time (Média de Horas de Atendimento por Mês)**")
+    
+    if not df_ind.empty:
         try:
-            # 1. Garante conversão da data
-            df_ind['data_dt'] = pd.to_datetime(df_ind['data'])
-            # 2. Cria agrupamento por Ano-Mês
+            # Garante a conversão da data base para formato temporal
+            df_ind['data_dt'] = pd.to_datetime(df_ind['data'], errors='coerce')
             df_ind['Mês'] = df_ind['data_dt'].dt.to_period('M').astype(str)
             
-            if 'lead_time' in df_ind.columns:
-                df_lead_time = df_ind.groupby('Mês')['lead_time'].mean().reset_index()
+            # CORREÇÃO 2: Cálculo dinâmico do Lead Time (Diferença em horas entre fim_disp e inicio_disp)
+            df_ind['h_inicio'] = pd.to_timedelta(df_ind['inicio_disp'] + ':00', errors='coerce')
+            df_ind['h_fim'] = pd.to_timedelta(df_ind['fim_disp'] + ':00', errors='coerce')
+            
+            # Calcula a diferença absoluta em horas de atendimento na oficina
+            df_ind['lead_time_horas'] = (df_ind['h_fim'] - df_ind['h_inicio']).dt.total_seconds() / 3600
+            
+            # Filtra valores inválidos ou negativos de horários lançados incorretamente
+            df_valid = df_ind[df_ind['lead_time_horas'] >= 0]
+            
+            if not df_valid.empty:
+                df_lead_time = df_valid.groupby('Mês')['lead_time_horas'].mean().reset_index()
                 df_lead_time = df_lead_time.set_index('Mês')
                 st.line_chart(df_lead_time, color="#C5A059")
             else:
-                st.warning("Coluna de cálculo de 'lead_time' não encontrada.")
+                st.warning("Aguardando registros com horários de início e fim válidos para calcular o Lead Time.")
+                
         except Exception as e:
             st.error(f"Erro ao processar gráfico de evolução: {e}")
-            
-        # =====================================================================
+    else:
+        st.warning("Sem dados de tarefas disponíveis para calcular indicadores de evolução.")
 
-# Certifique-se de que o elif abaixo está no mesmo nível de alinhamento (identação) do bloco de indicadores principal
+# CORREÇÃO 3: Alinhamento exato de espaços (identação) para evitar o SyntaxError nas abas seguintes
 elif aba_ativa == "👥 Minha Equipe":
-        st.subheader("👥 Gestão de Equipe e Acessos")
+    st.subheader("👥 Gestão de Equipe e Acessos")
         st.info("💡 **Dica profissional:** Para editar senhas ou cargos, altere diretamente na tabela. Para excluir, marque 'Exc' e clique no botão abaixo.")
         with st.expander("➕ Novo Integrante", expanded=True):
             with st.form("f_u", clear_on_submit=True):
