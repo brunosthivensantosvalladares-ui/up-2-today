@@ -460,22 +460,45 @@ if not st.session_state["logado"]:
                         engine = get_engine()
                         inicializar_banco()
                         
-                        # Consulta direta e simples na tabela empresa
+                        # 1. Tenta logar como Administrador Dono (Tabela Empresa)
                         with engine.connect() as conn:
                             empresa = conn.execute(
-                                text("SELECT nome, senha FROM empresa WHERE LOWER(email) = :u OR LOWER(nome) = :u"), 
+                                text("""
+                                    SELECT nome, senha FROM empresa 
+                                    WHERE LOWER(TRIM(email)) = LOWER(TRIM(:u)) 
+                                       OR LOWER(TRIM(nome)) = LOWER(TRIM(:u))
+                                """), 
                                 {"u": user_input}
                             ).fetchone()
                         
-                        if empresa and empresa[1] == pw_input:
+                        if empresa and empresa[1].strip() == pw_input:
                             st.session_state["logado"] = True
                             st.session_state["empresa"] = empresa[0]
                             st.session_state["perfil"] = "admin"
-                            st.session_state["usuario_ativo"] = "bruno"
+                            st.session_state["usuario_ativo"] = user_input
                             st.success("✅ Login efetuado com sucesso!")
                             st.rerun()
+                        
+                        # 2. Se não achou na empresa, tenta na tabela de usuários integrantes
                         else:
-                            st.error("❌ Usuário ou senha incorretos.")
+                            with engine.connect() as conn:
+                                usuario = conn.execute(
+                                    text("""
+                                        SELECT empresa_id, perfil, senha FROM usuarios 
+                                        WHERE LOWER(TRIM(login)) = LOWER(TRIM(:u))
+                                    """), 
+                                    {"u": user_input}
+                                ).fetchone()
+                                
+                            if usuario and usuario[2].strip() == pw_input:
+                                st.session_state["logado"] = True
+                                st.session_state["empresa"] = usuario[0]
+                                st.session_state["perfil"] = usuario[1]
+                                st.session_state["usuario_ativo"] = user_input
+                                st.success("✅ Login efetuado com sucesso!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Usuário ou senha incorretos.")
                     else:
                         st.warning("⚠️ Preencha todos os campos para acessar.")
                     
@@ -536,7 +559,7 @@ else:
         st.session_state.opcao_selecionada = target
         st.session_state.radio_key += 1 
 
-# 1. BARRA LATERAL
+    # 1. BARRA LATERAL
     with st.sidebar:
         # LOGOTIPO COM TAMANHO AMPLIADO PARA PREENCHER A SIDEBAR BRANCA
         _, col_img, _ = st.columns([0.05, 0.9, 0.05]) # Ajustado o espaçamento das colunas laterais
@@ -564,6 +587,7 @@ else:
         if st.button("Sair da Conta", type="primary"): 
             st.session_state["logado"] = False
             st.rerun()
+
     # 2. BOTÕES DE ABA NO TOPO
     cols = st.columns(len(opcoes))
     for i, nome in enumerate(opcoes):
@@ -637,7 +661,7 @@ else:
                     type="primary"
                 )
             except:
-                st.error("Erro ao gerar o arquivo PDF. Verifique a codificação dos textos.")
+                st.error("Erro ao generate o arquivo PDF. Verifique a codificação dos textos.")
 
         st.divider()
         col_m1, col_m2 = st.columns(2)
@@ -884,10 +908,10 @@ else:
                         if st.button("❌", key="close_assist"):
                             st.session_state.exibir_bot = False
                             st.rerun()
-            else:
-                if st.button("🔔 Ver Pendências"):
-                    st.session_state.exibir_bot = True
-                    st.rerun()
+        else:
+            if st.button("🔔 Ver Pendências"):
+                st.session_state.exibir_bot = True
+                st.rerun()
 
         st.divider()
         st.info("✍️ **Logística:** Clique nas colunas de **Início** ou **Fim** para preencher. **PCM:** Clique em **Área** ou **Executor** para definir. O salvamento é automático.")
@@ -939,7 +963,7 @@ else:
                                 "executor": st.column_config.TextColumn("Executor"),
                                 "id_chamado": None
                             }, 
-hide_index=False, use_container_width=True, key=f"ed_ted_{d}_{area}"
+                            hide_index=False, use_container_width=True, key=f"ed_ted_{d}_{area}"
                         )
 
                         if not edited_df.equals(df_editor_base[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']]):
@@ -962,8 +986,7 @@ hide_index=False, use_container_width=True, key=f"ed_ted_{d}_{area}"
                                         except: pass
                                 conn.commit()
                             st.toast("Alteração salva!", icon="✅")
-                            time_module.sleep(0.5)
-                            st.rerun()
+                            time_module.sleep(0.5); st.rerun()
 
     elif aba_ativa == "📋 Cadastro Direto":
         st.subheader("📝 Agendamento Direto")
@@ -1044,29 +1067,29 @@ hide_index=False, use_container_width=True, key=f"ed_ted_{d}_{area}"
                     del st.session_state.df_ap_work
                 st.rerun()
             
-    st.info("💡 Preencha os campos e marque 'Aprovar' na última coluna para enviar à agenda.")
-    
-    df_p = pd.read_sql(text("SELECT id, data_solicitacao, motorista, prefixo, descricao FROM chamados WHERE status = 'Pendente' AND empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
-    
-    if not df_p.empty:
-        if 'df_ap_work' not in st.session_state:
-            df_p['Executor'], df_p['Area_Destino'], df_p['Data_Programada'], df_p['Inicio'], df_p['Fim'], df_p['Aprovar'] = "", "Mecânica", datetime.now().date(), "00:00", "00:00", False
-            st.session_state.df_ap_work = df_p
-            
-        ed_c = st.data_editor(st.session_state.df_ap_work, hide_index=True, use_container_width=True, column_config={"data_solicitacao": "Aberto em", "motorista": "Solicitante", "Data_Programada": st.column_config.DateColumn("Data Programada"), "Area_Destino": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS), "Aprovar": st.column_config.CheckboxColumn("Aprovar?"), "id": None}, key="editor_chamados")
+        st.info("💡 Preencha os campos e marque 'Aprovar' na última coluna para enviar à agenda.")
         
-        if st.button("Processar Agendamentos", type="primary", key="btn_proc_agendamentos"):
-            selecionados = ed_c[ed_c['Aprovar'] == True]
-            if not selecionados.empty:
-                with engine.connect() as conn:
-                    for _, r in selecionados.iterrows():
-                        v_os = obter_proxima_os(engine, emp_id)
-                        conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem, empresa_id, numero_os) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, 'Não definido', :ic, 'Chamado', :eid, :nos)"), 
+        df_p = pd.read_sql(text("SELECT id, data_solicitacao, motorista, prefixo, descricao FROM chamados WHERE status = 'Pendente' AND empresa_id = :eid ORDER BY id DESC"), engine, params={"eid": emp_id})
+        
+        if not df_p.empty:
+            if 'df_ap_work' not in st.session_state:
+                df_p['Executor'], df_p['Area_Destino'], df_p['Data_Programada'], df_p['Inicio'], df_p['Fim'], df_p['Aprovar'] = "", "Mecânica", datetime.now().date(), "00:00", "00:00", False
+                st.session_state.df_ap_work = df_p
+                
+            ed_c = st.data_editor(st.session_state.df_ap_work, hide_index=True, use_container_width=True, column_config={"data_solicitacao": "Aberto em", "motorista": "Solicitante", "Data_Programada": st.column_config.DateColumn("Data Programada"), "Area_Destino": st.column_config.SelectboxColumn("Área", options=ORDEM_AREAS), "Aprovar": st.column_config.CheckboxColumn("Aprovar?"), "id": None}, key="editor_chamados")
+            
+            if st.button("Processar Agendamentos", type="primary", key="btn_proc_agendamentos"):
+                selecionados = ed_c[ed_c['Aprovar'] == True]
+                if not selecionados.empty:
+                    with engine.connect() as conn:
+                        for _, r in selecionados.iterrows():
+                            v_os = obter_proxima_os(engine, emp_id)
+                            conn.execute(text("INSERT INTO tarefas (data, executor, prefixo, inicio_disp, fim_disp, descricao, area, turno, id_chamado, origem, empresa_id, numero_os) VALUES (:dt, :ex, :pr, :ti, :tf, :ds, :ar, 'Não definido', :ic, 'Chamado', :eid, :nos)"), 
                                          {"dt": str(r['Data_Programada']), "ex": r['Executor'], "pr": r['prefixo'], "ti": r['Inicio'], "tf": r['Fim'], "ds": r['descricao'], "ar": r['Area_Destino'], "ic": r['id'], "eid": emp_id, "nos": v_os})
-                        conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
-                    conn.commit()
-                st.success("✅ Agendamentos processados!")
-                st.rerun()
+                            conn.execute(text("UPDATE chamados SET status = 'Agendado' WHERE id = :id"), {"id": r['id']})
+                        conn.commit()
+                    st.success("✅ Agendamentos processados!")
+                    st.rerun()
         else: 
             st.info("Nenhum chamado pendente no momento.")
 
