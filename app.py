@@ -1091,7 +1091,7 @@ else:
             with col_m1: st.metric("Lead Time Médio", f"{df_lead['dias'].mean():.1f} Dias")
             with col_m2:
                 df_ev = df_lead.groupby('data_conclusao')['dias'].mean().reset_index()
-                st.line_chart(df_ev.set_index('data_conclusao'), color=COR_VERDE)
+                st.line_chart(df_ev.set_index('data_conclusao'), color=COR_OURO)
 
     elif aba_ativa == "👥 Minha Equipe":
         st.subheader("👥 Gestão de Equipe e Acessos")
