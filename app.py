@@ -1075,14 +1075,14 @@ elif aba_ativa == "📊 Indicadores":
         
         if not df_ind.empty:
             try:
-                # Conversão segura de datas
-                df_ind['data_dt'] = pd.to_datetime(df_ind['data'], errors='coerce')
-                df_ind['Mês'] = df_ind['data_dt'].dt.to_period('M').astype(str)
-                
-                # Cálculo do tempo de atendimento em horas
-                df_ind['h_inicio'] = pd.to_timedelta(df_ind['inicio_disp'] + ':00', errors='coerce')
-                df_ind['h_fim'] = pd.to_timedelta(df_ind['fim_disp'] + ':00', errors='coerce')
-                df_ind['lead_time_horas'] = (df_ind['h_fim'] - df_ind['h_inicio']).dt.total_seconds() / 3600
+                   # Conversão segura de datas
+                    df_ind['data_dt'] = pd.to_datetime(df_ind['data'], errors='coerce')
+                    df_ind['Mês'] = df_ind['data_dt'].dt.to_period('M').astype(str)
+                    
+                    # Cálculo do tempo de atendimento em horas (alinhado com 16 espaços)
+                    df_ind['h_inicio'] = pd.to_timedelta(df_ind['inicio_disp'] + ':00', errors='coerce')
+                    df_ind['h_fim'] = pd.to_timedelta(df_ind['fim_disp'] + ':00', errors='coerce')
+                    df_ind['lead_time_horas'] = (df_ind['h_fim'] - df_ind['h_inicio']).dt.total_seconds() / 3600
                 
                 # Filtra registros válidos (ignora negativos ou erros de digitação)
                 df_valid = df_ind[df_ind['lead_time_horas'] >= 0]
