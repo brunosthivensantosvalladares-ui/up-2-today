@@ -287,9 +287,7 @@ st.markdown(f"""
         background: {COR_BRONZE} !important;
     }}
 
-    /* ... regras anteriores do CSS ... */
-
-    /* ESTILIZAÇÃO DA NOVA SIGLA UY */
+    /* REGRA DO CSS ANTERIOR (FECHAMENTO SEGURO) */
     .logo-u { color: #4A3C31 !important; font-weight: bold; }
     .logo-y { color: #C5A059 !important; font-weight: bold; }
 
@@ -306,19 +304,20 @@ st.markdown(f"""
     }
     </style>
 """, unsafe_allow_html=True)
+
 # --- FUNÇÃO DO PAINEL DE PAGAMENTO PROFISSIONAL ---
 def exibir_painel_pagamento_pro(origem):
     with st.container(border=True):
         st.markdown(f"""
             <div style='text-align: center; color: #31333F;'>
-                <h2 style='color: {COR_AZUL};'>💼 Pacote Up 2 Today Pro</h2>
-                <p style='font-size: 1.4rem; font-weight: bold; color: {COR_VERDE}; margin-bottom: 5px;'>R$ 299,00 / mês</p>
+                <h2 style='color: {COR_BRONZE};'>💼 Pacote Pro - {NOME_SISTEMA}</h2>
+                <p style='font-size: 1.4rem; font-weight: bold; color: {COR_OURO}; margin-bottom: 5px;'>R$ 299,00 / mês</p>
                 <p style='font-style: italic; font-size: 0.9rem;'>Gestão completa para frotas que não podem parar.</p>
                 <div style='text-align: left; background-color: #f0f2f6; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #ddd;'>
                     <p>✅ <b>Gestão Master:</b> Agenda e Cadastro de Manutenções ilimitados.</p>
                     <p>✅ <b>Equipe Total:</b> Acessos para motoristas e administradores sem limites.</p>
                     <p>✅ <b>Indicadores Inteligentes:</b> Gráficos de performance e Lead Time real.</p>
-                    <p>✅ <b>Relatórios Ilimitados:</b> Exportação profissional in PDF e Excel.</p>
+                    <p>✅ <b>Relatórios Ilimitados:</b> Exportação profissional em PDF e Excel.</p>
                 </div>
                 <p>Escaneie o QR Code abaixo no app do seu banco:</p>
             </div>
@@ -389,17 +388,17 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
     pdf.add_page()
     
     pdf.set_font("Arial", "B", 22)
-    pdf.set_text_color(27, 34, 76) 
+    pdf.set_text_color(74, 60, 49) 
     pdf.cell(6, 10, "U", ln=0)     
-    pdf.set_text_color(49, 173, 100) 
-    pdf.cell(40, 10, "2T", ln=0)
+    pdf.set_text_color(197, 160, 89) 
+    pdf.cell(40, 10, "1Y", ln=0)
     
     pdf.set_font("Arial", "I", 8)
     pdf.set_text_color(120, 120, 120)
     pdf.cell(144, 10, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=1, align="R")
     
     pdf.set_font("Arial", "B", 14)
-    pdf.set_text_color(27, 34, 76)
+    pdf.set_text_color(74, 60, 49)
     pdf.cell(190, 10, f"RELATORIO DE MANUTENCAO - {NOME_SISTEMA.upper()}", ln=True, align="C")
     
     pdf.set_font("Arial", "", 10)
@@ -415,7 +414,7 @@ def gerar_pdf_periodo(df_periodo, data_inicio, data_fim):
         for area in ORDEM_AREAS:
             df_area = df_periodo[(df_periodo['data'] == d_process) & (df_periodo['area'] == area)]
             if not df_area.empty:
-                pdf.set_font("Arial", "B", 9); pdf.set_text_color(49, 173, 100)
+                pdf.set_font("Arial", "B", 9); pdf.set_text_color(197, 160, 89)
                 pdf.cell(190, 7, f" Setor: {area}", ln=True)
                 
                 pdf.set_font("Arial", "B", 8); pdf.set_text_color(50); pdf.set_fill_color(230, 230, 230)
@@ -443,10 +442,10 @@ if not st.session_state["logado"]:
     with col_login:
         
         # =====================================================================
-        # CABEÇALHO PURIFICADO: SEM PLACEHOLDERS, SEM HTML COMPLEXO
+        # CABEÇALHO LIMPO: EM PARÁGRAFO PARA ADOTAR O DOURADO SEM BUG DE ALINHAMENTO
         # =====================================================================
-        st.markdown(f"## :gold[UY]")
-        st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
+        st.markdown("<p class='login-brand-title'>UY</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
         # =====================================================================
         
         aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
