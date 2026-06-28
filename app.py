@@ -297,8 +297,8 @@ st.markdown("""
     .logo-y { color: #C5A059 !important; font-weight: bold; }
     .login-brand-title {
         text-align: center !important;
-        color: #C5A059 !important;
-        font-size: 3.8rem !important;
+        color: #C5A059 !important; 
+        font-size: 2.8rem !important; /* Tamanho reduzido para melhor equilíbrio */
         font-weight: 900 !important;
         margin-bottom: 0px !important;
         margin-top: 10px !important;
