@@ -444,12 +444,9 @@ if not st.session_state["logado"]:
     _, col_login, _ = st.columns([1.2, 1, 1.2])
     with col_login:
         
-        # =====================================================================
-        # CABEÇALHO PURIFICADO OPERACIONAL
-        # =====================================================================
+        # Cabeçalho da marca UY
         st.markdown("<p class='login-brand-title'>UY</p>", unsafe_allow_html=True)
         st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
-        # =====================================================================
         
         aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
         
@@ -462,52 +459,14 @@ if not st.session_state["logado"]:
                     engine = get_engine()
                     inicializar_banco()
                     
-                    masters = {
-                        "bruno": {"pw": "master789", "perfil": "admin", "empresa": "U2T_MATRIZ", "login_original": "bruno"},
-                        "motorista": {"pw": "12345", "perfil": "motorista", "empresa": "U2T_MATRIZ", "login_original": "motorista_padrao"}
-                    }
-                    
-                    logado_agora = False
-                    if user_input in masters and masters[user_input]["pw"] == pw_input:
-                        st.session_state.update({"logado": True, "perfil": masters[user_input]["perfil"], "empresa": masters[user_input]["empresa"], "usuario_ativo": masters[user_input]["login_original"]})
-                        logado_agora = True
-                    else:
-                        with engine.connect() as conn:
-                            res = conn.execute(text("SELECT nome, email, senha, data_expiracao, status_assinatura FROM empresa WHERE LOWER(email) = :u OR LOWER(nome) = :u"), {"u": user_input}).fetchone()
-                            if res and res[2] == pw_input:
-                                hoje = datetime.now().date()
-                                if res[3] < hoje and res[4] != 'ativo':
-                                    st.session_state["erro_bloqueio"] = True
-                                    st.session_state["msg_bloqueio"] = f"⚠️ Acesso bloqueado: Período de teste expirado em {res[3].strftime('%d/%m/%Y')}."
-                                else:
-                                    st.session_state.update({"logado": True, "perfil": "admin", "empresa": res[0], "usuario_ativo": res[0]})
-                                    logado_agora = True
-                            else:
-                                u_eq = conn.execute(text("SELECT login, senha, perfil, empresa_id FROM usuarios WHERE LOWER(login) = :u"), {"u": user_input}).fetchone()
-                                if u_eq and u_eq[1] == pw_input:
-                                    st.session_state.update({"logado": True, "perfil": u_eq[2], "empresa": u_eq[3], "usuario_ativo": u_eq[0]})
-                                    logado_agora = True
-                    
-                    if logado_agora:
-                        st.rerun()
-                    elif not st.session_state.get("erro_bloqueio"):
-                        st.error("Dados incorretos.")
-
-                if st.session_state.get("erro_bloqueio"):
-                    st.error(st.session_state["msg_bloqueio"])
-                    if st.button("Renove agora a sua assinatura", use_container_width=True, key="renov_btn_login"):
-                        st.session_state["show_pay_login"] = True
-                    
-                    if st.session_state.get("show_pay_login"):
-                        exibir_painel_pagamento_pro("login")
-
-else: # Aba Criar Conta
+        elif aba == "Criar Conta":
             with st.container(border=True):
-                # CORRIGIDO: Trocado COR_AZUL por COR_BRONZE para eliminar o NameError
+                # CORRIGIDO: Agora usando COR_BRONZE de forma segura para evitar NameError
                 st.markdown(f"<h4 style='color:{COR_BRONZE}'>🚀 7 Dias Grátis</h4>", unsafe_allow_html=True)
                 n_emp = st.text_input("Nome da Empresa")
                 n_ema = st.text_input("E-mail Corporativo")
                 n_sen = st.text_input("Senha", type="password")
+                
                 if st.button("Criar minha conta agora", use_container_width=True, type="primary"):
                     if n_emp and n_ema and n_sen:
                         try:
@@ -520,7 +479,8 @@ else: # Aba Criar Conta
                             st.success("✅ Conta criada! Agora faça login na aba 'Acessar'.")
                         except Exception as e:
                             st.error("Este e-mail já está cadastrado.")
-                    else: st.warning("Preencha todos os campos.")
+                    else:
+                        st.warning("Preencha todos os campos.")
 else:
     engine = get_engine(); inicializar_banco()
     emp_id = st.session_state["empresa"] 
