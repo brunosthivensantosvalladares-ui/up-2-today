@@ -452,20 +452,55 @@ if not st.session_state["logado"]:
         
         if aba == "Acessar":
             with st.container(border=True):
-                user_input = st.text_input("E-mail ou Usuário", key="u_log").lower()
-                pw_input = st.text_input("Senha", type="password", key="p_log")
+                user_input = st.text_input("E-mail ou Usuário", key="u_log").lower().strip()
+                pw_input = st.text_input("Senha", type="password", key="p_log").strip()
                 
                 if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
-                    engine = get_engine()
-                    inicializar_banco()
+                    if user_input and pw_input:
+                        engine = get_engine()
+                        inicializar_banco()
+                        
+                        # 1. Tenta logar como Administrador (Tabela Empresa)
+                        with engine.connect() as conn:
+                            empresa = conn.execute(
+                                text("SELECT nome, senha FROM empresa WHERE LOWER(email) = :u OR LOWER(nome) = :u"), 
+                                {"u": user_input}
+                            ).fetchone()
+                        
+                        if empresa and empresa[1] == pw_input:
+                            st.session_state["logado"] = True
+                            st.session_state["empresa"] = empresa[0]
+                            st.session_state["perfil"] = "admin"
+                            st.session_state["usuario_ativo"] = user_input
+                            st.success("✅ Login efetuado com sucesso!")
+                            st.rerun()
+                        
+                        # 2. Se não achou na empresa, tenta na tabela de Usuários Integrantes (Equipe)
+                        else:
+                            with engine.connect() as conn:
+                                usuario = conn.execute(
+                                    text("SELECT empresa_id, perfil, senha FROM usuarios WHERE LOWER(login) = :u"), 
+                                    {"u": user_input}
+                                ).fetchone()
+                            
+                            if usuario and usuario[2] == pw_input:
+                                st.session_state["logado"] = True
+                                st.session_state["empresa"] = usuario[0]
+                                st.session_state["perfil"] = usuario[1]
+                                st.session_state["usuario_ativo"] = user_input
+                                st.success("✅ Login efetuado com sucesso!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Usuário ou senha incorretos.")
+                    else:
+                        st.warning("⚠️ Preencha todos os campos para acessar.")
                     
         elif aba == "Criar Conta":
             with st.container(border=True):
-                # CORRIGIDO: Agora usando COR_BRONZE de forma segura para evitar NameError
                 st.markdown(f"<h4 style='color:{COR_BRONZE}'>🚀 7 Dias Grátis</h4>", unsafe_allow_html=True)
-                n_emp = st.text_input("Nome da Empresa")
-                n_ema = st.text_input("E-mail Corporativo")
-                n_sen = st.text_input("Senha", type="password")
+                n_emp = st.text_input("Nome da Empresa").strip()
+                n_ema = st.text_input("E-mail Corporativo").lower().strip()
+                n_sen = st.text_input("Senha", type="password").strip()
                 
                 if st.button("Criar minha conta agora", use_container_width=True, type="primary"):
                     if n_emp and n_ema and n_sen:
