@@ -920,10 +920,10 @@ else:
                                 "executor": st.column_config.TextColumn("Executor"),
                                 "id_chamado": None
                             }, 
-                            hide_index=False, use_container_width=True, key=f"ed_ted_{d}_{area}"
+hide_index=False, use_container_width=True, key=f"ed_ted_{d}_{area}"
                         )
 
-if not edited_df.equals(df_editor_base[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']]):
+                        if not edited_df.equals(df_editor_base[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']]):
                             with engine.connect() as conn:
                                 for row_id, row in edited_df.iterrows():
                                     conn.execute(text("""
@@ -945,6 +945,7 @@ if not edited_df.equals(df_editor_base[['realizado', 'area', 'turno', 'prefixo',
                             st.toast("Alteração salva!", icon="✅")
                             time_module.sleep(0.5)
                             st.rerun()
+
     elif aba_ativa == "📋 Cadastro Direto":
         st.subheader("📝 Agendamento Direto")
         with st.popover("💡 Como usar o Cadastro Direto?"):
