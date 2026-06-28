@@ -923,7 +923,7 @@ else:
                             hide_index=False, use_container_width=True, key=f"ed_ted_{d}_{area}"
                         )
 
-                        if not edited_df.equals(df_editor_base[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']]):
+if not edited_df.equals(df_editor_base[['realizado', 'area', 'turno', 'prefixo', 'inicio_disp', 'fim_disp', 'executor', 'descricao', 'id_chamado']]):
                             with engine.connect() as conn:
                                 for row_id, row in edited_df.iterrows():
                                     conn.execute(text("""
@@ -941,11 +941,10 @@ else:
                                     if row['realizado'] and pd.notnull(row['id_chamado']):
                                         try: conn.execute(text("UPDATE chamados SET status = 'Concluído' WHERE id = :ic"), {"ic": int(row['id_chamado'])})
                                         except: pass
-conn.commit()
+                                conn.commit()
                             st.toast("Alteração salva!", icon="✅")
                             time_module.sleep(0.5)
                             st.rerun()
-
     elif aba_ativa == "📋 Cadastro Direto":
         st.subheader("📝 Agendamento Direto")
         with st.popover("💡 Como usar o Cadastro Direto?"):
