@@ -450,7 +450,7 @@ if not st.session_state["logado"]:
         
         aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
         
-        if aba == "Acessar":
+if aba == "Acessar":
             with st.container(border=True):
                 user_input = st.text_input("E-mail ou Usuário", key="u_log").lower().strip()
                 pw_input = st.text_input("Senha", type="password", key="p_log").strip()
@@ -460,7 +460,7 @@ if not st.session_state["logado"]:
                         engine = get_engine()
                         inicializar_banco()
                         
-                        # 1. Tenta logar como Administrador (Tabela Empresa)
+                        # 1. Tenta logar como Administrador Dono (Tabela Empresa)
                         with engine.connect() as conn:
                             empresa = conn.execute(
                                 text("SELECT nome, senha FROM empresa WHERE LOWER(email) = :u OR LOWER(nome) = :u"), 
@@ -475,11 +475,11 @@ if not st.session_state["logado"]:
                             st.success("✅ Login efetuado com sucesso!")
                             st.rerun()
                         
-                        # 2. Se não achou na empresa, tenta na tabela de Usuários Integrantes (Equipe)
+                        # 2. Tenta logar como Integrante de Equipe / Bruno (Tabela Usuarios)
                         else:
                             with engine.connect() as conn:
                                 usuario = conn.execute(
-                                    text("SELECT empresa_id, perfil, senha FROM usuarios WHERE LOWER(login) = :u"), 
+                                    text("SELECT empresa_id, perfil, senha, login FROM usuarios WHERE LOWER(login) = :u"), 
                                     {"u": user_input}
                                 ).fetchone()
                             
@@ -487,7 +487,7 @@ if not st.session_state["logado"]:
                                 st.session_state["logado"] = True
                                 st.session_state["empresa"] = usuario[0]
                                 st.session_state["perfil"] = usuario[1]
-                                st.session_state["usuario_ativo"] = user_input
+                                st.session_state["usuario_ativo"] = usuario[3] # Mantém o nome exato do banco
                                 st.success("✅ Login efetuado com sucesso!")
                                 st.rerun()
                             else:
