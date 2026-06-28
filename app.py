@@ -430,15 +430,15 @@ if not st.session_state["logado"]:
         placeholder_topo = st.empty()
         
         # =====================================================================
-        # CABEÇALHO DO LOGIN - AGORA COM UY 100% DOURADO
+        # SUBSTITUIÇÃO DO CORPO DO PLACEHOLDER - FORÇANDO DOURADO REAL
         # =====================================================================
-        st.markdown(
+        placeholder_topo.markdown(
             f"""
             <div style='text-align: center; margin-bottom: 20px;'>
-                <h1 style='margin-bottom: 0px; font-size: 3rem; line-height: 1.2;'>
+                <h1 style='margin-bottom: 0px; font-size: 3.5rem; line-height: 1.2;'>
                     <span style='color: {COR_OURO} !important; font-weight: bold; display: inline-block;'>U</span><span style='color: {COR_OURO} !important; font-weight: bold; display: inline-block;'>Y</span>
                 </h1>
-                <p style='font-size: 1rem; color: #FFFFFF !important; margin-top: 5px; font-weight: 500;'>{SLOGAN}</p>
+                <p style='font-size: 1rem; color: {COR_TEXTO} !important; margin-top: 5px; font-weight: 500;'>{SLOGAN}</p>
             </div>
             """, 
             unsafe_allow_html=True
