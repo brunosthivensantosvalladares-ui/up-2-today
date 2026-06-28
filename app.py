@@ -1004,7 +1004,7 @@ if aba_ativa == "📋 Cadastro Direto":
                         conn.commit()
                     st.rerun()
 
-        if aba_ativa == "📥 Chamados Oficina":
+ if aba_ativa == "📥 Chamados Oficina":
             c_tit, c_refresh = st.columns([0.8, 0.2])
             with c_tit: 
                 st.subheader("📥 Aprovação de Chamados")
