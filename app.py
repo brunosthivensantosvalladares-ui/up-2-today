@@ -450,7 +450,7 @@ if not st.session_state["logado"]:
         
         aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
         
-if aba == "Acessar":
+        if aba == "Acessar":
             with st.container(border=True):
                 user_input = st.text_input("E-mail ou Usuário", key="u_log").lower().strip()
                 pw_input = st.text_input("Senha", type="password", key="p_log").strip()
