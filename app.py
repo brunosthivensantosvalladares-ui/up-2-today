@@ -288,20 +288,21 @@ st.markdown(f"""
     }}
 
     /* ESTILIZAÇÃO DA NOVA SIGLA UY */
-    .logo-u {{ color: {COR_BRONZE} !important; font-weight: bold; }}
-    .logo-y {{ color: {COR_OURO} !important; font-weight: bold; }}
-    </style>
-    /* Adicione isto no final do seu bloco principal de CSS global */
-    .stMarkdown h2 {
+    .logo-u { color: {COR_BRONZE} !important; font-weight: bold; }
+    .logo-y { color: {COR_OURO} !important; font-weight: bold; }
+
+    /* ESTILO EXCLUSIVO DO UY DO LOGIN */
+    .login-brand-title {
         text-align: center !important;
-        font-size: 4rem !important;
-        font-weight: bold !important;
+        color: #C5A059 !important;
+        font-size: 3.8rem !important;
+        font-weight: 900 !important;
         margin-bottom: 0px !important;
+        margin-top: 10px !important;
+        line-height: 1.1 !important;
+        font-family: sans-serif !important;
     }
-    
-    .stMarkdown span[data-textcolor="gold"] {
-        color: #C5A059 !important; /* A cor ouro envelhecido exata do seu logotipo */
-    }
+    </style>
 """, unsafe_allow_html=True)
 # --- FUNÇÃO DO PAINEL DE PAGAMENTO PROFISSIONAL ---
 def exibir_painel_pagamento_pro(origem):
