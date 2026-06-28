@@ -430,19 +430,10 @@ if not st.session_state["logado"]:
         placeholder_topo = st.empty()
         
         # =====================================================================
-        # SUBSTITUIÇÃO BLINDADA COM CHAVES DUPLAS (F-STRING CORRETA)
+        # CÓDIGO DO CABEÇALHO PURIFICADO - VOLTANDO O SLOGAN ORIGINAL
         # =====================================================================
-        placeholder_topo.markdown(
-            f"""
-            <div style='text-align: center; margin-bottom: 20px; width: 100%; display: block;'>
-                <h1 style='margin-bottom: 0px; font-size: 4rem; line-height: 1.1; letter-spacing: 2px;'>
-                    <font id='logo-letra-u' style='color: {COR_OURO} !important; font-weight: 900;-webkit-text-fill-color: {COR_OURO} !important;'>U</font><font id='logo-letra-y' style='color: {COR_OURO} !important; font-weight: 900; -webkit-text-fill-color: {COR_OURO} !important;'>Y</font>
-                </h1>
-                <p style='font-size: 1.1rem; color: {COR_TEXTO} !important; margin-top: 8px; font-weight: bold; font-style: italic;'>{SLOGAN}</p>
-            </div>
-            """, 
-            unsafe_allow_html=True
-        )
+        placeholder_topo.markdown("<h1 class='titulo-dourado'>UY</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; font-style: italic; color: #555; margin-top: 0;'>{SLOGAN}</p>", unsafe_allow_html=True)
         # =====================================================================
         
         aba = st.radio("Selecione uma opção", ["Acessar", "Criar Conta"], horizontal=True, label_visibility="collapsed")
