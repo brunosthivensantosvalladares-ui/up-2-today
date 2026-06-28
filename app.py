@@ -1080,7 +1080,7 @@ else:
         with c2: 
             if not df_ind.empty:
                 df_st = df_ind['realizado'].map({True: 'Concluído', False: 'Pendente'}).value_counts()
-                st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_AZUL) 
+                st.markdown("**Status de Conclusão**"); st.bar_chart(df_st, color=COR_OURO) 
         st.divider(); st.markdown("**⏳ Tempo de Resposta (Lead Time)**")
         query_lead = text("SELECT c.data_solicitacao, t.data as data_conclusao FROM chamados c JOIN tarefas t ON c.id = t.id_chamado WHERE t.realizado = True AND t.empresa_id = :eid")
         df_lead = pd.read_sql(query_lead, engine, params={"eid": emp_id})
