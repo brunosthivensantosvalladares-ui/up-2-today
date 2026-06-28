@@ -430,16 +430,15 @@ if not st.session_state["logado"]:
         placeholder_topo = st.empty()
         
         # =====================================================================
-        # SUBSTITUIÇÃO DO CORPO DO PLACEHOLDER - FORÇANDO DOURADO REAL
+        # SUBSTITUIÇÃO BLINDADA COM CHAVES DUPLAS (F-STRING CORRETA)
         # =====================================================================
-        # REMOVIDO O 'f' ANTES DAS ASPAS TRIPLAS
         placeholder_topo.markdown(
-            """
-            <div style='text-align: center; margin-bottom: 20px;'>
-                <h1 style='margin-bottom: 0px; font-size: 3.5rem; line-height: 1.2;'>
-                    <span style='color: #B8860B !important; font-weight: bold; display: inline-block;'>U</span><span style='color: #B8860B !important; font-weight: bold; display: inline-block;'>Y</span>
+            f"""
+            <div style='text-align: center; margin-bottom: 20px; width: 100%; display: block;'>
+                <h1 style='margin-bottom: 0px; font-size: 4rem; line-height: 1.1; letter-spacing: 2px;'>
+                    <font id='logo-letra-u' style='color: {COR_OURO} !important; font-weight: 900;-webkit-text-fill-color: {COR_OURO} !important;'>U</font><font id='logo-letra-y' style='color: {COR_OURO} !important; font-weight: 900; -webkit-text-fill-color: {COR_OURO} !important;'>Y</font>
                 </h1>
-                <p style='font-size: 1rem; color: #FFFFFF !important; margin-top: 5px; font-weight: 500;'>Seu Controle. Nossa Prioridade.</p>
+                <p style='font-size: 1.1rem; color: {COR_TEXTO} !important; margin-top: 8px; font-weight: bold; font-style: italic;'>{SLOGAN}</p>
             </div>
             """, 
             unsafe_allow_html=True
@@ -455,7 +454,6 @@ if not st.session_state["logado"]:
                 
                 if st.button(f"Acessar Painel {NOME_SISTEMA}", use_container_width=True, type="primary"):
                     engine = get_engine()
-                    # ... (O código continua com a validação das senhas)
                     inicializar_banco()
                     
                     masters = {
