@@ -563,8 +563,12 @@ else:
     if st.session_state["perfil"] == "motorista":
         opcoes = ["✍️ Abrir Solicitação", "📜 Status"]
     else:
-        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "⏳ OSs Pendentes", "✅ OSs Concluídas", "📊 Indicadores", "👥 Minha Equipe", "📖 Manual do Sistema"]
+        # 1. A lista padrão para os outros Admins NÃO possui a equipe
+        opcoes = ["📅 Agenda Principal", "📋 Cadastro Direto", "📥 Chamados Oficina", "⏳ OSs Pendentes", "✅ OSs Concluídas", "📊 Indicadores", "📖 Manual do Sistema"]
+        
+        # 2. A aba só é injetada na lista se for o seu usuário master logado
         if usuario_ativo == "bruno":
+            opcoes.insert(6, "👥 Minha Equipe")  # Encaixa exatamente na posição antiga
             opcoes.append("👑 Gestão Master")
 
     if "opcao_selecionada" not in st.session_state or st.session_state.opcao_selecionada not in opcoes:
@@ -579,10 +583,9 @@ else:
 
     # 1. BARRA LATERAL
     with st.sidebar:
-        # LOGOTIPO COM TAMANHO AMPLIADO PARA PREENCHER A SIDEBAR BRANCA
-        _, col_img, _ = st.columns([0.05, 0.9, 0.05]) # Ajustado o espaçamento das colunas laterais
+        _, col_img, _ = st.columns([0.05, 0.9, 0.05])
         with col_img:
-            st.image(LOGO_URL, use_container_width=True) # Usa a largura máxima da coluna otimizada (220px+)
+            st.image(LOGO_URL, use_container_width=True)
         st.markdown(f"<p style='text-align: center; font-size: 0.8rem; color: {COR_BRONZE}; margin-top: -10px;'>{SLOGAN}</p>", unsafe_allow_html=True)
         st.divider()
         
