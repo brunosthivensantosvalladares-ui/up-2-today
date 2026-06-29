@@ -1184,6 +1184,10 @@ else:
             st.warning("Sem dados de tarefas disponíveis para calcular indicadores de evolução.")
 
     elif aba_ativa == "👥 Minha Equipe":
+        if usuario_ativo != "bruno":
+            st.error("🚫 Acesso restrito apenas ao Usuário Master.")
+            st.stop()
+            
         st.subheader("👥 Gestão de Equipe e Acessos")
         st.info("💡 **Dica profissional:** Para editar senhas ou cargos, altere diretamente na tabela. Para excluir, marque 'Exc' e clique no botão abaixo.")
         
